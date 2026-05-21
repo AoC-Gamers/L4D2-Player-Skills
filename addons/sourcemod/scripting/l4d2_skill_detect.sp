@@ -5,7 +5,7 @@
 #undef REQUIRE_PLUGIN
 #include <l4d2_player_skills>
 
-#define L4D2_SKILLS_LIBRARY "l4d2_player_skills"
+#define PLAYER_SKILLS_LIBRARY "l4d2_player_skills"
 
 Handle g_hForwardSkeet					= INVALID_HANDLE;
 Handle g_hForwardPounceKill				= INVALID_HANDLE;
@@ -77,7 +77,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 public void OnPluginStart()
 {
 	Legacy_KeepUnusedForwardsAlive();
-	g_bSkillsAvailable = LibraryExists(L4D2_SKILLS_LIBRARY);
+	g_bSkillsAvailable = LibraryExists(PLAYER_SKILLS_LIBRARY);
 }
 
 public void OnPluginEnd()
@@ -88,12 +88,12 @@ public void OnPluginEnd()
 
 public void OnAllPluginsLoaded()
 {
-	g_bSkillsAvailable = LibraryExists(L4D2_SKILLS_LIBRARY);
+	g_bSkillsAvailable = LibraryExists(PLAYER_SKILLS_LIBRARY);
 }
 
 public void OnLibraryAdded(const char[] name)
 {
-	if (StrEqual(name, L4D2_SKILLS_LIBRARY))
+	if (StrEqual(name, PLAYER_SKILLS_LIBRARY))
 	{
 		g_bSkillsAvailable = true;
 	}
@@ -101,7 +101,7 @@ public void OnLibraryAdded(const char[] name)
 
 public void OnLibraryRemoved(const char[] name)
 {
-	if (StrEqual(name, L4D2_SKILLS_LIBRARY))
+	if (StrEqual(name, PLAYER_SKILLS_LIBRARY))
 	{
 		g_bSkillsAvailable = false;
 	}
@@ -154,6 +154,11 @@ void Legacy_CloseForwards()
 	Legacy_CloseForward(g_hForwardAlarmTriggered);
 }
 
+bool Legacy_IsEventValid(int eventId)
+{
+	return PlayerSkills_IsEventValid(eventId);
+}
+
 int Legacy_GetEventClient(int eventId, L4D2SkillPlayerSlot slot)
 {
 	return PlayerSkills_GetEventClient(eventId, slot);
@@ -184,7 +189,7 @@ void Legacy_FireSkeetLike(Handle forwardHandle, int survivor, int hunter)
 
 public Action PlayerSkills_OnSkillDetected(int eventId, L4D2SkillType type)
 {
-	if (!g_bSkillsAvailable)
+	if (!g_bSkillsAvailable || !Legacy_IsEventValid(eventId))
 	{
 		return Plugin_Continue;
 	}
