@@ -1,0 +1,33 @@
+{
+  "build": {
+    "plugins": {
+      "root": [
+        "l4d2_player_skills"
+      ]
+    }
+  },
+  "artifact": {
+    "addons": {
+      "sourcemod": {
+        "scripting": {
+          "files": [
+            "l4d2_player_skills.sp"
+          ],
+          "dirs": [
+            "l4d2_player_skills"
+          ],
+          "include": {
+            "files": [
+              "l4d2_player_skills.inc"
+            ]
+          }
+        },
+        "translations": {
+          "files": [
+            "l4d2_player_skills.phrases.txt"
+          ]
+        }
+      }
+    }
+  }
+}

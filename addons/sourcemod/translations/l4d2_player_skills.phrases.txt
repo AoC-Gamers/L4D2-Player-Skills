@@ -1,0 +1,461 @@
+"Phrases"
+{
+	"Tag"
+	{
+		"en"		"[{olive}Skill{default}]"
+		"es"		"[{olive}Skill{default}]"
+	}
+
+	"SkeetAssisted"
+	{
+		"#format"	"{1:s},{2:s},{3:s}"
+		"en"		"{olive}{1}{default} skeeted {red}{2}{default} with help from {olive}{3}{default}."
+		"es"		"{olive}{1}{default} hizo {green}Skeet{default} a {red}{2}{default} con ayuda de {olive}{3}{default}."
+	}
+
+	"SkeetSingleShot"
+	{
+		"#format"	"{1:s},{2:s},{3:d}"
+		"en"		"{olive}{1}{default} skeeted {red}{2}{default} with {green}{3}{default} shot."
+		"es"		"{olive}{1}{default} hizo {green}Skeet{default} a {red}{2}{default} de {green}{3}{default} disparo."
+	}
+
+	"SkeetMultiShot"
+	{
+		"#format"	"{1:s},{2:s},{3:d}"
+		"en"		"{olive}{1}{default} skeeted {red}{2}{default} with {green}{3}{default} shots."
+		"es"		"{olive}{1}{default} hizo {green}Skeet{default} a {red}{2}{default} de {green}{3}{default} disparos."
+	}
+
+	"SkeetSingleShotFullHp"
+	{
+		"#format"	"{1:s},{2:s},{3:d},{4:d}"
+		"en"		"{olive}{1}{default} skeeted {red}{2}{default} for {green}{3}{default} damage with {green}{4}{default} shot {olive}(would kill at full HP){default}."
+		"es"		"{olive}{1}{default} hizo {green}Skeet{default} a {red}{2}{default} con {green}{3}{default} de daño de {green}{4}{default} disparo {olive}(lo mataba con vida completa){default}."
+	}
+
+	"SkeetMultiShotFullHp"
+	{
+		"#format"	"{1:s},{2:s},{3:d},{4:d}"
+		"en"		"{olive}{1}{default} skeeted {red}{2}{default} for {green}{3}{default} damage with {green}{4}{default} shots {olive}(would kill at full HP){default}."
+		"es"		"{olive}{1}{default} hizo {green}Skeet{default} a {red}{2}{default} con {green}{3}{default} de daño de {green}{4}{default} disparos {olive}(lo mataba con vida completa){default}."
+	}
+
+	"SkeetMelee"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"{olive}{1}{default} melee-skeeted {red}{2}{default}."
+		"es"		"{olive}{1}{default} hizo {green}SkeetMelee{default} a {red}{2}{default}."
+	}
+
+	"SkeetMeleePerfect"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"{olive}{1}{default} melee-skeeted {red}{2}{default} {olive}(Perfect){default}."
+		"es"		"{olive}{1}{default} hizo {green}SkeetMelee{default} a {red}{2}{default} {olive}(Perfecto){default}."
+	}
+
+	"HunterSkeetSniper"
+	{
+		"#format"	"{1:s},{2:s},{3:s}"
+		"en"		"{olive}{1}{default} skeeted {red}{2}{default} with a sniper {green}{3}{default}."
+		"es"		"{olive}{1}{default} hizo {green}Skeet{default} a {red}{2}{default} con sniper de {green}{3}{default}."
+	}
+
+	"HunterSkeetSniperFullHp"
+	{
+		"#format"	"{1:s},{2:s},{3:s}"
+		"en"		"{olive}{1}{default} skeeted {red}{2}{default} with a sniper {green}{3}{default} {olive}(would kill at full HP){default}."
+		"es"		"{olive}{1}{default} hizo {green}Skeet{default} a {red}{2}{default} con sniper de {green}{3}{default} {olive}(lo mataba con vida completa){default}."
+	}
+
+	"HunterSkeetGL"
+	{
+		"#format"	"{1:s},{2:s},{3:d}"
+		"en"		"{olive}{1}{default} skeeted {red}{2}{default} with a direct {green}Grenade Launcher{default} hit for {green}{3}{default} damage."
+		"es"		"{olive}{1}{default} hizo {green}Skeet{default} a {red}{2}{default} con impacto directo de {green}Grenade Launcher{default} por {green}{3}{default} de daño."
+	}
+
+	"HunterSkeetGLFullHp"
+	{
+		"#format"	"{1:s},{2:s},{3:d}"
+		"en"		"{olive}{1}{default} skeeted {red}{2}{default} with a direct {green}Grenade Launcher{default} hit for {green}{3}{default} damage {olive}(would kill at full HP){default}."
+		"es"		"{olive}{1}{default} hizo {green}Skeet{default} a {red}{2}{default} con impacto directo de {green}Grenade Launcher{default} por {green}{3}{default} de daño {olive}(lo mataba con vida completa){default}."
+	}
+
+	"HunterDeadstop"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"{olive}{1}{default} deadstopped {red}{2}{default}."
+		"es"		"{olive}{1}{default} hizo {green}Deadstop{default} a {red}{2}{default}."
+	}
+
+	"HunterHighPounce"
+	{
+		"#format"	"{1:s},{2:s},{3:d},{4:.0f}"
+		"en"		"{red}{1}{default} landed a {green}HunterHighPounce{default} on {olive}{2}{default} for {green}{3}{default} damage from {green}{4}{default} height."
+		"es"		"{red}{1}{default} hizo {green}HunterHighPounce{default} a {olive}{2}{default} por {green}{3}{default} de daño desde {green}{4}{default} de altura."
+	}
+
+	"JockeyHighPounce"
+	{
+		"#format"	"{1:s},{2:s},{3:.0f}"
+		"en"		"{red}{1}{default} landed a {green}JockeyHighPounce{default} on {olive}{2}{default} from {green}{3}{default} height."
+		"es"		"{red}{1}{default} hizo {green}JockeyHighPounce{default} a {olive}{2}{default} desde {green}{3}{default} de altura."
+	}
+
+	"SpecialPinClear"
+	{
+		"#format"	"{1:s},{2:s},{3:s}"
+		"en"		"{olive}{1}{default} cleared {red}{2}{default} off {olive}{3}{default}."
+		"es"		"{olive}{1}{default} hizo {green}SpecialPinClear{default} a {red}{2}{default} y salvo a {olive}{3}{default}."
+	}
+
+	"SpecialPinClearShove"
+	{
+		"#format"	"{1:s},{2:s},{3:s}"
+		"en"		"{olive}{1}{default} shove-cleared {red}{2}{default} off {olive}{3}{default}."
+		"es"		"{olive}{1}{default} hizo {green}SpecialPinClear{default} con shove a {red}{2}{default} y salvo a {olive}{3}{default}."
+	}
+
+	"SmokerTongueCut"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"{olive}{1}{default} cut {red}{2}{default}'s tongue."
+		"es"		"{olive}{1}{default} hizo {green}SmokerTongueCut{default} a {red}{2}{default}."
+	}
+
+	"SmokerSelfClearKill"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"{olive}{1}{default} self-cleared {red}{2}{default}."
+		"es"		"{olive}{1}{default} hizo {green}SmokerSelfClear{default} a {red}{2}{default}."
+	}
+
+	"SmokerSelfClearShove"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"{olive}{1}{default} shove-cleared {red}{2}{default}."
+		"es"		"{olive}{1}{default} hizo {green}SmokerSelfClear{default} con shove a {red}{2}{default}."
+	}
+
+	"BoomerPopBot"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"{olive}{1}{default} popped a {blue}Boomer Bot{default} in {green}{2}{default}s."
+		"es"		"{olive}{1}{default} hizo {green}Pop{default} a un {blue}Boomer Bot{default} en {green}{2}{default}s."
+	}
+
+	"BoomerPopPlayer"
+	{
+		"#format"	"{1:s},{2:s},{3:s}"
+		"en"		"{olive}{1}{default} popped {red}{2}{default}'s boomer in {green}{3}{default}s."
+		"es"		"{olive}{1}{default} hizo {green}Pop{default} al Boomer de {red}{2}{default} en {green}{3}{default}s."
+	}
+
+	"BoomerVomitLandedSingle"
+	{
+		"#format"	"{1:s},{2:d}"
+		"en"		"{red}{1}{default} landed {green}Vomit{default} on {olive}{2}{default} survivor."
+		"es"		"{red}{1}{default} conecto {green}Vomit{default} a {olive}{2}{default} survivor."
+	}
+
+	"BoomerVomitLandedMulti"
+	{
+		"#format"	"{1:s},{2:d}"
+		"en"		"{red}{1}{default} landed {green}Vomit{default} on {olive}{2}{default} survivors."
+		"es"		"{red}{1}{default} conecto {green}Vomit{default} a {olive}{2}{default} survivors."
+	}
+
+	"ChargerLevel"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"{olive}{1}{default} leveled {red}{2}{default} ({green}Charger{default})."
+		"es"		"{olive}{1}{default} hizo {green}Level{default} a {red}{2}{default} ({green}Charger{default})."
+	}
+
+	"ChargerInstaKillCarry"
+	{
+		"#format"	"{1:s},{2:s},{3:.0f}"
+		"en"		"{olive}{1}{default} ({green}Charger{default}) landed a {green}InstaKill{default} on {olive}{2}{default} from {green}{3}{default} height."
+		"es"		"{olive}{1}{default} ({green}Charger{default}) hizo {green}InstaKill{default} a {olive}{2}{default} desde {green}{3}{default} de altura."
+	}
+
+	"ChargerInstaKillCarryLedge"
+	{
+		"#format"	"{1:s},{2:s},{3:.0f}"
+		"en"		"{olive}{1}{default} ({green}Charger{default}) landed a ledge {green}InstaKill{default} on {olive}{2}{default} from {green}{3}{default} height."
+		"es"		"{olive}{1}{default} ({green}Charger{default}) hizo {green}InstaKill{default} de ledge a {olive}{2}{default} desde {green}{3}{default} de altura."
+	}
+
+	"ChargerInstaKillCarryDeadly"
+	{
+		"#format"	"{1:s},{2:s},{3:.0f}"
+		"en"		"{olive}{1}{default} ({green}Charger{default}) landed a deadly {green}InstaKill{default} on {olive}{2}{default} from {green}{3}{default} height."
+		"es"		"{olive}{1}{default} ({green}Charger{default}) hizo {green}InstaKill{default} deadly a {olive}{2}{default} desde {green}{3}{default} de altura."
+	}
+
+	"ChargerInstaKillCarryFatalFall"
+	{
+		"#format"	"{1:s},{2:s},{3:.0f}"
+		"en"		"{olive}{1}{default} ({green}Charger{default}) landed a fatal-fall {green}InstaKill{default} on {olive}{2}{default} from {green}{3}{default} height."
+		"es"		"{olive}{1}{default} ({green}Charger{default}) hizo {green}InstaKill{default} por fatal fall a {olive}{2}{default} desde {green}{3}{default} de altura."
+	}
+
+	"ChargerInstaKillCarryIncap"
+	{
+		"#format"	"{1:s},{2:s},{3:.0f}"
+		"en"		"{olive}{1}{default} ({green}Charger{default}) finished an incap {green}InstaKill{default} on {olive}{2}{default} from {green}{3}{default} height."
+		"es"		"{olive}{1}{default} ({green}Charger{default}) cerro un {green}InstaKill{default} tras incap a {olive}{2}{default} desde {green}{3}{default} de altura."
+	}
+
+	"ChargerInstaKillImpact"
+	{
+		"#format"	"{1:s},{2:s},{3:.0f}"
+		"en"		"{olive}{1}{default} ({green}Charger{default}) landed an impact {green}InstaKill{default} on {olive}{2}{default} from {green}{3}{default} height."
+		"es"		"{olive}{1}{default} ({green}Charger{default}) hizo {green}InstaKill{default} de impacto a {olive}{2}{default} desde {green}{3}{default} de altura."
+	}
+
+	"ChargerInstaKillImpactLedge"
+	{
+		"#format"	"{1:s},{2:s},{3:.0f}"
+		"en"		"{olive}{1}{default} ({green}Charger{default}) landed an impact ledge {green}InstaKill{default} on {olive}{2}{default} from {green}{3}{default} height."
+		"es"		"{olive}{1}{default} ({green}Charger{default}) hizo {green}InstaKill{default} de impacto en ledge a {olive}{2}{default} desde {green}{3}{default} de altura."
+	}
+
+	"ChargerInstaKillImpactDeadly"
+	{
+		"#format"	"{1:s},{2:s},{3:.0f}"
+		"en"		"{olive}{1}{default} ({green}Charger{default}) landed a deadly impact {green}InstaKill{default} on {olive}{2}{default} from {green}{3}{default} height."
+		"es"		"{olive}{1}{default} ({green}Charger{default}) hizo {green}InstaKill{default} deadly de impacto a {olive}{2}{default} desde {green}{3}{default} de altura."
+	}
+
+	"ChargerInstaKillImpactFatalFall"
+	{
+		"#format"	"{1:s},{2:s},{3:.0f}"
+		"en"		"{olive}{1}{default} ({green}Charger{default}) landed an impact fatal-fall {green}InstaKill{default} on {olive}{2}{default} from {green}{3}{default} height."
+		"es"		"{olive}{1}{default} ({green}Charger{default}) hizo {green}InstaKill{default} de impacto por fatal fall a {olive}{2}{default} desde {green}{3}{default} de altura."
+	}
+
+	"ChargerInstaKillImpactIncap"
+	{
+		"#format"	"{1:s},{2:s},{3:.0f}"
+		"en"		"{olive}{1}{default} ({green}Charger{default}) finished an impact incap {green}InstaKill{default} on {olive}{2}{default} from {green}{3}{default} height."
+		"es"		"{olive}{1}{default} ({green}Charger{default}) cerro un {green}InstaKill{default} de impacto tras incap a {olive}{2}{default} desde {green}{3}{default} de altura."
+	}
+
+	"ChargerDeathSetupLedge"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"{olive}{1}{default} ({green}Charger{default}) left {olive}{2}{default} hanging."
+		"es"		"{olive}{1}{default} ({green}Charger{default}) dejo a {olive}{2}{default} colgando."
+	}
+
+	"ChargerDeathSetupIncap"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"{olive}{1}{default} ({green}Charger{default}) left {olive}{2}{default} incapacitated."
+		"es"		"{olive}{1}{default} ({green}Charger{default}) dejo a {olive}{2}{default} incapacitado."
+	}
+
+	"CarAlarmTriggered"
+	{
+		"#format"	"{1:s}"
+		"en"		"{olive}{1}{default} triggered a {green}car alarm{default}."
+		"es"		"{olive}{1}{default} activo la {green}alarma del auto{default}."
+	}
+
+	"CarAlarmHit"
+	{
+		"#format"	"{1:s}"
+		"en"		"{olive}{1}{default} triggered a {green}car alarm{default} by hit."
+		"es"		"{olive}{1}{default} activo la {green}alarma del auto{default} al golpearla."
+	}
+
+	"CarAlarmHitAssist"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"{olive}{1}{default} triggered a {green}car alarm{default} by hit because of {red}{2}{default}."
+		"es"		"{olive}{1}{default} activo la {green}alarma del auto{default} al golpearla por culpa de {red}{2}{default}."
+	}
+
+	"CarAlarmHitIndirect"
+	{
+		"#format"	"{1:s}"
+		"en"		"{olive}{1}{default} triggered a {green}car alarm{default} indirectly by hit."
+		"es"		"{olive}{1}{default} activo la {green}alarma del auto{default} indirectamente al golpearla."
+	}
+
+	"CarAlarmHitForcedIndirect"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"{olive}{1}{default} triggered a {green}car alarm{default} indirectly by hit because of {red}{2}{default}."
+		"es"		"{olive}{1}{default} activo la {green}alarma del auto{default} indirectamente al golpearla por culpa de {red}{2}{default}."
+	}
+
+	"CarAlarmTouched"
+	{
+		"#format"	"{1:s}"
+		"en"		"{olive}{1}{default} triggered a {green}car alarm{default} by touch."
+		"es"		"{olive}{1}{default} activo la {green}alarma del auto{default} al tocarla."
+	}
+
+	"CarAlarmTouchedAssist"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"{olive}{1}{default} triggered a {green}car alarm{default} by touch because of {red}{2}{default}."
+		"es"		"{olive}{1}{default} activo la {green}alarma del auto{default} al tocarla por culpa de {red}{2}{default}."
+	}
+
+	"CarAlarmTouchedIndirect"
+	{
+		"#format"	"{1:s}"
+		"en"		"{olive}{1}{default} triggered a {green}car alarm{default} indirectly by touch."
+		"es"		"{olive}{1}{default} activo la {green}alarma del auto{default} indirectamente al tocarla."
+	}
+
+	"CarAlarmTouchedForcedIndirect"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"{olive}{1}{default} triggered a {green}car alarm{default} indirectly by touch because of {red}{2}{default}."
+		"es"		"{olive}{1}{default} activo la {green}alarma del auto{default} indirectamente al tocarla por culpa de {red}{2}{default}."
+	}
+
+	"CarAlarmExplosion"
+	{
+		"#format"	"{1:s}"
+		"en"		"{olive}{1}{default} triggered a {green}car alarm{default} by explosion."
+		"es"		"{olive}{1}{default} activo la {green}alarma del auto{default} por una explosion."
+	}
+
+	"CarAlarmExplosionAssist"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"{olive}{1}{default} triggered a {green}car alarm{default} by explosion because of {red}{2}{default}."
+		"es"		"{olive}{1}{default} activo la {green}alarma del auto{default} por una explosion por culpa de {red}{2}{default}."
+	}
+
+	"CarAlarmExplosionIndirect"
+	{
+		"#format"	"{1:s}"
+		"en"		"{olive}{1}{default} triggered a {green}car alarm{default} indirectly by explosion."
+		"es"		"{olive}{1}{default} activo la {green}alarma del auto{default} indirectamente por una explosion."
+	}
+
+	"CarAlarmExplosionForcedIndirect"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"{olive}{1}{default} triggered a {green}car alarm{default} indirectly by explosion because of {red}{2}{default}."
+		"es"		"{olive}{1}{default} activo la {green}alarma del auto{default} indirectamente por una explosion por culpa de {red}{2}{default}."
+	}
+
+	"CarAlarmBoomer"
+	{
+		"#format"	"{1:s}"
+		"en"		"{olive}{1}{default} triggered a {green}car alarm{default} because of a {red}Boomer{default}."
+		"es"		"{olive}{1}{default} activo la {green}alarma del auto{default} por un {red}Boomer{default}."
+	}
+
+	"CarAlarmBoomerAssist"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"{olive}{1}{default} triggered a {green}car alarm{default} because of {red}{2}{default}."
+		"es"		"{olive}{1}{default} activo la {green}alarma del auto{default} por culpa de {red}{2}{default}."
+	}
+
+	"BunnyHopStreakSingle"
+	{
+		"#format"	"{1:s},{2:d},{3:s}"
+		"en"		"{olive}{1}{default} hit a {green}BunnyHopStreak{default} of {green}{2}{default} hop at {green}{3}{default} speed."
+		"es"		"{olive}{1}{default} hizo {green}BunnyHopStreak{default} de {green}{2}{default} hop a {green}{3}{default} de velocidad."
+	}
+
+	"BunnyHopStreakMulti"
+	{
+		"#format"	"{1:s},{2:d},{3:s}"
+		"en"		"{olive}{1}{default} hit a {green}BunnyHopStreak{default} of {green}{2}{default} hops at {green}{3}{default} speed."
+		"es"		"{olive}{1}{default} hizo {green}BunnyHopStreak{default} de {green}{2}{default} hops a {green}{3}{default} de velocidad."
+	}
+
+	"WitchCrown"
+	{
+		"#format"	"{1:s},{2:d}"
+		"en"		"{olive}{1}{default} crowned the {red}Witch{default} for {green}{2}{default} damage."
+		"es"		"{olive}{1}{default} hizo {green}Crown{default} a la {red}Witch{default} con {green}{2}{default} de daño."
+	}
+
+	"TankRockSkeet"
+	{
+		"#format"	"{1:s}"
+		"en"		"{olive}{1}{default} skeeted a {red}Tank rock{default}."
+		"es"		"{olive}{1}{default} hizo {green}Skeet{default} a una {red}Tank rock{default}."
+	}
+
+	"TankRockHit"
+	{
+		"#format"	"{1:s}"
+		"en"		"{olive}{1}{default} was hit by a {red}Tank rock{default}."
+		"es"		"{olive}{1}{default} fue golpeado por una {red}roca del Tank{default}."
+	}
+
+	"BossTankHealthRemaining"
+	{
+		"#format"	"{1:s},{2:d}"
+		"en"		"{blue}Tank {default}({olive}{1}{default}) had {green}{2}{default} health remaining."
+		"es"		"{blue}Tank {default}({olive}{1}{default}) quedo con {green}{2}{default} de vida restante."
+	}
+
+	"BossTankDamageTitle"
+	{
+		"#format"	"{1:s}"
+		"en"		"{blue}Damage {default}dealt to {blue}Tank {default}({olive}{1}{default}):"
+		"es"		"{blue}Daño {default}hecho al {blue}Tank {default}({olive}{1}{default}):"
+	}
+
+	"BossWitchHealthRemaining"
+	{
+		"#format"	"{1:d}"
+		"en"		"{blue}Witch {default}had {olive}{1}{default} health remaining."
+		"es"		"{blue}Witch {default}quedo con {olive}{1}{default} de vida restante."
+	}
+
+	"BossWitchDamageTitle"
+	{
+		"en"		"{blue}Damage {default}dealt to {blue}Witch{default}:"
+		"es"		"{blue}Daño {default}hecho a la {blue}Witch{default}:"
+	}
+
+	"BossDamageEntry"
+	{
+		"#format"	"{1:d},{2:d},{3:s}"
+		"en"		"{blue}[{default}{1}{blue}] ({default}{2}%{blue}) {olive}{3}"
+		"es"		"{blue}[{default}{1}{blue}] ({default}{2}%{blue}) {olive}{3}"
+	}
+
+	"BossDamageEntryCrown"
+	{
+		"#format"	"{1:d},{2:d},{3:s}"
+		"en"		"{blue}[{default}{1}{blue}] ({default}{2}%{blue}) {olive}{3} {green}(Crown){default}"
+		"es"		"{blue}[{default}{1}{blue}] ({default}{2}%{blue}) {olive}{3} {green}(Crown){default}"
+	}
+
+	"BossWitchDamageCombined"
+	{
+		"#format"	"{1:d},{2:d},{3:s}"
+		"en"		"{blue}[{default}{1}{blue}] ({default}{2}%{blue}) {green}{3}"
+		"es"		"{blue}[{default}{1}{blue}] ({default}{2}%{blue}) {green}{3}"
+	}
+
+	"BossWitchDamageCombinedName"
+	{
+		"en"		"The Other Survivors"
+		"es"		"Los otros Survivors"
+	}
+
+	"WitchKilledByTank"
+	{
+		"#format"	"{1:s}"
+		"en"		"{red}Tank {default}({olive}{1}{default}) killed the {red}Witch{default}."
+		"es"		"{red}Tank {default}({olive}{1}{default}) mato a la {red}Witch{default}."
+	}
+}
