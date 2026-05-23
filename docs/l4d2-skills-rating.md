@@ -284,5 +284,3 @@ Direccion recomendada:
    - tag estandar
    - tag con estrellas
    - o ambos
-
-## Puntos Abiertos

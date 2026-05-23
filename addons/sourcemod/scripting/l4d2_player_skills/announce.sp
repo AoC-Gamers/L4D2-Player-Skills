@@ -3,8 +3,12 @@
 #endif
 #define _l4d2_player_skills_announce_included
 
+// Announce and chat-command coordinator. This file formats visible output for
+// skill events, boss summaries, and lightweight player-facing commands.
+
 int g_iAnnounceSortSession = -1;
 
+// Initialization and commands.
 void Announce_Init()
 {
 	RegConsoleCmd("sm_skills", Command_Skills, "Print a summary of your detected skills.");
@@ -14,7 +18,9 @@ Action Command_Skills(int client, int args)
 {
 	if (client <= 0 || !IsValidClient(client))
 	{
-		ReplyToCommand(client, "[l4d2_player_skills] sm_skills is in-game only.");
+		char tag[32];
+		FormatEx(tag, sizeof(tag), "%T", "Tag", LANG_SERVER);
+		ReplyToCommand(client, "%s sm_skills is in-game only.", tag);
 		return Plugin_Handled;
 	}
 
@@ -111,6 +117,7 @@ Action Command_Skills(int client, int args)
 	return Plugin_Handled;
 }
 
+// Skill summary helpers.
 void Announce_PrintSkillsSummaryLine(int client, const int counts[L4D2Skill_Size],
 	L4D2SkillType typeA, const char[] phraseA,
 	L4D2SkillType typeB, const char[] phraseB,
@@ -156,6 +163,7 @@ void Announce_AppendSkillStat(int client, char[] line, int maxlen, const int cou
 	hasAny = true;
 }
 
+// Skill event announce flow.
 void Announce_GetSkillTag(int eventIndex, char[] buffer, int maxlen)
 {
 	int rating = Skills_GetEventRating(eventIndex);
@@ -550,6 +558,7 @@ void Announce_Skill(int eventId)
 	API_FireSkillAnnounced(eventId, g_SkillEvents[eventIndex].type);
 }
 
+// Boss announce flow.
 void Announce_BossDamage(int sessionIndex)
 {
 	if (g_cvAnnounceBossDamage == null || !g_cvAnnounceBossDamage.BoolValue)
@@ -602,6 +611,7 @@ void Announce_BossDamage(int sessionIndex)
 	API_FireBossDamageAnnounced(g_BossSessions[sessionIndex].id, g_BossSessions[sessionIndex].type);
 }
 
+// Tank and Witch summary helpers.
 void Announce_TankDamage(int sessionIndex, bool tankAlive)
 {
 	if (sessionIndex < 0 || sessionIndex >= L4D2_SKILLS_MAX_BOSSES || g_BossSessions[sessionIndex].id == 0)

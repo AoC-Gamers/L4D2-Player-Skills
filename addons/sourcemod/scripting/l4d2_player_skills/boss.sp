@@ -3,6 +3,10 @@
 #endif
 #define _l4d2_player_skills_boss_included
 
+// Boss session coordinator. This file keeps Tank/Witch lifecycle, damage-session
+// finalization, and event emission for boss-related skills and summaries.
+
+// Initialization and reset.
 void Boss_Init()
 {
 	Boss_ResetAll();
@@ -16,6 +20,7 @@ void Boss_ResetAll()
 	}
 }
 
+// Client lifecycle and control-transfer flow.
 void Boss_OnClientPutInServer(int client)
 {
 	if (client > 0 && client <= MaxClients)
@@ -223,6 +228,7 @@ void Boss_OnEntityCreated(int entity, const char[] classname)
 	}
 }
 
+// Entity lifecycle and round flow.
 void Boss_OnRoundStart()
 {
 	Boss_ResetAll();
@@ -262,6 +268,7 @@ void Boss_OnRoundEnd()
 	}
 }
 
+// Event-driven Tank and Witch tracking.
 void Boss_EventTankSpawn(Event event)
 {
 	if (!Skills_IsEnabled())
@@ -420,15 +427,6 @@ void Boss_EventPlayerIncapacitatedStart(Event event)
 	Boss_AnnounceWitchRemainingHealth(witch);
 }
 
-void Boss_EventInfectedHurt(Event event)
-{
-	// Witch damage is tracked from SDKHook_OnTakeDamagePost for better accuracy.
-	if (event == null)
-	{
-		return;
-	}
-}
-
 void Boss_EventWitchKilled(Event event)
 {
 	if (!Skills_IsEnabled())
@@ -471,6 +469,7 @@ void Boss_EventWitchKilled(Event event)
 	Boss_FinalizeSession(sessionIndex);
 }
 
+// Session lookup and allocation helpers.
 int Boss_EnsureTankSession(int client)
 {
 	int userid = GetClientUserId(client);
@@ -641,6 +640,7 @@ int Boss_FindOrCreateDamageEntry(int sessionIndex, int attacker)
 	return -1;
 }
 
+// Session event creation and counters.
 void Boss_CreateTankDeadEvent(int sessionIndex, int killer)
 {
 	if (!IsValidSurvivor(killer))
@@ -917,7 +917,7 @@ void Boss_CreateWitchDeadEvent(int sessionIndex, int killer)
 	}
 
 	g_SkillEvents[eventIndex].actor.Capture(killer);
-		g_SkillEvents[eventIndex].victim.client = g_BossSessions[sessionIndex].entity;
+	g_SkillEvents[eventIndex].victim.client = g_BossSessions[sessionIndex].entity;
 	g_SkillEvents[eventIndex].victim.userid = 0;
 	g_SkillEvents[eventIndex].victim.accountId = 0;
 	g_SkillEvents[eventIndex].victim.bot = true;
@@ -948,6 +948,7 @@ void Boss_CreateWitchDeadEvent(int sessionIndex, int killer)
 	}
 }
 
+// Witch event helpers.
 void Boss_CreateWitchIncapEvent(int sessionIndex, int witch, int victim)
 {
 	if (!IsValidSurvivor(victim))

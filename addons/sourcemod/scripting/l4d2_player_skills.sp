@@ -218,7 +218,6 @@ public void OnPluginStart()
 	HookEvent("charger_impact", Event_ChargerImpact, EventHookMode_Post);
 	HookEvent("charger_carry_end", Event_ChargerCarryEnd, EventHookMode_Post);
 	HookEvent("triggered_car_alarm", Event_TriggeredCarAlarm, EventHookMode_Post);
-	HookEvent("infected_hurt", Event_InfectedHurt, EventHookMode_Post);
 	HookEvent("witch_killed", Event_WitchKilled, EventHookMode_Post);
 	HookEvent("choke_start", Event_ChokeStart, EventHookMode_Post);
 	HookEvent("tongue_pull_stopped", Event_TonguePullStopped, EventHookMode_Post);
@@ -498,11 +497,6 @@ void Event_ChargerCarryEnd(Event event, const char[] name, bool dontBroadcast)
 void Event_TriggeredCarAlarm(Event event, const char[] name, bool dontBroadcast)
 {
 	Detect_EventTriggeredCarAlarm();
-}
-
-void Event_InfectedHurt(Event event, const char[] name, bool dontBroadcast)
-{
-	Boss_EventInfectedHurt(event);
 }
 
 void Event_WitchKilled(Event event, const char[] name, bool dontBroadcast)
