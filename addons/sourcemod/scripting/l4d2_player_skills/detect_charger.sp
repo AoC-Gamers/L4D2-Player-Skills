@@ -81,6 +81,45 @@ void Detect_RecordChargeVictim(int charger, int victim, bool wasCarried)
 	g_DetectChargeVictim[victim].incapTime = 0.0;
 }
 
+float Detect_GetChargeVerticalDrop(int victim)
+{
+	if (!IsValidSurvivor(victim))
+	{
+		return 0.0;
+	}
+
+	float currentOrigin[3];
+	GetClientAbsOrigin(victim, currentOrigin);
+	return g_DetectChargeVictim[victim].startOrigin[2] - currentOrigin[2];
+}
+
+bool Detect_IsChargerDeathSetupEligible(int victim, bool incapped, bool ledgeHang)
+{
+	if (!IsValidSurvivor(victim))
+	{
+		return false;
+	}
+
+	if (ledgeHang)
+	{
+		return true;
+	}
+
+	if (!incapped)
+	{
+		return false;
+	}
+
+	if ((g_DetectChargeVictim[victim].flags & DCFLAG_DEADLY) != 0)
+	{
+		return false;
+	}
+
+	float height = Detect_GetChargeVerticalDrop(victim);
+	float threshold = g_cvDetectDeathSetupHeight != null ? g_cvDetectDeathSetupHeight.FloatValue : 100.0;
+	return height >= threshold;
+}
+
 void Detect_EmitChargerDeathSetup(int victim, bool incapped, bool ledgeHang)
 {
 	if (!IsValidSurvivor(victim) || g_DetectChargeVictim[victim].setupEmitted)
@@ -100,6 +139,11 @@ void Detect_EmitChargerDeathSetup(int victim, bool incapped, bool ledgeHang)
 		return;
 	}
 
+	if (!Detect_IsChargerDeathSetupEligible(victim, incapped, ledgeHang))
+	{
+		return;
+	}
+
 	int eventId = Skills_CreateEvent(L4D2Skill_ChargerDeathSetup);
 	int eventIndex = Skills_GetEventIndex(eventId);
 	if (eventIndex == -1)
@@ -113,6 +157,7 @@ void Detect_EmitChargerDeathSetup(int victim, bool incapped, bool ledgeHang)
 	g_SkillEvents[eventIndex].wasCarried = g_DetectChargeVictim[victim].wasCarried;
 	g_SkillEvents[eventIndex].incapped = incapped;
 	g_SkillEvents[eventIndex].ledgeHang = ledgeHang;
+	g_SkillEvents[eventIndex].height = Detect_GetChargeVerticalDrop(victim);
 
 	g_DetectChargeVictim[victim].setupEmitted = true;
 
