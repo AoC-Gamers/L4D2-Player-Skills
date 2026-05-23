@@ -7,6 +7,17 @@
 #define L4D2_SKILLS_MAX_DAMAGE_ENTRIES 32
 #define L4D2_SKILLS_MAX_EVENTS		   256
 #define L4D2_SKILLS_SHOTGUN_BLAST_TIME 0.1
+#define L4D2_SKILLS_DEFAULT_BOOMER_HEALTH 50
+#define L4D2_SKILLS_DEFAULT_SMOKER_HEALTH 250
+#define L4D2_SKILLS_DEFAULT_HUNTER_HEALTH 250
+#define L4D2_SKILLS_DEFAULT_SPITTER_HEALTH 100
+#define L4D2_SKILLS_DEFAULT_JOCKEY_HEALTH 325
+#define L4D2_SKILLS_DEFAULT_CHARGER_HEALTH 600
+#define L4D2_SKILLS_DEFAULT_TANK_HEALTH 4000
+#define L4D2_SKILLS_DEFAULT_WITCH_HEALTH 1000
+#define L4D2_SKILLS_DEFAULT_HUNTER_MAX_POUNCE_BONUS_DAMAGE 24.0
+#define L4D2_SKILLS_DEFAULT_HUNTER_HIGH_POUNCE_HEIGHT 400.0
+#define L4D2_SKILLS_DEFAULT_JOCKEY_HIGH_POUNCE_HEIGHT 300.0
 
 enum L4D2SkillType
 {
@@ -72,6 +83,24 @@ enum PlayerSkillsDebugCategory
 	PlayerSkillsDebug_Announce	= 1 << 6
 }
 
+enum PlayerSkillsGameMode
+{
+	PlayerSkillsGameMode_Unknown = 0,
+	PlayerSkillsGameMode_Coop,
+	PlayerSkillsGameMode_Versus,
+	PlayerSkillsGameMode_Survival,
+	PlayerSkillsGameMode_Scavenge
+}
+
+enum PlayerSkillsCvarScope
+{
+	PlayerSkillsCvarScope_Global = 0,
+	PlayerSkillsCvarScope_Coop,
+	PlayerSkillsCvarScope_Versus,
+	PlayerSkillsCvarScope_Survival,
+	PlayerSkillsCvarScope_Scavenge
+}
+
 /**
  * @brief Snapshot of a player identity captured at event time.
  * @remarks Stores both runtime and persistent identifiers so the plugin can
@@ -83,6 +112,7 @@ enum struct L4D2PlayerRef
 	int	 userid;
 	int	 accountId;
 	bool bot;
+	int	 character;
 	char name[MAX_NAME_LENGTH];
 	char auth[32];
 
@@ -97,6 +127,7 @@ enum struct L4D2PlayerRef
 		this.userid	   = 0;
 		this.accountId = 0;
 		this.bot	   = false;
+		this.character = -1;
 		this.name[0]   = '\0';
 		this.auth[0]   = '\0';
 	}
@@ -122,6 +153,7 @@ enum struct L4D2PlayerRef
 		this.userid	   = GetClientUserId(client);
 		this.bot	   = IsFakeClient(client);
 		this.accountId = this.bot ? 0 : GetSteamAccountID(client);
+		this.character = (L4D_GetClientTeam(client) == L4DTeam_Survivor) ? GetEntProp(client, Prop_Send, "m_survivorCharacter") : -1;
 
 		GetClientName(client, this.name, sizeof(this.name));
 
@@ -135,6 +167,17 @@ enum struct L4D2PlayerRef
 		{
 			strcopy(this.auth, sizeof(this.auth), "UNKNOWN");
 		}
+	}
+
+	/**
+	 * @brief Clears the runtime client binding while keeping persistent identity fields.
+	 *
+	 * @noreturn
+	 */
+	void DetachClient()
+	{
+		this.client = 0;
+		this.userid = 0;
 	}
 
 	/**
@@ -173,8 +216,8 @@ enum struct L4D2PlayerRef
 
 	/**
 	 * @brief Checks whether a live client matches this persistent identity.
-	 * @remarks Human players compare by Steam account id. Bots compare by
-	 *          current userid because they do not expose a persistent account id.
+	 * @remarks Human players compare by Steam account id. Survivor bots compare by
+	 *          survivor character so bot/player replacement keeps the same identity.
 	 *
 	 * @param client         Client index to compare.
 	 *
@@ -189,10 +232,32 @@ enum struct L4D2PlayerRef
 
 		if (this.bot || IsFakeClient(client))
 		{
-			return this.bot && IsFakeClient(client) && this.userid > 0 && GetClientUserId(client) == this.userid;
+			if (!this.bot || !IsFakeClient(client))
+			{
+				return false;
+			}
+
+			if (L4D_GetClientTeam(client) != L4DTeam_Survivor || this.character < 0)
+			{
+				return false;
+			}
+
+			return GetEntProp(client, Prop_Send, "m_survivorCharacter") == this.character;
 		}
 
-		return this.accountId > 0 && GetSteamAccountID(client) == this.accountId;
+		int accountId = GetSteamAccountID(client);
+		if (this.accountId > 0 && accountId > 0)
+		{
+			return this.accountId == accountId;
+		}
+
+		char auth[32];
+		if (!GetClientAuthId(client, AuthId_Steam2, auth, sizeof(auth), true))
+		{
+			return false;
+		}
+
+		return this.auth[0] != '\0' && strcmp(this.auth, auth) == 0;
 	}
 }
 

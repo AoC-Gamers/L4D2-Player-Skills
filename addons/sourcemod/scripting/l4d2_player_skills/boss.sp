@@ -517,7 +517,7 @@ int Boss_EnsureWitchSession(int entity)
 		return -1;
 	}
 
-	int maxHealth = g_cvWitchHealth.IntValue;
+	int maxHealth = Skills_GetWitchMaxHealth();
 	L4D2BossSession(slot).Start(L4D2Boss_Witch, entity, 0, maxHealth);
 	Skills_Debug(PlayerSkillsDebug_Boss, "Started Witch session. session=%d entity=%d maxhp=%d", g_BossSessions[slot].id, entity, maxHealth);
 	return slot;

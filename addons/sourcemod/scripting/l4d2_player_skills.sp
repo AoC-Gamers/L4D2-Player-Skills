@@ -21,7 +21,23 @@ ConVar	g_cvEnable				 = null;
 ConVar	g_cvDebug				 = null;
 ConVar	g_cvAnnounceSkills		 = null;
 ConVar	g_cvAnnounceBossDamage	 = null;
+ConVar	g_cvBoomerHealth		 = null;
+ConVar	g_cvSmokerHealth		 = null;
+ConVar	g_cvHunterHealth		 = null;
+ConVar	g_cvHunterMaxPounceBonusDamage = null;
+ConVar	g_cvSpitterHealth		 = null;
+ConVar	g_cvJockeyHealth		 = null;
+ConVar	g_cvChargerHealth		 = null;
+ConVar	g_cvTankHealth			 = null;
 ConVar	g_cvWitchHealth			 = null;
+ConVar	g_cvVersusBoomerLimit	 = null;
+ConVar	g_cvVersusSmokerLimit	 = null;
+ConVar	g_cvVersusHunterLimit	 = null;
+ConVar	g_cvVersusSpitterLimit	 = null;
+ConVar	g_cvVersusJockeyLimit	 = null;
+ConVar	g_cvVersusChargerLimit	 = null;
+ConVar	g_cvHunterHighPounceHeight = null;
+ConVar	g_cvJockeyHighPounceHeight = null;
 
 int		g_iWitchPrintMinimum	 = 0;
 int		g_iWitchPrintMaxLines	 = 0;
@@ -212,7 +228,23 @@ public void OnPluginStart()
 	g_cvAnnounceSkills	   = CreateConVar("l4d2_player_skills_announce_skills", "1", "Announce detected skills in chat.");
 	g_cvAnnounceBossDamage = CreateConVar("l4d2_player_skills_announce_boss_damage", "1", "Announce boss damage summaries in chat.");
 
+	g_cvBoomerHealth	   = FindConVar("z_exploding_health");
+	g_cvSmokerHealth	   = FindConVar("z_gas_health");
+	g_cvHunterHealth	   = FindConVar("z_hunter_health");
+	g_cvHunterMaxPounceBonusDamage = FindConVar("z_hunter_max_pounce_bonus_damage");
+	g_cvSpitterHealth	   = FindConVar("z_spitter_health");
+	g_cvJockeyHealth	   = FindConVar("z_jockey_health");
+	g_cvChargerHealth	   = FindConVar("z_charger_health");
+	g_cvTankHealth		   = FindConVar("z_tank_health");
 	g_cvWitchHealth		   = FindConVar("z_witch_health");
+	g_cvVersusBoomerLimit  = FindConVar("z_versus_boomer_limit");
+	g_cvVersusSmokerLimit  = FindConVar("z_versus_smoker_limit");
+	g_cvVersusHunterLimit  = FindConVar("z_versus_hunter_limit");
+	g_cvVersusSpitterLimit = FindConVar("z_versus_spitter_limit");
+	g_cvVersusJockeyLimit  = FindConVar("z_versus_jockey_limit");
+	g_cvVersusChargerLimit = FindConVar("z_versus_charger_limit");
+	g_cvHunterHighPounceHeight = CreateConVar("l4d2_player_skills_hunter_high_pounce_height", "400", "Minimum vertical height for HunterHighPounce.");
+	g_cvJockeyHighPounceHeight = CreateConVar("l4d2_player_skills_jockey_high_pounce_height", "300", "Minimum vertical height for JockeyHighPounce.");
 
 	AutoExecConfig(false, "l4d2_player_skills");
 

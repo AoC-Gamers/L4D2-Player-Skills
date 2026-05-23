@@ -114,12 +114,8 @@ StringMap g_smDetectCarPendingReason = null;
 StringMap g_smDetectCarPendingInfected = null;
 StringMap g_smDetectCarPendingFlags = null;
 ConVar g_cvDetectPounceInterrupt = null;
-ConVar g_cvDetectChargerHealth = null;
-ConVar g_cvDetectHunterHighPounceHeight = null;
-ConVar g_cvDetectJockeyHighPounceHeight = null;
 ConVar g_cvDetectMaxPounceDistance = null;
 ConVar g_cvDetectMinPounceDistance = null;
-ConVar g_cvDetectMaxPounceDamage = null;
 ConVar g_cvDetectInstaKillHeight = null;
 ConVar g_cvDetectBHopMinStreak = null;
 ConVar g_cvDetectBHopMinInitSpeed = null;
@@ -135,12 +131,8 @@ void Detect_Init()
 	g_smDetectCarPendingInfected = new StringMap();
 	g_smDetectCarPendingFlags = new StringMap();
 	g_cvDetectPounceInterrupt = FindConVar("z_pounce_damage_interrupt");
-	g_cvDetectChargerHealth = FindConVar("z_charger_health");
-	g_cvDetectHunterHighPounceHeight = CreateConVar("l4d2_player_skills_hunter_high_pounce_height", "400", "Minimum vertical height for HunterHighPounce.");
-	g_cvDetectJockeyHighPounceHeight = CreateConVar("l4d2_player_skills_jockey_high_pounce_height", "300", "Minimum vertical height for JockeyHighPounce.");
 	g_cvDetectMaxPounceDistance = FindConVar("z_pounce_damage_range_max");
 	g_cvDetectMinPounceDistance = FindConVar("z_pounce_damage_range_min");
-	g_cvDetectMaxPounceDamage = FindConVar("z_hunter_max_pounce_bonus_damage");
 	g_cvDetectInstaKillHeight = CreateConVar("l4d2_player_skills_charger_instakill_height", "400", "Minimum vertical drop for ChargerInstaKill.");
 	g_cvDetectBHopMinStreak = CreateConVar("l4d2_player_skills_bhop_streak_min", "3", "Minimum amount of successful hops for BunnyHopStreak.");
 	g_cvDetectBHopMinInitSpeed = CreateConVar("l4d2_player_skills_bhop_init_speed", "150", "Minimum initial jump speed to start tracking BunnyHopStreak.");
@@ -355,7 +347,7 @@ void Detect_OnPouncedOnSurvivorPost(int victim, int attacker)
 	Detect_SetPinState(attacker, victim, L4D2ZombieClass_Hunter, -1.0, -1.0);
 
 	float height = Detect_GetLeapHeight(attacker, victim);
-	float threshold = g_cvDetectHunterHighPounceHeight != null ? g_cvDetectHunterHighPounceHeight.FloatValue : 400.0;
+	float threshold = g_cvHunterHighPounceHeight != null ? g_cvHunterHighPounceHeight.FloatValue : L4D2_SKILLS_DEFAULT_HUNTER_HIGH_POUNCE_HEIGHT;
 	float distance = Detect_GetLeapDistance(attacker, victim);
 	float calculatedDamage = Detect_CalculateHunterPounceDamage(distance);
 	bool incapped = L4D_IsPlayerIncapacitated(victim);
@@ -1685,7 +1677,7 @@ void Detect_EventJockeyRide(Event event)
 	}
 
 	float height = Detect_GetLeapHeight(jockey, survivor);
-	float threshold = g_cvDetectJockeyHighPounceHeight != null ? g_cvDetectJockeyHighPounceHeight.FloatValue : 300.0;
+	float threshold = g_cvJockeyHighPounceHeight != null ? g_cvJockeyHighPounceHeight.FloatValue : L4D2_SKILLS_DEFAULT_JOCKEY_HIGH_POUNCE_HEIGHT;
 	bool reportedHigh = height >= threshold;
 	if (!reportedHigh)
 	{
@@ -1808,7 +1800,7 @@ float Detect_CalculateHunterPounceDamage(float distance)
 {
 	float minDistance = g_cvDetectMinPounceDistance != null ? g_cvDetectMinPounceDistance.FloatValue : 300.0;
 	float maxDistance = g_cvDetectMaxPounceDistance != null ? g_cvDetectMaxPounceDistance.FloatValue : 1000.0;
-	float maxBonusDamage = g_cvDetectMaxPounceDamage != null ? g_cvDetectMaxPounceDamage.FloatValue : 24.0;
+	float maxBonusDamage = Skills_GetHunterMaxPounceBonusDamage();
 
 	if (distance <= minDistance)
 	{
@@ -2724,7 +2716,7 @@ void Detect_HandleChargerHurt(Event event, int victim, int attacker)
 		&& (damageType & DMG_CLUB || damageType & DMG_SLASH)
 		&& Detect_IsChargerCharging(victim))
 	{
-		int chargerHealth = g_cvDetectChargerHealth != null ? g_cvDetectChargerHealth.IntValue : 600;
+		int chargerHealth = Skills_GetSpecialMaxHealth(L4D2ZombieClass_Charger);
 		int levelThreshold = RoundToFloor(float(chargerHealth) * 0.65);
 		float rawDamage = g_fDetectChargerLastRawDamage[victim];
 		if (g_iDetectChargerLastAttacker[victim] != attacker || !(g_iDetectChargerLastDamageType[victim] & (DMG_CLUB | DMG_SLASH)))
@@ -2747,6 +2739,7 @@ void Detect_HandleChargerHurt(Event event, int victim, int attacker)
 				{
 					g_SkillEvents[eventIndex].chipDamage = 0;
 				}
+				g_SkillEvents[eventIndex].perfect = (g_SkillEvents[eventIndex].chipDamage == 0);
 
 				Action result = API_FireSkillDetected(eventId, L4D2Skill_ChargerLevel);
 				if (result < Plugin_Handled)

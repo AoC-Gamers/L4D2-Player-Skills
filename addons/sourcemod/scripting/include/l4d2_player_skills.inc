@@ -106,7 +106,8 @@ enum L4D2SkillIntField
 	L4D2SkillInt_ZombieClass,
 	L4D2SkillInt_Reason,
 	L4D2SkillInt_Actor2,
-	L4D2SkillInt_Victim2
+	L4D2SkillInt_Victim2,
+	L4D2SkillInt_Rating
 }
 
 /**

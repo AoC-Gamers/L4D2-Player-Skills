@@ -264,6 +264,12 @@ void API_WriteEventSkillProperties(Handle kv, int eventIndex)
 		KvSetNum(kv, "reason", g_SkillEvents[eventIndex].reason);
 	}
 
+	int rating = Skills_GetEventRating(eventIndex);
+	if (rating > 0)
+	{
+		KvSetNum(kv, "rating", rating);
+	}
+
 	if (g_SkillEvents[eventIndex].shots > 0)
 	{
 		KvSetNum(kv, "shots", g_SkillEvents[eventIndex].shots);
@@ -511,6 +517,7 @@ public int Native_PlayerSkills_GetEventInt(Handle plugin, int numParams)
 		case 7: return g_SkillEvents[eventIndex].reason;
 		case 8: return g_SkillEvents[eventIndex].actor2;
 		case 9: return g_SkillEvents[eventIndex].victim2;
+		case 10: return Skills_GetEventRating(eventIndex);
 	}
 
 	return 0;

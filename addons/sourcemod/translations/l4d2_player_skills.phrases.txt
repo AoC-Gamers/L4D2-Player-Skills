@@ -6,6 +6,122 @@
 		"es"		"[{olive}Skill{default}]"
 	}
 
+	"SkillsSummaryHeader"
+	{
+		"#format"	"{1:s}"
+		"en"		"Detected skills for {olive}{1}{default} on this map:"
+		"es"		"Skills detectadas de {olive}{1}{default} en este mapa:"
+	}
+
+	"SkillsSummaryEmpty"
+	{
+		"#format"	"{1:s}"
+		"en"		"No detected skills for {olive}{1}{default} on this map yet."
+		"es"		"No hay skills detectadas para {olive}{1}{default} en este mapa todavia."
+	}
+
+	"SkillsLabelSkeet"
+	{
+		"en"		"Skeet"
+		"es"		"Skeet"
+	}
+
+	"SkillsLabelSkeetMelee"
+	{
+		"en"		"SkeetMelee"
+		"es"		"SkeetMelee"
+	}
+
+	"SkillsLabelDeadstop"
+	{
+		"en"		"Deadstop"
+		"es"		"Deadstop"
+	}
+
+	"SkillsLabelPop"
+	{
+		"en"		"Pop"
+		"es"		"Pop"
+	}
+
+	"SkillsLabelLevel"
+	{
+		"en"		"Level"
+		"es"		"Level"
+	}
+
+	"SkillsLabelCrown"
+	{
+		"en"		"Crown"
+		"es"		"Crown"
+	}
+
+	"SkillsLabelTongueCut"
+	{
+		"en"		"TongueCut"
+		"es"		"TongueCut"
+	}
+
+	"SkillsLabelSelfClear"
+	{
+		"en"		"SelfClear"
+		"es"		"SelfClear"
+	}
+
+	"SkillsLabelInstaKill"
+	{
+		"en"		"InstaKill"
+		"es"		"InstaKill"
+	}
+
+	"SkillsLabelDeathSetup"
+	{
+		"en"		"DeathSetup"
+		"es"		"DeathSetup"
+	}
+
+	"SkillsLabelPinClear"
+	{
+		"en"		"PinClear"
+		"es"		"PinClear"
+	}
+
+	"SkillsLabelBHop"
+	{
+		"en"		"BHop"
+		"es"		"BHop"
+	}
+
+	"SkillsLabelHunterHighPounce"
+	{
+		"en"		"HunterHP"
+		"es"		"HunterHP"
+	}
+
+	"SkillsLabelJockeyHighPounce"
+	{
+		"en"		"JockeyHP"
+		"es"		"JockeyHP"
+	}
+
+	"SkillsLabelVomit"
+	{
+		"en"		"Vomit"
+		"es"		"Vomit"
+	}
+
+	"SkillsLabelCarAlarm"
+	{
+		"en"		"CarAlarm"
+		"es"		"CarAlarm"
+	}
+
+	"SkillsLabelRockSkeet"
+	{
+		"en"		"RockSkeet"
+		"es"		"RockSkeet"
+	}
+
 	"SkeetAssisted"
 	{
 		"#format"	"{1:s},{2:s},{3:s}"
@@ -52,7 +168,7 @@
 	{
 		"#format"	"{1:s},{2:s}"
 		"en"		"{olive}{1}{default} melee-skeeted {red}{2}{default} {olive}(Perfect){default}."
-		"es"		"{olive}{1}{default} hizo {green}SkeetMelee{default} a {red}{2}{default} {olive}(Perfecto){default}."
+		"es"		"{olive}{1}{default} hizo {green}SkeetMelee{default} a {red}{2}{default} {green}disparo perfecto!{default}"
 	}
 
 	"HunterSkeetSniper"
@@ -172,6 +288,13 @@
 		"#format"	"{1:s},{2:s}"
 		"en"		"{olive}{1}{default} leveled {red}{2}{default} ({green}Charger{default})."
 		"es"		"{olive}{1}{default} hizo {green}Level{default} a {red}{2}{default} ({green}Charger{default})."
+	}
+
+	"ChargerLevelPerfect"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"{olive}{1}{default} landed a {green}PerfectLevel{default} on {red}{2}{default} ({green}Charger{default})."
+		"es"		"{olive}{1}{default} hizo {green}PerfectLevel{default} a {red}{2}{default} ({green}Charger{default})."
 	}
 
 	"ChargerInstaKillCarry"

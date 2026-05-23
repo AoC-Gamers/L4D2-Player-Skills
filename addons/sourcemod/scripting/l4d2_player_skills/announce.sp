@@ -7,6 +7,178 @@ int g_iAnnounceSortSession = -1;
 
 void Announce_Init()
 {
+	RegConsoleCmd("sm_skills", Command_Skills, "Print a summary of your detected skills.");
+}
+
+Action Command_Skills(int client, int args)
+{
+	if (client <= 0 || !IsValidClient(client))
+	{
+		ReplyToCommand(client, "[l4d2_player_skills] sm_skills is in-game only.");
+		return Plugin_Handled;
+	}
+
+	if (!Skills_IsEnabled())
+	{
+		CPrintToChat(client, "%t {red}Plugin disabled.{default}", "Tag");
+		return Plugin_Handled;
+	}
+
+	int target = client;
+	if (args >= 1)
+	{
+		char pattern[MAX_TARGET_LENGTH];
+		GetCmdArg(1, pattern, sizeof(pattern));
+
+		int targets[1];
+		char targetName[MAX_TARGET_LENGTH];
+		bool targetNameMl = false;
+		int found = ProcessTargetString(pattern, client, targets, sizeof(targets), COMMAND_FILTER_CONNECTED, targetName, sizeof(targetName), targetNameMl);
+		if (found != 1)
+		{
+			ReplyToTargetError(client, found);
+			return Plugin_Handled;
+		}
+
+		target = targets[0];
+	}
+
+	char targetName[MAX_NAME_LENGTH];
+	GetClientName(target, targetName, sizeof(targetName));
+
+	int counts[L4D2Skill_Size];
+	int total = 0;
+
+	for (int index = 0; index < L4D2_SKILLS_MAX_EVENTS; index++)
+	{
+		if (g_SkillEvents[index].id <= 0 || !g_SkillEvents[index].actor.IsSamePersistentPlayer(target))
+		{
+			continue;
+		}
+
+		switch (g_SkillEvents[index].type)
+		{
+			case L4D2Skill_WitchDead:
+			{
+				if (!g_SkillEvents[index].crown)
+				{
+					continue;
+				}
+			}
+
+			case L4D2Skill_TankDead, L4D2Skill_WitchIncap, L4D2Skill_TankRockHit:
+			{
+				continue;
+			}
+		}
+
+		counts[g_SkillEvents[index].type]++;
+		total++;
+	}
+
+	if (total <= 0)
+	{
+		CPrintToChat(client, "%t %t", "Tag", "SkillsSummaryEmpty", targetName);
+		return Plugin_Handled;
+	}
+
+	CPrintToChat(client, "%t %t", "Tag", "SkillsSummaryHeader", targetName);
+
+	Announce_PrintSkillsSummaryLine(client, counts,
+		L4D2Skill_HunterSkeet, "SkillsLabelSkeet",
+		L4D2Skill_HunterSkeetMelee, "SkillsLabelSkeetMelee",
+		L4D2Skill_HunterDeadstop, "SkillsLabelDeadstop",
+		L4D2Skill_BoomerPop, "SkillsLabelPop",
+		L4D2Skill_ChargerLevel, "SkillsLabelLevel",
+		L4D2Skill_WitchDead, "SkillsLabelCrown");
+
+	Announce_PrintSkillsSummaryLine(client, counts,
+		L4D2Skill_SmokerTongueCut, "SkillsLabelTongueCut",
+		L4D2Skill_SmokerSelfClear, "SkillsLabelSelfClear",
+		L4D2Skill_ChargerInstaKill, "SkillsLabelInstaKill",
+		L4D2Skill_ChargerDeathSetup, "SkillsLabelDeathSetup",
+		L4D2Skill_SpecialPinClear, "SkillsLabelPinClear",
+		L4D2Skill_BunnyHopStreak, "SkillsLabelBHop");
+
+	Announce_PrintSkillsSummaryLine(client, counts,
+		L4D2Skill_HunterHighPounce, "SkillsLabelHunterHighPounce",
+		L4D2Skill_JockeyHighPounce, "SkillsLabelJockeyHighPounce",
+		L4D2Skill_BoomerVomitLanded, "SkillsLabelVomit",
+		L4D2Skill_CarAlarmTriggered, "SkillsLabelCarAlarm",
+		L4D2Skill_TankRockSkeet, "SkillsLabelRockSkeet",
+		L4D2Skill_None, "");
+
+	return Plugin_Handled;
+}
+
+void Announce_PrintSkillsSummaryLine(int client, const int counts[L4D2Skill_Size],
+	L4D2SkillType typeA, const char[] phraseA,
+	L4D2SkillType typeB, const char[] phraseB,
+	L4D2SkillType typeC, const char[] phraseC,
+	L4D2SkillType typeD, const char[] phraseD,
+	L4D2SkillType typeE, const char[] phraseE,
+	L4D2SkillType typeF, const char[] phraseF)
+{
+	char line[256];
+	bool hasAny = false;
+
+	Announce_AppendSkillStat(client, line, sizeof(line), counts, typeA, phraseA, hasAny);
+	Announce_AppendSkillStat(client, line, sizeof(line), counts, typeB, phraseB, hasAny);
+	Announce_AppendSkillStat(client, line, sizeof(line), counts, typeC, phraseC, hasAny);
+	Announce_AppendSkillStat(client, line, sizeof(line), counts, typeD, phraseD, hasAny);
+	Announce_AppendSkillStat(client, line, sizeof(line), counts, typeE, phraseE, hasAny);
+	Announce_AppendSkillStat(client, line, sizeof(line), counts, typeF, phraseF, hasAny);
+
+	if (hasAny)
+	{
+		CPrintToChat(client, "%t %s", "Tag", line);
+	}
+}
+
+void Announce_AppendSkillStat(int client, char[] line, int maxlen, const int counts[L4D2Skill_Size], L4D2SkillType type, const char[] phrase, bool &hasAny)
+{
+	if (type <= L4D2Skill_None || type >= L4D2Skill_Size || counts[type] <= 0 || phrase[0] == '\0')
+	{
+		return;
+	}
+
+	char label[48];
+	FormatEx(label, sizeof(label), "%T", phrase, client);
+
+	if (hasAny)
+	{
+		StrCat(line, maxlen, " {default}| ");
+	}
+
+	char segment[80];
+	FormatEx(segment, sizeof(segment), "{green}%s{default}: {olive}%d", label, counts[type]);
+	StrCat(line, maxlen, segment);
+	hasAny = true;
+}
+
+void Announce_GetSkillTag(int eventIndex, char[] buffer, int maxlen)
+{
+	int rating = Skills_GetEventRating(eventIndex);
+	switch (rating)
+	{
+		case 1:
+		{
+			strcopy(buffer, maxlen, "[{olive}★{default}]");
+			return;
+		}
+		case 2:
+		{
+			strcopy(buffer, maxlen, "[{olive}★★{default}]");
+			return;
+		}
+		case 3:
+		{
+			strcopy(buffer, maxlen, "[{olive}★★★{default}]");
+			return;
+		}
+	}
+
+	FormatEx(buffer, maxlen, "%T", "Tag", LANG_SERVER);
 }
 
 void Announce_Skill(int eventId)
@@ -22,13 +194,16 @@ void Announce_Skill(int eventId)
 		return;
 	}
 
+	char tag[32];
+	Announce_GetSkillTag(eventIndex, tag, sizeof(tag));
+
 	switch (g_SkillEvents[eventIndex].type)
 	{
 		case L4D2Skill_HunterSkeet:
 		{
 			if (g_SkillEvents[eventIndex].grenadeLauncher)
 			{
-				CPrintToChatAll("%t %t", "Tag",
+				CPrintToChatAll("%s %t", tag,
 					g_SkillEvents[eventIndex].wouldQualifyAtBaseline ? "HunterSkeetGLFullHp" : "HunterSkeetGL",
 					g_SkillEvents[eventIndex].actor.name,
 					g_SkillEvents[eventIndex].victim.name,
@@ -36,7 +211,7 @@ void Announce_Skill(int eventId)
 			}
 			else if (g_SkillEvents[eventIndex].sniper)
 			{
-				CPrintToChatAll("%t %t", "Tag",
+				CPrintToChatAll("%s %t", tag,
 					g_SkillEvents[eventIndex].wouldQualifyAtBaseline ? "HunterSkeetSniperFullHp" : "HunterSkeetSniper",
 					g_SkillEvents[eventIndex].actor.name,
 					g_SkillEvents[eventIndex].victim.name,
@@ -44,7 +219,7 @@ void Announce_Skill(int eventId)
 			}
 			else if (g_SkillEvents[eventIndex].wouldQualifyAtBaseline)
 			{
-				CPrintToChatAll("%t %t", "Tag",
+				CPrintToChatAll("%s %t", tag,
 					g_SkillEvents[eventIndex].shots == 1 ? "SkeetSingleShotFullHp" : "SkeetMultiShotFullHp",
 					g_SkillEvents[eventIndex].actor.name,
 					g_SkillEvents[eventIndex].victim.name,
@@ -53,21 +228,21 @@ void Announce_Skill(int eventId)
 			}
 			else if (g_SkillEvents[eventIndex].assister.userid > 0)
 			{
-				CPrintToChatAll("%t %t", "Tag", "SkeetAssisted",
+				CPrintToChatAll("%s %t", tag, "SkeetAssisted",
 					g_SkillEvents[eventIndex].actor.name,
 					g_SkillEvents[eventIndex].victim.name,
 					g_SkillEvents[eventIndex].assister.name);
 			}
 			else if (g_SkillEvents[eventIndex].shots == 1)
 			{
-				CPrintToChatAll("%t %t", "Tag", "SkeetSingleShot",
+				CPrintToChatAll("%s %t", tag, "SkeetSingleShot",
 					g_SkillEvents[eventIndex].actor.name,
 					g_SkillEvents[eventIndex].victim.name,
 					g_SkillEvents[eventIndex].shots);
 			}
 			else
 			{
-				CPrintToChatAll("%t %t", "Tag", "SkeetMultiShot",
+				CPrintToChatAll("%s %t", tag, "SkeetMultiShot",
 					g_SkillEvents[eventIndex].actor.name,
 					g_SkillEvents[eventIndex].victim.name,
 					g_SkillEvents[eventIndex].shots);
@@ -76,7 +251,7 @@ void Announce_Skill(int eventId)
 
 		case L4D2Skill_HunterSkeetMelee:
 		{
-			CPrintToChatAll("%t %t", "Tag",
+			CPrintToChatAll("%s %t", tag,
 				g_SkillEvents[eventIndex].perfect ? "SkeetMeleePerfect" : "SkeetMelee",
 				g_SkillEvents[eventIndex].actor.name,
 				g_SkillEvents[eventIndex].victim.name);
@@ -84,14 +259,14 @@ void Announce_Skill(int eventId)
 
 		case L4D2Skill_HunterDeadstop:
 		{
-			CPrintToChatAll("%t %t", "Tag", "HunterDeadstop",
+			CPrintToChatAll("%s %t", tag, "HunterDeadstop",
 				g_SkillEvents[eventIndex].actor.name,
 				g_SkillEvents[eventIndex].victim.name);
 		}
 
 		case L4D2Skill_HunterHighPounce:
 		{
-			CPrintToChatAll("%t %t", "Tag", "HunterHighPounce",
+			CPrintToChatAll("%s %t", tag, "HunterHighPounce",
 				g_SkillEvents[eventIndex].actor.name,
 				g_SkillEvents[eventIndex].victim.name,
 				g_SkillEvents[eventIndex].damage,
@@ -100,7 +275,7 @@ void Announce_Skill(int eventId)
 
 		case L4D2Skill_JockeyHighPounce:
 		{
-			CPrintToChatAll("%t %t", "Tag", "JockeyHighPounce",
+			CPrintToChatAll("%s %t", tag, "JockeyHighPounce",
 				g_SkillEvents[eventIndex].actor.name,
 				g_SkillEvents[eventIndex].victim.name,
 				g_SkillEvents[eventIndex].height);
@@ -108,7 +283,7 @@ void Announce_Skill(int eventId)
 
 		case L4D2Skill_SpecialPinClear:
 		{
-			CPrintToChatAll("%t %t", "Tag",
+			CPrintToChatAll("%s %t", tag,
 				g_SkillEvents[eventIndex].withShove ? "SpecialPinClearShove" : "SpecialPinClear",
 				g_SkillEvents[eventIndex].actor.name,
 				g_SkillEvents[eventIndex].victim.name,
@@ -117,14 +292,14 @@ void Announce_Skill(int eventId)
 
 		case L4D2Skill_SmokerTongueCut:
 		{
-			CPrintToChatAll("%t %t", "Tag", "SmokerTongueCut",
+			CPrintToChatAll("%s %t", tag, "SmokerTongueCut",
 				g_SkillEvents[eventIndex].actor.name,
 				g_SkillEvents[eventIndex].victim.name);
 		}
 
 		case L4D2Skill_SmokerSelfClear:
 		{
-			CPrintToChatAll("%t %t", "Tag",
+			CPrintToChatAll("%s %t", tag,
 				g_SkillEvents[eventIndex].withShove ? "SmokerSelfClearShove" : "SmokerSelfClearKill",
 				g_SkillEvents[eventIndex].actor.name,
 				g_SkillEvents[eventIndex].victim.name);
@@ -137,13 +312,13 @@ void Announce_Skill(int eventId)
 
 			if (g_SkillEvents[eventIndex].victim.bot)
 			{
-				CPrintToChatAll("%t %t", "Tag", "BoomerPopBot",
+				CPrintToChatAll("%s %t", tag, "BoomerPopBot",
 					g_SkillEvents[eventIndex].actor.name,
 					timeText);
 			}
 			else
 			{
-				CPrintToChatAll("%t %t", "Tag", "BoomerPopPlayer",
+				CPrintToChatAll("%s %t", tag, "BoomerPopPlayer",
 					g_SkillEvents[eventIndex].actor.name,
 					g_SkillEvents[eventIndex].victim.name,
 					timeText);
@@ -152,7 +327,7 @@ void Announce_Skill(int eventId)
 
 		case L4D2Skill_BoomerVomitLanded:
 		{
-			CPrintToChatAll("%t %t", "Tag",
+			CPrintToChatAll("%s %t", tag,
 				g_SkillEvents[eventIndex].amount == 1 ? "BoomerVomitLandedSingle" : "BoomerVomitLandedMulti",
 				g_SkillEvents[eventIndex].actor.name,
 				g_SkillEvents[eventIndex].amount);
@@ -169,24 +344,24 @@ void Announce_Skill(int eventId)
 				{
 					if (forced && indirect)
 					{
-						CPrintToChatAll("%t %t", "Tag", "CarAlarmHitForcedIndirect",
+						CPrintToChatAll("%s %t", tag, "CarAlarmHitForcedIndirect",
 							g_SkillEvents[eventIndex].actor.name,
 							g_SkillEvents[eventIndex].victim.name);
 					}
 					else if (forced)
 					{
-						CPrintToChatAll("%t %t", "Tag", "CarAlarmHitAssist",
+						CPrintToChatAll("%s %t", tag, "CarAlarmHitAssist",
 							g_SkillEvents[eventIndex].actor.name,
 							g_SkillEvents[eventIndex].victim.name);
 					}
 					else if (indirect)
 					{
-						CPrintToChatAll("%t %t", "Tag", "CarAlarmHitIndirect",
+						CPrintToChatAll("%s %t", tag, "CarAlarmHitIndirect",
 							g_SkillEvents[eventIndex].actor.name);
 					}
 					else
 					{
-						CPrintToChatAll("%t %t", "Tag", "CarAlarmHit",
+						CPrintToChatAll("%s %t", tag, "CarAlarmHit",
 							g_SkillEvents[eventIndex].actor.name);
 					}
 				}
@@ -195,24 +370,24 @@ void Announce_Skill(int eventId)
 				{
 					if (forced && indirect)
 					{
-						CPrintToChatAll("%t %t", "Tag", "CarAlarmTouchedForcedIndirect",
+						CPrintToChatAll("%s %t", tag, "CarAlarmTouchedForcedIndirect",
 							g_SkillEvents[eventIndex].actor.name,
 							g_SkillEvents[eventIndex].victim.name);
 					}
 					else if (forced)
 					{
-						CPrintToChatAll("%t %t", "Tag", "CarAlarmTouchedAssist",
+						CPrintToChatAll("%s %t", tag, "CarAlarmTouchedAssist",
 							g_SkillEvents[eventIndex].actor.name,
 							g_SkillEvents[eventIndex].victim.name);
 					}
 					else if (indirect)
 					{
-						CPrintToChatAll("%t %t", "Tag", "CarAlarmTouchedIndirect",
+						CPrintToChatAll("%s %t", tag, "CarAlarmTouchedIndirect",
 							g_SkillEvents[eventIndex].actor.name);
 					}
 					else
 					{
-						CPrintToChatAll("%t %t", "Tag", "CarAlarmTouched",
+						CPrintToChatAll("%s %t", tag, "CarAlarmTouched",
 							g_SkillEvents[eventIndex].actor.name);
 					}
 				}
@@ -221,24 +396,24 @@ void Announce_Skill(int eventId)
 				{
 					if (forced && indirect)
 					{
-						CPrintToChatAll("%t %t", "Tag", "CarAlarmExplosionForcedIndirect",
+						CPrintToChatAll("%s %t", tag, "CarAlarmExplosionForcedIndirect",
 							g_SkillEvents[eventIndex].actor.name,
 							g_SkillEvents[eventIndex].victim.name);
 					}
 					else if (forced)
 					{
-						CPrintToChatAll("%t %t", "Tag", "CarAlarmExplosionAssist",
+						CPrintToChatAll("%s %t", tag, "CarAlarmExplosionAssist",
 							g_SkillEvents[eventIndex].actor.name,
 							g_SkillEvents[eventIndex].victim.name);
 					}
 					else if (indirect)
 					{
-						CPrintToChatAll("%t %t", "Tag", "CarAlarmExplosionIndirect",
+						CPrintToChatAll("%s %t", tag, "CarAlarmExplosionIndirect",
 							g_SkillEvents[eventIndex].actor.name);
 					}
 					else
 					{
-						CPrintToChatAll("%t %t", "Tag", "CarAlarmExplosion",
+						CPrintToChatAll("%s %t", tag, "CarAlarmExplosion",
 							g_SkillEvents[eventIndex].actor.name);
 					}
 				}
@@ -247,20 +422,20 @@ void Announce_Skill(int eventId)
 				{
 					if (g_SkillEvents[eventIndex].victim.userid > 0)
 					{
-						CPrintToChatAll("%t %t", "Tag", "CarAlarmBoomerAssist",
+						CPrintToChatAll("%s %t", tag, "CarAlarmBoomerAssist",
 							g_SkillEvents[eventIndex].actor.name,
 							g_SkillEvents[eventIndex].victim.name);
 					}
 					else
 					{
-						CPrintToChatAll("%t %t", "Tag", "CarAlarmBoomer",
+						CPrintToChatAll("%s %t", tag, "CarAlarmBoomer",
 							g_SkillEvents[eventIndex].actor.name);
 					}
 				}
 
 				default:
 				{
-					CPrintToChatAll("%t %t", "Tag", "CarAlarmTriggered",
+					CPrintToChatAll("%s %t", tag, "CarAlarmTriggered",
 						g_SkillEvents[eventIndex].actor.name);
 				}
 			}
@@ -270,7 +445,7 @@ void Announce_Skill(int eventId)
 		{
 			char velocityText[16];
 			FormatEx(velocityText, sizeof(velocityText), "%.1f", g_SkillEvents[eventIndex].maxVelocity);
-			CPrintToChatAll("%t %t", "Tag",
+			CPrintToChatAll("%s %t", tag,
 				g_SkillEvents[eventIndex].streak == 1 ? "BunnyHopStreakSingle" : "BunnyHopStreakMulti",
 				g_SkillEvents[eventIndex].actor.name,
 				g_SkillEvents[eventIndex].streak,
@@ -279,7 +454,7 @@ void Announce_Skill(int eventId)
 
 		case L4D2Skill_ChargerLevel:
 		{
-			CPrintToChatAll("%t %t", "Tag", "ChargerLevel",
+			CPrintToChatAll("%s %t", tag, g_SkillEvents[eventIndex].perfect ? "ChargerLevelPerfect" : "ChargerLevel",
 				g_SkillEvents[eventIndex].actor.name,
 				g_SkillEvents[eventIndex].victim.name);
 		}
@@ -334,7 +509,7 @@ void Announce_Skill(int eventId)
 				}
 			}
 
-			CPrintToChatAll("%t %t", "Tag",
+			CPrintToChatAll("%s %t", tag,
 				phrase,
 				g_SkillEvents[eventIndex].actor.name,
 				g_SkillEvents[eventIndex].victim.name,
@@ -343,7 +518,7 @@ void Announce_Skill(int eventId)
 
 		case L4D2Skill_ChargerDeathSetup:
 		{
-			CPrintToChatAll("%t %t", "Tag",
+			CPrintToChatAll("%s %t", tag,
 				g_SkillEvents[eventIndex].ledgeHang ? "ChargerDeathSetupLedge" : "ChargerDeathSetupIncap",
 				g_SkillEvents[eventIndex].actor.name,
 				g_SkillEvents[eventIndex].victim.name);
@@ -353,7 +528,7 @@ void Announce_Skill(int eventId)
 		{
 			if (g_SkillEvents[eventIndex].crown)
 			{
-				CPrintToChatAll("%t %t", "Tag", "WitchCrown",
+				CPrintToChatAll("%s %t", tag, "WitchCrown",
 					g_SkillEvents[eventIndex].actor.name,
 					g_SkillEvents[eventIndex].damage);
 			}
@@ -361,13 +536,13 @@ void Announce_Skill(int eventId)
 
 		case L4D2Skill_TankRockSkeet:
 		{
-			CPrintToChatAll("%t %t", "Tag", "TankRockSkeet",
+			CPrintToChatAll("%s %t", tag, "TankRockSkeet",
 				g_SkillEvents[eventIndex].actor.name);
 		}
 
 		case L4D2Skill_TankRockHit:
 		{
-			CPrintToChatAll("%t %t", "Tag", "TankRockHit",
+			CPrintToChatAll("%s %t", tag, "TankRockHit",
 				g_SkillEvents[eventIndex].victim.name);
 		}
 	}

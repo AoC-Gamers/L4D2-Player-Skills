@@ -3,6 +3,8 @@
 #endif
 #define _l4d2_player_skills_helpers_included
 
+#define L4D2_SKILLS_FAST_POP_TIME 1.0
+
 /**
  * @brief Checks whether the plugin is currently enabled.
  *
@@ -252,6 +254,397 @@ stock bool IsWitchEntity(int entity)
 	char classname[64];
 	GetEntityClassname(entity, classname, sizeof(classname));
 	return StrContains(classname, "witch", false) != -1;
+}
+
+/**
+ * @brief Returns the current base game mode as a typed value.
+ *
+ * @return               Parsed game mode, or Unknown if unavailable.
+ */
+stock PlayerSkillsGameMode Skills_GetCurrentGameMode()
+{
+	switch (L4D_GetGameModeType())
+	{
+		case GAMEMODE_COOP:
+		{
+			return PlayerSkillsGameMode_Coop;
+		}
+		case GAMEMODE_VERSUS:
+		{
+			return PlayerSkillsGameMode_Versus;
+		}
+		case GAMEMODE_SURVIVAL:
+		{
+			return PlayerSkillsGameMode_Survival;
+		}
+		case GAMEMODE_SCAVENGE:
+		{
+			return PlayerSkillsGameMode_Scavenge;
+		}
+	}
+
+	return PlayerSkillsGameMode_Unknown;
+}
+
+/**
+ * @brief Checks whether the current map is running in Coop-style mode.
+ *
+ * @return               True in Coop or Realism style modes.
+ */
+stock bool Skills_IsCoopMode()
+{
+	return Skills_GetCurrentGameMode() == PlayerSkillsGameMode_Coop;
+}
+
+/**
+ * @brief Checks whether the current map is running in Versus mode.
+ *
+ * @return               True when left4dhooks reports a Versus-style mode.
+ */
+stock bool Skills_IsVersusMode()
+{
+	return Skills_GetCurrentGameMode() == PlayerSkillsGameMode_Versus;
+}
+
+/**
+ * @brief Checks whether the current map is running in Survival mode.
+ *
+ * @return               True when left4dhooks reports Survival.
+ */
+stock bool Skills_IsSurvivalMode()
+{
+	return Skills_GetCurrentGameMode() == PlayerSkillsGameMode_Survival;
+}
+
+/**
+ * @brief Checks whether the current map is running in Scavenge mode.
+ *
+ * @return               True when left4dhooks reports a Scavenge-style mode.
+ */
+stock bool Skills_IsScavengeMode()
+{
+	return Skills_GetCurrentGameMode() == PlayerSkillsGameMode_Scavenge;
+}
+
+/**
+ * @brief Checks whether a cvar scope is relevant in the current base mode.
+ *
+ * @param scope          Contextual scope associated with a cvar or rule.
+ *
+ * @return               True if the scope applies to the current mode.
+ */
+stock bool Skills_IsScopeRelevant(PlayerSkillsCvarScope scope)
+{
+	switch (scope)
+	{
+		case PlayerSkillsCvarScope_Global:
+		{
+			return true;
+		}
+		case PlayerSkillsCvarScope_Coop:
+		{
+			return Skills_IsCoopMode();
+		}
+		case PlayerSkillsCvarScope_Versus:
+		{
+			return Skills_IsVersusMode();
+		}
+		case PlayerSkillsCvarScope_Survival:
+		{
+			return Skills_IsSurvivalMode();
+		}
+		case PlayerSkillsCvarScope_Scavenge:
+		{
+			return Skills_IsScavengeMode();
+		}
+	}
+
+	return false;
+}
+
+/**
+ * @brief Checks whether closet rescue logic is relevant in the current mode.
+ *
+ * @return               True in Coop-style modes.
+ */
+stock bool Skills_IsClosetRescueRelevant()
+{
+	return Skills_IsScopeRelevant(PlayerSkillsCvarScope_Coop);
+}
+
+/**
+ * @brief Returns the configured maximum health for a special infected class.
+ *
+ * @param zombieClass    Target infected class.
+ *
+ * @return               Configured max health, or 0 if the class is not supported.
+ */
+stock int Skills_GetSpecialMaxHealth(L4D2ZombieClassType zombieClass)
+{
+	switch (zombieClass)
+	{
+		case L4D2ZombieClass_Smoker:
+		{
+			return g_cvSmokerHealth != null ? g_cvSmokerHealth.IntValue : L4D2_SKILLS_DEFAULT_SMOKER_HEALTH;
+		}
+		case L4D2ZombieClass_Boomer:
+		{
+			return g_cvBoomerHealth != null ? g_cvBoomerHealth.IntValue : L4D2_SKILLS_DEFAULT_BOOMER_HEALTH;
+		}
+		case L4D2ZombieClass_Hunter:
+		{
+			return g_cvHunterHealth != null ? g_cvHunterHealth.IntValue : L4D2_SKILLS_DEFAULT_HUNTER_HEALTH;
+		}
+		case L4D2ZombieClass_Spitter:
+		{
+			return g_cvSpitterHealth != null ? g_cvSpitterHealth.IntValue : L4D2_SKILLS_DEFAULT_SPITTER_HEALTH;
+		}
+		case L4D2ZombieClass_Jockey:
+		{
+			return g_cvJockeyHealth != null ? g_cvJockeyHealth.IntValue : L4D2_SKILLS_DEFAULT_JOCKEY_HEALTH;
+		}
+		case L4D2ZombieClass_Charger:
+		{
+			return g_cvChargerHealth != null ? g_cvChargerHealth.IntValue : L4D2_SKILLS_DEFAULT_CHARGER_HEALTH;
+		}
+		case L4D2ZombieClass_Tank:
+		{
+			return g_cvTankHealth != null ? g_cvTankHealth.IntValue : L4D2_SKILLS_DEFAULT_TANK_HEALTH;
+		}
+	}
+
+	return 0;
+}
+
+/**
+ * @brief Returns the configured maximum health for a Witch.
+ *
+ * @return               Configured Witch max health.
+ */
+stock int Skills_GetWitchMaxHealth()
+{
+	return g_cvWitchHealth != null ? g_cvWitchHealth.IntValue : L4D2_SKILLS_DEFAULT_WITCH_HEALTH;
+}
+
+/**
+ * @brief Returns the configured maximum Hunter pounce bonus damage.
+ *
+ * @return               Configured Hunter pounce bonus damage baseline.
+ */
+stock float Skills_GetHunterMaxPounceBonusDamage()
+{
+	return g_cvHunterMaxPounceBonusDamage != null ? g_cvHunterMaxPounceBonusDamage.FloatValue : L4D2_SKILLS_DEFAULT_HUNTER_MAX_POUNCE_BONUS_DAMAGE;
+}
+
+/**
+ * @brief Returns the configured maximum total Hunter pounce damage.
+ * @remarks The game adds a base point on top of the configurable bonus.
+ *
+ * @return               Maximum total Hunter pounce damage.
+ */
+stock int Skills_GetHunterMaxPounceTotalDamage()
+{
+	return RoundToFloor(Skills_GetHunterMaxPounceBonusDamage()) + 1;
+}
+
+/**
+ * @brief Returns the configured minimum vertical height for HunterHighPounce.
+ *
+ * @return               Configured Hunter high-pounce threshold.
+ */
+stock float Skills_GetHunterHighPounceHeightThreshold()
+{
+	return g_cvHunterHighPounceHeight != null ? g_cvHunterHighPounceHeight.FloatValue : L4D2_SKILLS_DEFAULT_HUNTER_HIGH_POUNCE_HEIGHT;
+}
+
+/**
+ * @brief Returns the configured minimum vertical height for JockeyHighPounce.
+ *
+ * @return               Configured Jockey high-pounce threshold.
+ */
+stock float Skills_GetJockeyHighPounceHeightThreshold()
+{
+	return g_cvJockeyHighPounceHeight != null ? g_cvJockeyHighPounceHeight.FloatValue : L4D2_SKILLS_DEFAULT_JOCKEY_HIGH_POUNCE_HEIGHT;
+}
+
+/**
+ * @brief Returns whether a special infected class is enabled by Versus limit cvars.
+ * @remarks This helper is only meaningful in player-controlled infected modes.
+ *          Outside Versus it returns false instead of implying global availability.
+ *
+ * @param zombieClass    Target infected class.
+ *
+ * @return               True if the current mode is Versus and the class has a positive limit.
+ */
+stock bool Skills_IsVersusSpecialLimitEnabled(L4D2ZombieClassType zombieClass)
+{
+	if (!Skills_IsVersusMode())
+	{
+		return false;
+	}
+
+	ConVar limit = null;
+
+	switch (zombieClass)
+	{
+		case L4D2ZombieClass_Smoker:
+		{
+			limit = g_cvVersusSmokerLimit;
+		}
+		case L4D2ZombieClass_Boomer:
+		{
+			limit = g_cvVersusBoomerLimit;
+		}
+		case L4D2ZombieClass_Hunter:
+		{
+			limit = g_cvVersusHunterLimit;
+		}
+		case L4D2ZombieClass_Spitter:
+		{
+			limit = g_cvVersusSpitterLimit;
+		}
+		case L4D2ZombieClass_Jockey:
+		{
+			limit = g_cvVersusJockeyLimit;
+		}
+		case L4D2ZombieClass_Charger:
+		{
+			limit = g_cvVersusChargerLimit;
+		}
+		default:
+		{
+			return true;
+		}
+	}
+
+	return limit == null || limit.IntValue > 0;
+}
+
+/**
+ * @brief Returns the public 0-3 star rating for a stored skill event.
+ *
+ * @param eventIndex     Zero-based slot index inside g_SkillEvents.
+ *
+ * @return               0 for unrated events, otherwise a rating from 1 to 3.
+ */
+stock int Skills_GetEventRating(int eventIndex)
+{
+	if (eventIndex < 0 || eventIndex >= L4D2_SKILLS_MAX_EVENTS || g_SkillEvents[eventIndex].id <= 0)
+	{
+		return 0;
+	}
+
+	switch (g_SkillEvents[eventIndex].type)
+	{
+		case L4D2Skill_SmokerTongueCut:
+		{
+			return 2;
+		}
+		case L4D2Skill_SmokerSelfClear, L4D2Skill_SpecialPinClear, L4D2Skill_HunterDeadstop:
+		{
+			return 1;
+		}
+		case L4D2Skill_HunterSkeet:
+		{
+			return (g_SkillEvents[eventIndex].headshot || g_SkillEvents[eventIndex].perfect) ? 3 : 2;
+		}
+		case L4D2Skill_HunterSkeetMelee:
+		{
+			return g_SkillEvents[eventIndex].perfect ? 3 : 2;
+		}
+		case L4D2Skill_HunterHighPounce:
+		{
+			int damage = g_SkillEvents[eventIndex].damage;
+			int maxTotalDamage = Skills_GetHunterMaxPounceTotalDamage();
+
+			if (damage >= 22 && damage <= maxTotalDamage)
+			{
+				return 3;
+			}
+
+			if (damage >= 15)
+			{
+				return 2;
+			}
+
+			return 1;
+		}
+		case L4D2Skill_JockeyHighPounce:
+		{
+			float threshold = Skills_GetJockeyHighPounceHeightThreshold();
+			float height = g_SkillEvents[eventIndex].height;
+
+			if (height >= (threshold + 350.0))
+			{
+				return 3;
+			}
+
+			if (height >= (threshold + 150.0))
+			{
+				return 2;
+			}
+
+			return 1;
+		}
+		case L4D2Skill_BoomerVomitLanded:
+		{
+			if (g_SkillEvents[eventIndex].amount >= 4)
+			{
+				return 2;
+			}
+
+			return g_SkillEvents[eventIndex].amount >= 3 ? 1 : 0;
+		}
+		case L4D2Skill_BoomerPop:
+		{
+			if (g_SkillEvents[eventIndex].timeA > 0.0 && g_SkillEvents[eventIndex].timeA <= 0.5)
+			{
+				return 3;
+			}
+
+			if (g_SkillEvents[eventIndex].timeA > 0.5 && g_SkillEvents[eventIndex].timeA <= 1.4)
+			{
+				return 2;
+			}
+
+			return 1;
+		}
+		case L4D2Skill_BunnyHopStreak:
+		{
+			return 1;
+		}
+		case L4D2Skill_ChargerLevel:
+		{
+			return g_SkillEvents[eventIndex].perfect ? 3 : 2;
+		}
+		case L4D2Skill_ChargerInstaKill:
+		{
+			return 3;
+		}
+		case L4D2Skill_ChargerDeathSetup:
+		{
+			return 2;
+		}
+		case L4D2Skill_WitchDead:
+		{
+			return g_SkillEvents[eventIndex].crown ? 2 : 0;
+		}
+		case L4D2Skill_TankRockSkeet:
+		{
+			return 2;
+		}
+		case L4D2Skill_CarAlarmTriggered:
+		{
+			if (g_SkillEvents[eventIndex].reason == view_as<int>(L4D2CarAlarm_Boomer))
+			{
+				return g_SkillEvents[eventIndex].victim.userid > 0 ? 1 : 0;
+			}
+
+			return (g_SkillEvents[eventIndex].forced && g_SkillEvents[eventIndex].victim.userid > 0) ? 1 : 0;
+		}
+	}
+
+	return 0;
 }
 
 /**
