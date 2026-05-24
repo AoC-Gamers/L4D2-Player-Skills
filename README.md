@@ -10,6 +10,14 @@ El proyecto consolida lógica que antes estaba repartida entre varios plugins y 
 - wrapper legacy para `l4d2_skill_detect`
 - documentación de flujos, interpretación y build
 
+## Command Surface
+
+- `sm_skills`
+  - imprime el resumen de skills detectadas en chat
+  - además imprime una tabla comparativa en la consola del usuario
+  - sin argumentos: jugador actual
+  - `sm_skills <player>`: objetivo explícito
+
 ## Documentation Index
 
 ### Product Documentation

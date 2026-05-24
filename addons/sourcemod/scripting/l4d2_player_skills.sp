@@ -5,6 +5,7 @@
 #include <sdkhooks>
 #include <sdktools>
 #include <colors>
+#include <console_table>
 #include <left4dhooks>
 
 #include "l4d2_player_skills/types.sp"
@@ -248,7 +249,7 @@ public void OnPluginStart()
 	AutoExecConfig(false, "l4d2_player_skills");
 
 	API_Init();
-	Announce_Init();
+	Regcmd_Init();
 	Boss_Init();
 	Detect_Init();
 }
@@ -423,7 +424,6 @@ void Event_TankSpawn(Event event, const char[] name, bool dontBroadcast)
 
 void Event_PlayerHurt(Event event, const char[] name, bool dontBroadcast)
 {
-	Boss_EventPlayerHurt(event);
 	Detect_EventPlayerHurt(event);
 }
 

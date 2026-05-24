@@ -20,6 +20,8 @@ Este documento resume los flujos actuales de skills relacionadas con `Hunter`.
 - `SDKHook_OnTakeDamage`
 - `SDKHook_OnTakeDamagePost`
 
+`player_hurt` queda solo como contexto complementario. El daño canónico para clasificación de skeets se captura desde `SDKHook_OnTakeDamagePost`.
+
 ### State
 
 - `g_bDetectHunterPouncing`
@@ -85,6 +87,8 @@ flowchart TD
 - `player_death`
 - `SDKHook_OnTakeDamage`
 - `SDKHook_OnTakeDamagePost`
+
+`player_hurt` queda solo como contexto complementario. El daño canónico para clasificación de melee skeets se captura desde `SDKHook_OnTakeDamagePost`.
 
 ### State
 

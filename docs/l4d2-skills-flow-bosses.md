@@ -17,7 +17,7 @@ Este documento resume los flujos actuales de skills y sesiones relacionadas con 
 ### Sources
 
 - `tank_spawn`
-- `player_hurt`
+- `SDKHook_OnTakeDamagePost`
 - `player_death`
 - `tank_killed`
 - `L4D_OnReplaceTank`
@@ -65,7 +65,7 @@ Contexto adicional:
 ```mermaid
 flowchart TD
     A[tank_spawn] --> B[Start Tank session]
-    B --> C[player_hurt / player_death]
+    B --> C[OnTakeDamagePost / player_death]
     C --> D[Track damage, owner, stasis and transfers]
     D --> E[tank_killed or Tank death]
     E --> F[Emit TankDead]

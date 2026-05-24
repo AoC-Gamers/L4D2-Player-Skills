@@ -6,10 +6,20 @@
 // Boss session coordinator. This file keeps Tank/Witch lifecycle, damage-session
 // finalization, and event emission for boss-related skills and summaries.
 
+bool g_bBossTankDamageHooked[MAXPLAYERS + 1];
+
 // Initialization and reset.
 void Boss_Init()
 {
 	Boss_ResetAll();
+
+	for (int client = 1; client <= MaxClients; client++)
+	{
+		if (IsValidClient(client))
+		{
+			Boss_HookTankDamageClient(client);
+		}
+	}
 }
 
 void Boss_ResetAll()
@@ -18,11 +28,18 @@ void Boss_ResetAll()
 	{
 		L4D2BossSession(index).Reset();
 	}
+
+	for (int client = 1; client <= MaxClients; client++)
+	{
+		g_bBossTankDamageHooked[client] = false;
+	}
 }
 
 // Client lifecycle and control-transfer flow.
 void Boss_OnClientPutInServer(int client)
 {
+	Boss_HookTankDamageClient(client);
+
 	if (client > 0 && client <= MaxClients)
 	{
 		for (int index = 0; index < L4D2_SKILLS_MAX_BOSSES; index++)
@@ -39,6 +56,8 @@ void Boss_OnClientPutInServer(int client)
 
 void Boss_OnClientDisconnect(int client)
 {
+	Boss_UnhookTankDamageClient(client);
+
 	for (int index = 0; index < L4D2_SKILLS_MAX_BOSSES; index++)
 	{
 		if (g_BossSessions[index].id == 0 || g_BossSessions[index].state != L4D2BossState_Active)
@@ -52,6 +71,28 @@ void Boss_OnClientDisconnect(int client)
 			Skills_Debug(PlayerSkillsDebug_Boss, "Boss owner disconnected. session=%d userid=%d", g_BossSessions[index].id, g_BossSessions[index].userid);
 		}
 	}
+}
+
+void Boss_HookTankDamageClient(int client)
+{
+	if (client <= 0 || client > MaxClients || g_bBossTankDamageHooked[client])
+	{
+		return;
+	}
+
+	SDKHook(client, SDKHook_OnTakeDamagePost, Boss_OnTankTakeDamagePost);
+	g_bBossTankDamageHooked[client] = true;
+}
+
+void Boss_UnhookTankDamageClient(int client)
+{
+	if (client <= 0 || client > MaxClients || !g_bBossTankDamageHooked[client])
+	{
+		return;
+	}
+
+	SDKUnhook(client, SDKHook_OnTakeDamagePost, Boss_OnTankTakeDamagePost);
+	g_bBossTankDamageHooked[client] = false;
 }
 
 void Boss_OnReplaceTank(int tank, int newtank)
@@ -285,24 +326,15 @@ void Boss_EventTankSpawn(Event event)
 	Boss_EnsureTankSession(client);
 }
 
-void Boss_EventPlayerHurt(Event event)
+void Boss_OnTankTakeDamagePost(int victim, int attacker, int inflictor, float damage, int damagetype)
 {
-	if (!Skills_IsEnabled())
+	if (!Skills_IsEnabled() || !IsValidTank(victim) || !IsValidSurvivor(attacker))
 	{
 		return;
 	}
 
-	int victim = GetClientOfUserId(event.GetInt("userid"));
-	int attacker = GetClientOfUserId(event.GetInt("attacker"));
-
-	if (!IsValidTank(victim) || !IsValidSurvivor(attacker))
-	{
-		return;
-	}
-
-	int damage = event.GetInt("dmg_health");
-	int health = event.GetInt("health");
-	if (damage <= 0)
+	int roundedDamage = RoundToFloor(damage);
+	if (roundedDamage <= 0)
 	{
 		return;
 	}
@@ -315,11 +347,18 @@ void Boss_EventPlayerHurt(Event event)
 
 	L4D2BossSession(sessionIndex).RefreshOwner(victim);
 
-	if (health > 0)
+	int maxHealth = g_BossSessions[sessionIndex].maxHealth;
+	if (maxHealth > 0 && g_BossSessions[sessionIndex].totalDamage + roundedDamage > maxHealth)
 	{
-		L4D2BossSession(sessionIndex).AddDamage(attacker, damage);
-		g_BossSessions[sessionIndex].lastHealth = health;
+		roundedDamage = maxHealth - g_BossSessions[sessionIndex].totalDamage;
 	}
+
+	if (roundedDamage > 0)
+	{
+		L4D2BossSession(sessionIndex).AddDamage(attacker, roundedDamage);
+	}
+
+	g_BossSessions[sessionIndex].lastHealth = GetClientHealth(victim);
 }
 
 void Boss_EventPlayerDeath(Event event)
@@ -378,14 +417,9 @@ void Boss_EventPlayerDeath(Event event)
 	L4D2BossSession(sessionIndex).RefreshOwner(victim);
 
 	int attacker = GetClientOfUserId(event.GetInt("attacker"));
-	if (IsValidSurvivor(attacker) && g_BossSessions[sessionIndex].lastHealth > 0)
-	{
-		L4D2BossSession(sessionIndex).AddDamage(attacker, g_BossSessions[sessionIndex].lastHealth);
-		g_BossSessions[sessionIndex].lastHealth = 0;
-	}
-
 	Boss_CreateTankDeadEvent(sessionIndex, attacker);
 
+	g_BossSessions[sessionIndex].lastHealth = 0;
 	g_BossSessions[sessionIndex].state = L4D2BossState_Dead;
 	Boss_FinalizeSession(sessionIndex);
 }

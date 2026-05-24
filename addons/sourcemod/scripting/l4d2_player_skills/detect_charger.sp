@@ -271,17 +271,14 @@ bool Detect_IsChargerCharging(int charger)
 	return IsValidEntity(abilityEnt) && GetEntProp(abilityEnt, Prop_Send, "m_isCharging") != 0;
 }
 
-void Detect_HandleChargerHurt(Event event, int victim, int attacker)
+void Detect_HandleChargerHurt(int victim, int attacker, int damageType, int appliedDamage, int postHealth)
 {
-	int damage = event.GetInt("dmg_health");
-	int health = event.GetInt("health");
-	int damageType = event.GetInt("type");
-	if (damage <= 0)
+	if (appliedDamage <= 0)
 	{
 		return;
 	}
 
-	if (health == 0
+	if (postHealth == 0
 		&& (damageType & DMG_CLUB || damageType & DMG_SLASH)
 		&& Detect_IsChargerCharging(victim))
 	{
@@ -323,8 +320,12 @@ void Detect_HandleChargerHurt(Event event, int victim, int attacker)
 		}
 	}
 
-	if (health > 0)
+	if (postHealth > 0)
 	{
-		g_DetectChargerDamageSnapshot[victim].lastHealth = health;
+		g_DetectChargerDamageSnapshot[victim].lastHealth = postHealth;
+	}
+	else
+	{
+		g_DetectChargerDamageSnapshot[victim].lastHealth = 0;
 	}
 }

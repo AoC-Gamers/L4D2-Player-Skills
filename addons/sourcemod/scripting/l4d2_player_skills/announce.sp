@@ -9,9 +9,9 @@
 int g_iAnnounceSortSession = -1;
 
 // Initialization and commands.
-void Announce_Init()
+void Regcmd_Init()
 {
-	RegConsoleCmd("sm_skills", Command_Skills, "Print a summary of your detected skills.");
+	RegConsoleCmd("sm_skills", Command_Skills, "Print the detected skills summary in chat and the comparative skills table in console.");
 }
 
 Action Command_Skills(int client, int args)
@@ -114,7 +114,112 @@ Action Command_Skills(int client, int args)
 		L4D2Skill_TankRockSkeet, "SkillsLabelRockSkeet",
 		L4D2Skill_None, "");
 
+	Announce_RenderSkillsTable(client, target);
+
 	return Plugin_Handled;
+}
+
+void Announce_RenderSkillsTable(int client, int target)
+{
+	L4DTeam team = GetClientL4DTeam(target);
+	if (team != L4DTeam_Survivor && team != L4DTeam_Infected)
+	{
+		ConsolePanel_PrintMessage(client, "[l4d2_player_skills] No comparable skill table is available for that team.");
+		return;
+	}
+
+	ConsolePanel panel;
+	ConsolePanel_Reset(panel);
+	ConsolePanel_SetWidth(panel, 86);
+	ConsolePanel_EnableSafeAscii(panel, true);
+
+	char line[160];
+	Format(line, sizeof(line), "L4D2 Player Skills");
+	ConsolePanel_AddHeaderLine(panel, line);
+
+	Format(line, sizeof(line), "Player: %N | Team: %s", target, team == L4DTeam_Survivor ? "Survivor" : "Infected");
+	ConsolePanel_AddHeaderLine(panel, line);
+
+	if (team == L4DTeam_Survivor)
+	{
+		ConsoleTable_AddColumn(panel.table, "Player", 18, ConsoleTableAlignment_Left, ConsoleTableCellType_String);
+		ConsoleTable_AddColumn(panel.table, "Sk", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
+		ConsoleTable_AddColumn(panel.table, "SM", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
+		ConsoleTable_AddColumn(panel.table, "DS", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
+		ConsoleTable_AddColumn(panel.table, "BP", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
+		ConsoleTable_AddColumn(panel.table, "Lv", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
+		ConsoleTable_AddColumn(panel.table, "Cr", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
+		ConsoleTable_AddColumn(panel.table, "TC", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
+		ConsoleTable_AddColumn(panel.table, "SC", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
+		ConsoleTable_AddColumn(panel.table, "RS", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
+
+		int players[8];
+		int count = Announce_CollectSortedSkillClients(team, players, sizeof(players));
+		for (int i = 0; i < count; i++)
+		{
+			if (!ConsoleTable_BeginRow(panel.table))
+			{
+				break;
+			}
+
+			char playerName[32];
+			Format(playerName, sizeof(playerName), "%s%N", players[i] == target ? ">" : "", players[i]);
+
+			ConsoleTable_AddStringCell(panel.table, playerName);
+			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_HunterSkeet));
+			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_HunterSkeetMelee));
+			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_HunterDeadstop));
+			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_BoomerPop));
+			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_ChargerLevel));
+			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_WitchDead));
+			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_SmokerTongueCut));
+			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_SmokerSelfClear));
+			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_TankRockSkeet));
+			ConsoleTable_EndRow(panel.table);
+		}
+
+		ConsolePanel_AddHeaderLine(panel, "Sk=Skeets SM=SkeetMelees DS=Deadstops BP=BoomerPops Lv=Levels");
+		ConsolePanel_AddHeaderLine(panel, "Cr=Crowns TC=TongueCuts SC=SmokerClears RS=RockSkeets");
+	}
+	else
+	{
+		ConsoleTable_AddColumn(panel.table, "Player", 18, ConsoleTableAlignment_Left, ConsoleTableCellType_String);
+		ConsoleTable_AddColumn(panel.table, "HP", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
+		ConsoleTable_AddColumn(panel.table, "JP", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
+		ConsoleTable_AddColumn(panel.table, "BV", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
+		ConsoleTable_AddColumn(panel.table, "IK", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
+		ConsoleTable_AddColumn(panel.table, "DS", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
+		ConsoleTable_AddColumn(panel.table, "CA", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
+		ConsoleTable_AddColumn(panel.table, "RH", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
+
+		int players[8];
+		int count = Announce_CollectSortedSkillClients(team, players, sizeof(players));
+		for (int i = 0; i < count; i++)
+		{
+			if (!ConsoleTable_BeginRow(panel.table))
+			{
+				break;
+			}
+
+			char playerName[32];
+			Format(playerName, sizeof(playerName), "%s%N", players[i] == target ? ">" : "", players[i]);
+
+			ConsoleTable_AddStringCell(panel.table, playerName);
+			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_HunterHighPounce));
+			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_JockeyHighPounce));
+			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_BoomerVomitLanded));
+			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_ChargerInstaKill));
+			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_ChargerDeathSetup));
+			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_CarAlarmTriggered));
+			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_TankRockHit));
+			ConsoleTable_EndRow(panel.table);
+		}
+
+		ConsolePanel_AddHeaderLine(panel, "HP=HunterPounces JP=JockeyPounces BV=BoomerVomit IK=InstaKills");
+		ConsolePanel_AddHeaderLine(panel, "DS=DeathSetups CA=CarAlarms RH=RockHits");
+	}
+
+	ConsolePanel_RenderToClient(panel, client);
 }
 
 // Skill summary helpers.
@@ -161,6 +266,87 @@ void Announce_AppendSkillStat(int client, char[] line, int maxlen, const int cou
 	FormatEx(segment, sizeof(segment), "{green}%s{default}: {olive}%d", label, counts[type]);
 	StrCat(line, maxlen, segment);
 	hasAny = true;
+}
+
+int Announce_CountSkillTypeForClient(int client, L4D2SkillType type)
+{
+	if (!IsValidClient(client))
+	{
+		return 0;
+	}
+
+	int count = 0;
+	for (int index = 0; index < L4D2_SKILLS_MAX_EVENTS; index++)
+	{
+		if (g_SkillEvents[index].id <= 0 || g_SkillEvents[index].type != type || !g_SkillEvents[index].actor.IsSamePersistentPlayer(client))
+		{
+			continue;
+		}
+
+		if (type == L4D2Skill_WitchDead && !g_SkillEvents[index].crown)
+		{
+			continue;
+		}
+
+		count++;
+	}
+
+	return count;
+}
+
+int Announce_GetSkillScoreForClient(int client, L4DTeam team)
+{
+	if (team == L4DTeam_Survivor)
+	{
+		return Announce_CountSkillTypeForClient(client, L4D2Skill_HunterSkeet)
+			+ Announce_CountSkillTypeForClient(client, L4D2Skill_HunterSkeetMelee)
+			+ Announce_CountSkillTypeForClient(client, L4D2Skill_HunterDeadstop)
+			+ Announce_CountSkillTypeForClient(client, L4D2Skill_BoomerPop)
+			+ Announce_CountSkillTypeForClient(client, L4D2Skill_ChargerLevel)
+			+ Announce_CountSkillTypeForClient(client, L4D2Skill_WitchDead)
+			+ Announce_CountSkillTypeForClient(client, L4D2Skill_SmokerTongueCut)
+			+ Announce_CountSkillTypeForClient(client, L4D2Skill_SmokerSelfClear)
+			+ Announce_CountSkillTypeForClient(client, L4D2Skill_TankRockSkeet);
+	}
+
+	return Announce_CountSkillTypeForClient(client, L4D2Skill_HunterHighPounce)
+		+ Announce_CountSkillTypeForClient(client, L4D2Skill_JockeyHighPounce)
+		+ Announce_CountSkillTypeForClient(client, L4D2Skill_BoomerVomitLanded)
+		+ Announce_CountSkillTypeForClient(client, L4D2Skill_ChargerInstaKill)
+		+ Announce_CountSkillTypeForClient(client, L4D2Skill_ChargerDeathSetup)
+		+ Announce_CountSkillTypeForClient(client, L4D2Skill_CarAlarmTriggered)
+		+ Announce_CountSkillTypeForClient(client, L4D2Skill_TankRockHit);
+}
+
+int Announce_CollectSortedSkillClients(L4DTeam team, int[] clients, int maxClients)
+{
+	int count = 0;
+	for (int client = 1; client <= MaxClients && count < maxClients; client++)
+	{
+		if (!IsValidClient(client) || GetClientL4DTeam(client) != team)
+		{
+			continue;
+		}
+
+		clients[count++] = client;
+	}
+
+	for (int i = 1; i < count; i++)
+	{
+		int key = clients[i];
+		int keyScore = Announce_GetSkillScoreForClient(key, team);
+		int j = i - 1;
+
+		while (j >= 0 && Announce_GetSkillScoreForClient(clients[j], team) < keyScore)
+		{
+			clients[j + 1] = clients[j];
+			j--;
+		}
+
+		clients[j + 1] = key;
+	}
+
+	return count;
 }
 
 // Skill event announce flow.

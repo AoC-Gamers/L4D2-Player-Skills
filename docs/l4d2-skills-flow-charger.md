@@ -18,6 +18,8 @@ Este documento resume los flujos actuales de skills relacionadas con `Charger`.
 - `SDKHook_OnTakeDamage`
 - `SDKHook_OnTakeDamagePost`
 
+`player_hurt` queda solo como contexto complementario. El daño canónico usado por `ChargerLevel` se captura desde `SDKHook_OnTakeDamagePost`.
+
 ### State
 
 - `g_iDetectChargerLastHealth`
@@ -44,7 +46,7 @@ Se emite `ChargerLevel` cuando:
 
 ```mermaid
 flowchart TD
-    A[player_hurt on Charger] --> B[Track last melee raw damage]
+    A[OnTakeDamage / OnTakeDamagePost on Charger] --> B[Track last melee raw damage and applied damage]
     B --> C[player_death on Charger]
     C --> D{Was charging and killed by melee}
     D -->|no| E[Stop]

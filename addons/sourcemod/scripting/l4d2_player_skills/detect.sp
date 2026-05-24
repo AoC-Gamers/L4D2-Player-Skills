@@ -241,6 +241,7 @@ float g_fDetectSpecialClearTimeA[MAXPLAYERS + 1];
 float g_fDetectSpecialClearTimeB[MAXPLAYERS + 1];
 
 bool g_bDetectHunterPouncing[MAXPLAYERS + 1];
+bool g_bDetectClientDamageHooked[MAXPLAYERS + 1];
 bool g_bDetectShotCounted[MAXPLAYERS + 1][MAXPLAYERS + 1];
 float g_fDetectHunterLastShove[MAXPLAYERS + 1][MAXPLAYERS + 1];
 int g_iDetectHunterSpawnHealth[MAXPLAYERS + 1];
@@ -329,6 +330,7 @@ void Detect_ResetAll()
 		g_fDetectSpecialClearTimeA[client] = -1.0;
 		g_fDetectSpecialClearTimeB[client] = -1.0;
 		g_bDetectHunterPouncing[client] = false;
+		g_bDetectClientDamageHooked[client] = false;
 		g_iDetectHunterSpawnHealth[client] = 0;
 		g_DetectHunterDamageSnapshot[client].Reset();
 		g_DetectChargerDamageSnapshot[client].Reset();
@@ -367,8 +369,12 @@ void Detect_OnClientPutInServer(int client)
 		return;
 	}
 
-	SDKHook(client, SDKHook_OnTakeDamage, Detect_OnTakeDamage_Client);
-	SDKHook(client, SDKHook_OnTakeDamagePost, Detect_OnTakeDamagePost_Client);
+	if (!g_bDetectClientDamageHooked[client])
+	{
+		SDKHook(client, SDKHook_OnTakeDamage, Detect_OnTakeDamage_Client);
+		SDKHook(client, SDKHook_OnTakeDamagePost, Detect_OnTakeDamagePost_Client);
+		g_bDetectClientDamageHooked[client] = true;
+	}
 
 	Detect_ResetBoomer(client);
 	Detect_ResetBHop(client);
@@ -391,8 +397,12 @@ void Detect_OnClientPutInServer(int client)
 
 void Detect_OnClientDisconnect(int client)
 {
-	SDKUnhook(client, SDKHook_OnTakeDamage, Detect_OnTakeDamage_Client);
-	SDKUnhook(client, SDKHook_OnTakeDamagePost, Detect_OnTakeDamagePost_Client);
+	if (client > 0 && client <= MaxClients && g_bDetectClientDamageHooked[client])
+	{
+		SDKUnhook(client, SDKHook_OnTakeDamage, Detect_OnTakeDamage_Client);
+		SDKUnhook(client, SDKHook_OnTakeDamagePost, Detect_OnTakeDamagePost_Client);
+		g_bDetectClientDamageHooked[client] = false;
+	}
 
 	Detect_ClearPinStateByAttacker(client);
 	Detect_ClearPinStateByVictim(client);
@@ -783,11 +793,6 @@ void Detect_EventPlayerHurt(Event event)
 		}
 	}
 
-	if (IsValidZombieClass(victim, L4D2ZombieClass_Charger) && IsValidSurvivor(attacker))
-	{
-		Detect_HandleChargerHurt(event, victim, attacker);
-	}
-
 	if (!IsValidZombieClass(victim, L4D2ZombieClass_Hunter) || !IsValidSurvivor(attacker))
 	{
 		if (IsValidSurvivor(victim) && IsValidTank(attacker))
@@ -795,59 +800,12 @@ void Detect_EventPlayerHurt(Event event)
 			char weapon[32];
 			event.GetString("weapon", weapon, sizeof(weapon));
 			if (StrEqual(weapon, "tank_rock"))
-	{
-		Detect_MarkTankRockHit(attacker, victim);
+			{
+				Detect_MarkTankRockHit(attacker, victim);
 			}
 		}
 
 		return;
-	}
-
-	int health = event.GetInt("health");
-	if (damage <= 0)
-	{
-		return;
-	}
-
-	if (!g_bDetectShotCounted[victim][attacker])
-	{
-		g_iDetectHunterShots[victim][attacker]++;
-		g_bDetectShotCounted[victim][attacker] = true;
-	}
-
-	if (g_DetectHunterDamageSnapshot[victim].lastHealth > 0 && damage > g_DetectHunterDamageSnapshot[victim].lastHealth)
-	{
-		g_iDetectHunterOverkill[victim] = damage - g_DetectHunterDamageSnapshot[victim].lastHealth;
-		damage = g_DetectHunterDamageSnapshot[victim].lastHealth;
-	}
-
-	if (g_iDetectHunterShotDmg[victim][attacker] > 0
-		&& (GetGameTime() - g_fDetectHunterShotStart[victim][attacker]) > DETECT_SHOTGUN_BLAST_TIME)
-	{
-		g_iDetectHunterShotDmg[victim][attacker] = 0;
-		g_fDetectHunterShotStart[victim][attacker] = 0.0;
-	}
-
-	if (g_bDetectHunterPouncing[victim] && (damageType & DMG_BUCKSHOT))
-	{
-		if (g_fDetectHunterShotStart[victim][attacker] == 0.0)
-		{
-			g_fDetectHunterShotStart[victim][attacker] = GetGameTime();
-		}
-
-		g_iDetectHunterShotDmg[victim][attacker] += damage;
-		g_iDetectHunterShotDmgTeam[victim] += damage;
-
-		if (health == 0)
-		{
-			g_bDetectHunterKilledPouncing[victim] = true;
-		}
-	}
-
-	if (health > 0)
-	{
-		g_iDetectHunterDamage[victim][attacker] += damage;
-		g_DetectHunterDamageSnapshot[victim].lastHealth = health;
 	}
 }
 
@@ -999,8 +957,6 @@ void Detect_EventPlayerDeath(Event event)
 			Detect_ResetHunter(victim);
 			return;
 		}
-
-		g_iDetectHunterDamage[victim][attacker] += g_DetectHunterDamageSnapshot[victim].lastHealth;
 
 		if (g_bDetectHunterKilledPouncing[victim] && g_iDetectHunterShotDmgTeam[victim] > 0)
 		{
@@ -1272,12 +1228,74 @@ void Detect_OnTakeDamagePost_Client(int victim, int attacker, int inflictor, flo
 		g_DetectHunterDamageSnapshot[victim].lastAttacker = attacker;
 		g_DetectHunterDamageSnapshot[victim].lastDamageType = damagetype;
 		g_DetectHunterDamageSnapshot[victim].lastRawDamage = damage;
+
+		if (!IsValidSurvivor(attacker))
+		{
+			return;
+		}
+
+		int appliedDamage = RoundToFloor(damage);
+		if (appliedDamage <= 0)
+		{
+			return;
+		}
+
+		if (!g_bDetectShotCounted[victim][attacker])
+		{
+			g_iDetectHunterShots[victim][attacker]++;
+			g_bDetectShotCounted[victim][attacker] = true;
+		}
+
+		int healthBeforeDamage = g_DetectHunterDamageSnapshot[victim].lastHealthBeforeDamage > 0
+			? g_DetectHunterDamageSnapshot[victim].lastHealthBeforeDamage
+			: g_DetectHunterDamageSnapshot[victim].lastHealth;
+		if (healthBeforeDamage > 0 && appliedDamage > healthBeforeDamage)
+		{
+			g_iDetectHunterOverkill[victim] = appliedDamage - healthBeforeDamage;
+			appliedDamage = healthBeforeDamage;
+		}
+
+		if (g_iDetectHunterShotDmg[victim][attacker] > 0
+			&& (GetGameTime() - g_fDetectHunterShotStart[victim][attacker]) > DETECT_SHOTGUN_BLAST_TIME)
+		{
+			g_iDetectHunterShotDmg[victim][attacker] = 0;
+			g_fDetectHunterShotStart[victim][attacker] = 0.0;
+		}
+
+		int postHealth = GetClientHealth(victim);
+		if (g_bDetectHunterPouncing[victim] && (damagetype & DMG_BUCKSHOT))
+		{
+			if (g_fDetectHunterShotStart[victim][attacker] == 0.0)
+			{
+				g_fDetectHunterShotStart[victim][attacker] = GetGameTime();
+			}
+
+			g_iDetectHunterShotDmg[victim][attacker] += appliedDamage;
+			g_iDetectHunterShotDmgTeam[victim] += appliedDamage;
+
+			if (postHealth <= 0)
+			{
+				g_bDetectHunterKilledPouncing[victim] = true;
+			}
+		}
+
+		g_iDetectHunterDamage[victim][attacker] += appliedDamage;
+		g_DetectHunterDamageSnapshot[victim].lastHealth = postHealth > 0 ? postHealth : 0;
 	}
 	else if (zombieClass == L4D2ZombieClass_Charger)
 	{
 		g_DetectChargerDamageSnapshot[victim].lastAttacker = attacker;
 		g_DetectChargerDamageSnapshot[victim].lastDamageType = damagetype;
 		g_DetectChargerDamageSnapshot[victim].lastRawDamage = damage;
+
+		if (!IsValidSurvivor(attacker))
+		{
+			return;
+		}
+
+		int appliedDamage = RoundToFloor(damage);
+		int postHealth = GetClientHealth(victim);
+		Detect_HandleChargerHurt(victim, attacker, damagetype, appliedDamage, postHealth);
 	}
 }
 
