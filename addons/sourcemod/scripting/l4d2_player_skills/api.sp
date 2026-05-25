@@ -10,6 +10,7 @@ Handle g_hForwardBossDamageAnnounced = INVALID_HANDLE;
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
+	g_Runtime.isLate = late;
 	RegPluginLibrary("l4d2_player_skills");
 	API_CreateForwards();
 	API_CreateNatives();

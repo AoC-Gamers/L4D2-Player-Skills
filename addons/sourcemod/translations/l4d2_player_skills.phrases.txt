@@ -83,7 +83,7 @@
 	"SkillsLabelPinClear"
 	{
 		"en"		"PinClear"
-		"es"		"PinClear"
+		"es"		"SpecialClear"
 	}
 
 	"SkillsLabelBHop"
@@ -224,14 +224,14 @@
 	{
 		"#format"	"{1:s},{2:s},{3:s}"
 		"en"		"{olive}{1}{default} cleared {red}{2}{default} off {olive}{3}{default}."
-		"es"		"{olive}{1}{default} hizo {green}SpecialPinClear{default} a {red}{2}{default} y salvo a {olive}{3}{default}."
+		"es"		"{olive}{1}{default} hizo {green}SpecialClear{default} a {red}{2}{default} y salvo a {olive}{3}{default}."
 	}
 
 	"SpecialPinClearShove"
 	{
 		"#format"	"{1:s},{2:s},{3:s}"
 		"en"		"{olive}{1}{default} shove-cleared {red}{2}{default} off {olive}{3}{default}."
-		"es"		"{olive}{1}{default} hizo {green}SpecialPinClear{default} con shove a {red}{2}{default} y salvo a {olive}{3}{default}."
+		"es"		"{olive}{1}{default} hizo {green}SpecialClear{default} con empujón a {red}{2}{default} y salvo a {olive}{3}{default}."
 	}
 
 	"SmokerTongueCut"

@@ -8,6 +8,8 @@
 #include <console_table>
 #include <left4dhooks>
 
+#define LIBRARY_LEFT4DHOOKS "left4dhooks"
+
 #include "l4d2_player_skills/types.sp"
 
 L4D2BossSessionData g_BossSessions[L4D2_SKILLS_MAX_BOSSES];
@@ -201,7 +203,9 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
+	bool isLate = g_Runtime.isLate;
 	g_Runtime.Reset();
+	g_Runtime.isLate = isLate;
 	BuildPath(Path_SM, g_sDebugLogPath, sizeof(g_sDebugLogPath), "logs/l4d2_player_skills_debug.log");
 	LoadTranslations("l4d2_player_skills.phrases");
 
@@ -254,22 +258,61 @@ public void OnPluginStart()
 	g_cvHunterHighPounceHeight = CreateConVar("l4d2_player_skills_hunter_high_pounce_height", "400", "Minimum vertical height for HunterHighPounce.");
 	g_cvJockeyHighPounceHeight = CreateConVar("l4d2_player_skills_jockey_high_pounce_height", "300", "Minimum vertical height for JockeyHighPounce.");
 
-	if (g_cvSurvivorLimit != null) g_cvSurvivorLimit.AddChangeHook(ConVarChange_ModeContext);
-	if (g_cvMaxPlayerZombies != null) g_cvMaxPlayerZombies.AddChangeHook(ConVarChange_ModeContext);
-	if (g_cvVersusBoomerLimit != null) g_cvVersusBoomerLimit.AddChangeHook(ConVarChange_ModeContext);
-	if (g_cvVersusSmokerLimit != null) g_cvVersusSmokerLimit.AddChangeHook(ConVarChange_ModeContext);
-	if (g_cvVersusHunterLimit != null) g_cvVersusHunterLimit.AddChangeHook(ConVarChange_ModeContext);
-	if (g_cvVersusSpitterLimit != null) g_cvVersusSpitterLimit.AddChangeHook(ConVarChange_ModeContext);
-	if (g_cvVersusJockeyLimit != null) g_cvVersusJockeyLimit.AddChangeHook(ConVarChange_ModeContext);
-	if (g_cvVersusChargerLimit != null) g_cvVersusChargerLimit.AddChangeHook(ConVarChange_ModeContext);
+	g_cvSurvivorLimit.AddChangeHook(ConVarChange_ModeContext);
+	g_cvMaxPlayerZombies.AddChangeHook(ConVarChange_ModeContext);
+	g_cvVersusBoomerLimit.AddChangeHook(ConVarChange_ModeContext);
+	g_cvVersusSmokerLimit.AddChangeHook(ConVarChange_ModeContext);
+	g_cvVersusHunterLimit.AddChangeHook(ConVarChange_ModeContext);
+	g_cvVersusSpitterLimit.AddChangeHook(ConVarChange_ModeContext);
+	g_cvVersusJockeyLimit.AddChangeHook(ConVarChange_ModeContext);
+	g_cvVersusChargerLimit.AddChangeHook(ConVarChange_ModeContext);
 
 	AutoExecConfig(false, "l4d2_player_skills");
-	Skills_RefreshModeContext();
 
 	API_Init();
 	Regcmd_Init();
 	Boss_Init();
 	Detect_Init();
+
+	if (!g_Runtime.isLate)
+	{
+		return;
+	}
+
+	g_Runtime.hasLeft4DHooks = LibraryExists(LIBRARY_LEFT4DHOOKS);
+	Skills_RefreshModeContext();
+	Skills_RefreshRoundLiveState();
+}
+
+public void OnAllPluginsLoaded()
+{
+	g_Runtime.hasLeft4DHooks = LibraryExists(LIBRARY_LEFT4DHOOKS);
+	Skills_RefreshModeContext();
+	Skills_RefreshRoundLiveState();
+}
+
+public void OnLibraryAdded(const char[] name)
+{
+	if (strcmp(name, LIBRARY_LEFT4DHOOKS) != 0)
+	{
+		return;
+	}
+
+	g_Runtime.hasLeft4DHooks = true;
+	Skills_RefreshModeContext();
+	Skills_RefreshRoundLiveState();
+}
+
+public void OnLibraryRemoved(const char[] name)
+{
+	if (strcmp(name, LIBRARY_LEFT4DHOOKS) != 0)
+	{
+		return;
+	}
+
+	g_Runtime.hasLeft4DHooks = false;
+	Skills_RefreshModeContext();
+	Skills_RefreshRoundLiveState();
 }
 
 public void OnMapStart()

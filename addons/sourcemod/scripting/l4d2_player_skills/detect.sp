@@ -1148,6 +1148,15 @@ void Detect_EventBoomerExploded(Event event)
 	}
 
 	float timeAlive = g_DetectBoomer[boomer].spawnTime > 0.0 ? (GetGameTime() - g_DetectBoomer[boomer].spawnTime) : 0.0;
+	if (Skills_IsCompetitiveMode() && timeAlive > L4D2_SKILLS_COMPETITIVE_POP_MAX_TIME)
+	{
+		Skills_Debug(PlayerSkillsDebug_Detect,
+			"Ignoring boomer pop outside competitive window. boomer=%d attacker=%d time_alive=%.2f max=%.2f",
+			boomer, attacker, timeAlive, L4D2_SKILLS_COMPETITIVE_POP_MAX_TIME);
+		Detect_ResetBoomer(boomer);
+		return;
+	}
+
 	int eventId = Skills_CreateEvent(L4D2Skill_BoomerPop);
 	int eventIndex = Skills_GetEventIndex(eventId);
 	if (eventIndex == -1)

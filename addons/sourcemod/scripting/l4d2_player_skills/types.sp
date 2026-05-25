@@ -190,6 +190,8 @@ enum struct PlayerSkillsLifecyclePolicyData
 enum struct PlayerSkillsRuntimeState
 {
 	PlayerSkillsGameMode baseMode;
+	bool hasLeft4DHooks;
+	bool isLate;
 	bool roundLive;
 	int configuredSurvivorLimit;
 	int configuredPlayerZombieLimit;
@@ -204,6 +206,8 @@ enum struct PlayerSkillsRuntimeState
 	void Reset()
 	{
 		this.baseMode = PlayerSkillsGameMode_Unknown;
+		this.hasLeft4DHooks = false;
+		this.isLate = false;
 		this.roundLive = false;
 		this.configuredSurvivorLimit = 0;
 		this.configuredPlayerZombieLimit = 0;

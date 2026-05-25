@@ -4,6 +4,7 @@
 #define _l4d2_player_skills_helpers_included
 
 #define L4D2_SKILLS_FAST_POP_TIME 1.0
+#define L4D2_SKILLS_COMPETITIVE_POP_MAX_TIME 3.0
 
 /**
  * @brief Checks whether the plugin is currently enabled.
@@ -20,6 +21,12 @@ stock bool Skills_IsRoundLive()
 	return Skills_IsEnabled() && g_Runtime.roundLive;
 }
 
+stock bool Skills_IsCompetitiveMode()
+{
+	return g_Runtime.baseMode == PlayerSkillsGameMode_Versus
+		|| g_Runtime.baseMode == PlayerSkillsGameMode_Scavenge;
+}
+
 stock void Skills_RefreshRoundLiveState()
 {
 	if (!Skills_IsEnabled())
@@ -29,6 +36,7 @@ stock void Skills_RefreshRoundLiveState()
 	}
 
 	if (g_Runtime.roundLiveSignal == PlayerSkillsRoundLiveSignal_SafeArea
+		&& g_Runtime.hasLeft4DHooks
 		&& GetFeatureStatus(FeatureType_Native, "L4D_HasAnySurvivorLeftSafeArea") != FeatureStatus_Unknown
 		&& L4D_HasAnySurvivorLeftSafeArea())
 	{
@@ -285,6 +293,12 @@ stock bool IsWitchEntity(int entity)
  */
 stock PlayerSkillsGameMode Skills_GetCurrentGameMode()
 {
+	if (!g_Runtime.hasLeft4DHooks
+		|| GetFeatureStatus(FeatureType_Native, "L4D_GetGameModeType") != FeatureStatus_Available)
+	{
+		return PlayerSkillsGameMode_Unknown;
+	}
+
 	switch (L4D_GetGameModeType())
 	{
 		case GAMEMODE_COOP:
