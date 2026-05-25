@@ -13,6 +13,7 @@
 L4D2BossSessionData g_BossSessions[L4D2_SKILLS_MAX_BOSSES];
 L4D2DamageEntry		g_BossDamage[L4D2_SKILLS_MAX_BOSSES][L4D2_SKILLS_MAX_DAMAGE_ENTRIES];
 L4D2SkillEventData	g_SkillEvents[L4D2_SKILLS_MAX_EVENTS];
+PlayerSkillsRuntimeState g_Runtime;
 
 int	g_iBossSerial		= 0;
 int	g_iEventSerial		= 0;
@@ -31,6 +32,8 @@ ConVar	g_cvJockeyHealth		 = null;
 ConVar	g_cvChargerHealth		 = null;
 ConVar	g_cvTankHealth			 = null;
 ConVar	g_cvWitchHealth			 = null;
+ConVar	g_cvSurvivorLimit		 = null;
+ConVar	g_cvMaxPlayerZombies	 = null;
 ConVar	g_cvVersusBoomerLimit	 = null;
 ConVar	g_cvVersusSmokerLimit	 = null;
 ConVar	g_cvVersusHunterLimit	 = null;
@@ -198,11 +201,14 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
+	g_Runtime.Reset();
 	BuildPath(Path_SM, g_sDebugLogPath, sizeof(g_sDebugLogPath), "logs/l4d2_player_skills_debug.log");
 	LoadTranslations("l4d2_player_skills.phrases");
 
 	HookEvent("round_start", Event_RoundStart, EventHookMode_PostNoCopy);
 	HookEvent("round_end", Event_RoundEnd, EventHookMode_PostNoCopy);
+	HookEvent("scavenge_round_start", Event_ScavengeRoundStart, EventHookMode_PostNoCopy);
+	HookEvent("scavenge_round_finished", Event_ScavengeRoundFinished, EventHookMode_PostNoCopy);
 	HookEvent("ability_use", Event_AbilityUse, EventHookMode_Post);
 	HookEvent("weapon_fire", Event_WeaponFire, EventHookMode_Post);
 	HookEvent("player_jump", Event_PlayerJump, EventHookMode_Post);
@@ -237,6 +243,8 @@ public void OnPluginStart()
 	g_cvChargerHealth	   = FindConVar("z_charger_health");
 	g_cvTankHealth		   = FindConVar("z_tank_health");
 	g_cvWitchHealth		   = FindConVar("z_witch_health");
+	g_cvSurvivorLimit      = FindConVar("survivor_limit");
+	g_cvMaxPlayerZombies   = FindConVar("z_max_player_zombies");
 	g_cvVersusBoomerLimit  = FindConVar("z_versus_boomer_limit");
 	g_cvVersusSmokerLimit  = FindConVar("z_versus_smoker_limit");
 	g_cvVersusHunterLimit  = FindConVar("z_versus_hunter_limit");
@@ -246,7 +254,17 @@ public void OnPluginStart()
 	g_cvHunterHighPounceHeight = CreateConVar("l4d2_player_skills_hunter_high_pounce_height", "400", "Minimum vertical height for HunterHighPounce.");
 	g_cvJockeyHighPounceHeight = CreateConVar("l4d2_player_skills_jockey_high_pounce_height", "300", "Minimum vertical height for JockeyHighPounce.");
 
+	if (g_cvSurvivorLimit != null) g_cvSurvivorLimit.AddChangeHook(ConVarChange_ModeContext);
+	if (g_cvMaxPlayerZombies != null) g_cvMaxPlayerZombies.AddChangeHook(ConVarChange_ModeContext);
+	if (g_cvVersusBoomerLimit != null) g_cvVersusBoomerLimit.AddChangeHook(ConVarChange_ModeContext);
+	if (g_cvVersusSmokerLimit != null) g_cvVersusSmokerLimit.AddChangeHook(ConVarChange_ModeContext);
+	if (g_cvVersusHunterLimit != null) g_cvVersusHunterLimit.AddChangeHook(ConVarChange_ModeContext);
+	if (g_cvVersusSpitterLimit != null) g_cvVersusSpitterLimit.AddChangeHook(ConVarChange_ModeContext);
+	if (g_cvVersusJockeyLimit != null) g_cvVersusJockeyLimit.AddChangeHook(ConVarChange_ModeContext);
+	if (g_cvVersusChargerLimit != null) g_cvVersusChargerLimit.AddChangeHook(ConVarChange_ModeContext);
+
 	AutoExecConfig(false, "l4d2_player_skills");
+	Skills_RefreshModeContext();
 
 	API_Init();
 	Regcmd_Init();
@@ -256,6 +274,9 @@ public void OnPluginStart()
 
 public void OnMapStart()
 {
+	Skills_RefreshModeContext();
+	g_Runtime.roundLive = false;
+	Skills_RefreshRoundLiveState();
 	Skills_ResetEvents();
 	Boss_ResetAll();
 	Detect_ResetAll();
@@ -263,16 +284,42 @@ public void OnMapStart()
 
 public void OnMapEnd()
 {
+	g_Runtime.roundLive = false;
 	Skills_ResetEvents();
 	Boss_ResetAll();
 	Detect_ResetAll();
 }
 
+public void OnConfigsExecuted()
+{
+	Skills_RefreshModeContext();
+	Skills_RefreshRoundLiveState();
+}
+
+public void L4D_OnGameModeChange(int gamemode)
+{
+	Skills_RefreshModeContext();
+	Skills_RefreshRoundLiveState();
+}
+
 public void OnPluginEnd()
 {
+	g_Runtime.roundLive = false;
 	Skills_ResetEvents();
 	Boss_ResetAll();
 	Detect_ResetAll();
+}
+
+public void L4D_OnFirstSurvivorLeftSafeArea_Post(int client)
+{
+	if (!Skills_IsEnabled()
+		|| g_Runtime.roundLive
+		|| g_Runtime.roundLiveSignal != PlayerSkillsRoundLiveSignal_SafeArea)
+	{
+		return;
+	}
+
+	g_Runtime.roundLive = true;
 }
 
 public void OnClientPutInServer(int client)
@@ -305,52 +352,102 @@ public void L4D_OnWitchSetHarasser(int witch, int victim)
 
 public void L4D_OnGrabWithTongue_Post(int victim, int attacker)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
 	Detect_OnGrabWithTonguePost(victim, attacker);
 }
 
 public void L4D_OnPouncedOnSurvivor_Post(int victim, int attacker)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
 	Detect_OnPouncedOnSurvivorPost(victim, attacker);
 }
 
 public void L4D2_OnJockeyRide_Post(int victim, int attacker)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
 	Detect_OnJockeyRidePost(victim, attacker);
 }
 
 public void L4D2_OnStartCarryingVictim_Post(int victim, int attacker)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
 	Detect_OnStartCarryingVictimPost(victim, attacker);
 }
 
 public void L4D2_OnSlammedSurvivor_Post(int victim, int attacker, bool bWallSlam, bool bDeadlyCharge)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
 	Detect_OnSlammedSurvivorPost(victim, attacker, bWallSlam, bDeadlyCharge);
 }
 
 public Action L4D_OnFatalFalling(int client, int camera)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return Plugin_Continue;
+	}
+
 	Detect_OnFatalFalling(client);
 	return Plugin_Continue;
 }
 
 public void L4D_OnFalling(int client)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
 	Detect_OnFalling(client);
 }
 
 public void L4D_OnLedgeGrabbed_Post(int client)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
 	Detect_OnLedgeGrabbedPost(client);
 }
 
 public void L4D_OnIncapacitated_Post(int client, int inflictor, int attacker, float damage, int damagetype, int weapon)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
 	Detect_OnIncapacitatedPost(client, attacker, damagetype);
 }
 
 public void L4D2_OnPummelVictim_Post(int attacker, int victim)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
 	Detect_OnPummelVictimPost(attacker, victim);
 }
 
@@ -387,34 +484,104 @@ public void L4D_OnLeaveStasis(int tank)
 
 public void L4D2_OnEntityShoved_Post(int client, int entity, int weapon, const float vecDir[3], bool bIsHighPounce)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
 	Detect_OnEntityShovedPost(client, entity, weapon, vecDir, bIsHighPounce);
 }
 
 public void L4D_TankRock_OnRelease_Post(int tank, int rock, const float vecPos[3], const float vecAng[3], const float vecVel[3], const float vecRot[3])
 {
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
 	Detect_OnTankRockReleasePost(tank, rock);
 }
 
 public void L4D_TankRock_BounceTouch_Post(int tank, int rock, int entity)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
 	Detect_OnTankRockBounceTouchPost(tank, rock, entity);
 }
 
 public void L4D_TankRock_OnDetonate(int tank, int rock)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
 	Detect_OnTankRockDetonate(tank, rock);
 }
 
 void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 {
+	if (!Skills_ShouldHandleRoundStartEvent(name))
+	{
+		return;
+	}
+
+	g_Runtime.roundLive = false;
 	Boss_OnRoundStart();
 	Detect_OnRoundStart();
+
+	if (g_Runtime.roundLiveSignal == PlayerSkillsRoundLiveSignal_Immediate)
+	{
+		g_Runtime.roundLive = true;
+	}
 }
 
 void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 {
+	if (g_Runtime.baseMode == PlayerSkillsGameMode_Versus)
+	{
+		return;
+	}
+
+	if (!Skills_ShouldHandleRoundEndEvent(name))
+	{
+		return;
+	}
+
 	Boss_OnRoundEnd();
 	Detect_OnRoundEnd();
+	g_Runtime.roundLive = false;
+}
+
+public void L4D2_OnEndVersusModeRound_Post()
+{
+	if (g_Runtime.baseMode != PlayerSkillsGameMode_Versus)
+	{
+		return;
+	}
+
+	Boss_OnRoundEnd();
+	Detect_OnRoundEnd();
+	g_Runtime.roundLive = false;
+}
+
+void Event_ScavengeRoundStart(Event event, const char[] name, bool dontBroadcast)
+{
+	Event_RoundStart(event, name, dontBroadcast);
+}
+
+void Event_ScavengeRoundFinished(Event event, const char[] name, bool dontBroadcast)
+{
+	Event_RoundEnd(event, name, dontBroadcast);
+}
+
+public void ConVarChange_ModeContext(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+	Skills_RefreshModeContext();
+	Skills_RefreshRoundLiveState();
 }
 
 void Event_TankSpawn(Event event, const char[] name, bool dontBroadcast)
@@ -424,31 +591,61 @@ void Event_TankSpawn(Event event, const char[] name, bool dontBroadcast)
 
 void Event_PlayerHurt(Event event, const char[] name, bool dontBroadcast)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
 	Detect_EventPlayerHurt(event);
 }
 
 void Event_AbilityUse(Event event, const char[] name, bool dontBroadcast)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
 	Detect_EventAbilityUse(event);
 }
 
 void Event_WeaponFire(Event event, const char[] name, bool dontBroadcast)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
 	Detect_EventWeaponFire(event);
 }
 
 void Event_PlayerJump(Event event, const char[] name, bool dontBroadcast)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
 	Detect_EventPlayerJump(event);
 }
 
 void Event_PlayerJumpApex(Event event, const char[] name, bool dontBroadcast)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
 	Detect_EventPlayerJumpApex(event);
 }
 
 void Event_JockeyRide(Event event, const char[] name, bool dontBroadcast)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
 	Detect_EventJockeyRide(event);
 }
 
@@ -459,58 +656,113 @@ void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast)
 
 void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
 	Boss_EventPlayerDeath(event);
 	Detect_EventPlayerDeath(event);
 }
 
 void Event_PlayerIncapacitatedStart(Event event, const char[] name, bool dontBroadcast)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
 	Boss_EventPlayerIncapacitatedStart(event);
 	Detect_EventPlayerIncapacitatedStart(event);
 }
 
 void Event_PlayerShoved(Event event, const char[] name, bool dontBroadcast)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
 	Detect_EventPlayerShoved(event);
 }
 
 void Event_PlayerNowIt(Event event, const char[] name, bool dontBroadcast)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
 	Detect_EventPlayerNowIt(event);
 }
 
 void Event_BoomerExploded(Event event, const char[] name, bool dontBroadcast)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
 	Detect_EventBoomerExploded(event);
 }
 
 void Event_ChargerImpact(Event event, const char[] name, bool dontBroadcast)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
 	Detect_EventChargerImpact(event);
 }
 
 void Event_ChargerCarryEnd(Event event, const char[] name, bool dontBroadcast)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
 	Detect_EventChargerCarryEnd(event);
 }
 
 void Event_TriggeredCarAlarm(Event event, const char[] name, bool dontBroadcast)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
 	Detect_EventTriggeredCarAlarm();
 }
 
 void Event_WitchKilled(Event event, const char[] name, bool dontBroadcast)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
 	Boss_EventWitchKilled(event);
 }
 
 void Event_ChokeStart(Event event, const char[] name, bool dontBroadcast)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
 	Detect_EventChokeStart(event);
 }
 
 void Event_TonguePullStopped(Event event, const char[] name, bool dontBroadcast)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
 	Detect_EventTonguePullStopped(event);
 }
 

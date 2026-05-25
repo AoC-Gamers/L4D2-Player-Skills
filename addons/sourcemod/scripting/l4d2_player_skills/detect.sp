@@ -1191,7 +1191,7 @@ void Detect_EventWeaponFire(Event event)
 // Client damage snapshots used by Hunter/Charger classification flows.
 Action Detect_OnTakeDamage_Client(int victim, int &attacker, int &inflictor, float &damage, int &damagetype)
 {
-	if (!Skills_IsEnabled() || !IsValidInfected(victim))
+	if (!Skills_IsRoundLive() || !IsValidInfected(victim))
 	{
 		return Plugin_Continue;
 	}
@@ -1217,7 +1217,7 @@ Action Detect_OnTakeDamage_Client(int victim, int &attacker, int &inflictor, flo
 
 void Detect_OnTakeDamagePost_Client(int victim, int attacker, int inflictor, float damage, int damagetype)
 {
-	if (!Skills_IsEnabled() || !IsValidInfected(victim))
+	if (!Skills_IsRoundLive() || !IsValidInfected(victim))
 	{
 		return;
 	}

@@ -15,6 +15,28 @@ stock bool Skills_IsEnabled()
 	return g_cvEnable != null && g_cvEnable.BoolValue;
 }
 
+stock bool Skills_IsRoundLive()
+{
+	return Skills_IsEnabled() && g_Runtime.roundLive;
+}
+
+stock void Skills_RefreshRoundLiveState()
+{
+	if (!Skills_IsEnabled())
+	{
+		g_Runtime.roundLive = false;
+		return;
+	}
+
+	if (g_Runtime.roundLiveSignal == PlayerSkillsRoundLiveSignal_SafeArea
+		&& GetFeatureStatus(FeatureType_Native, "L4D_HasAnySurvivorLeftSafeArea") != FeatureStatus_Unknown
+		&& L4D_HasAnySurvivorLeftSafeArea())
+	{
+		g_Runtime.roundLive = true;
+		return;
+	}
+}
+
 /**
  * @brief Checks whether a client index is valid and in-game.
  *
@@ -326,6 +348,16 @@ stock bool Skills_IsScavengeMode()
 	return Skills_GetCurrentGameMode() == PlayerSkillsGameMode_Scavenge;
 }
 
+stock int Skills_GetConfiguredSurvivorLimit()
+{
+	return g_cvSurvivorLimit != null ? g_cvSurvivorLimit.IntValue : 0;
+}
+
+stock int Skills_GetConfiguredPlayerZombieLimit()
+{
+	return g_cvMaxPlayerZombies != null ? g_cvMaxPlayerZombies.IntValue : 0;
+}
+
 /**
  * @brief Checks whether a cvar scope is relevant in the current base mode.
  *
@@ -520,6 +552,422 @@ stock bool Skills_IsVersusSpecialLimitEnabled(L4D2ZombieClassType zombieClass)
 	return limit == null || limit.IntValue > 0;
 }
 
+stock int Skills_GetEnabledSiPoolMask()
+{
+	int mask = view_as<int>(PlayerSkillsSiPool_None);
+
+	if (Skills_IsVersusSpecialLimitEnabled(L4D2ZombieClass_Smoker))
+	{
+		mask |= view_as<int>(PlayerSkillsSiPool_Smoker);
+	}
+	if (Skills_IsVersusSpecialLimitEnabled(L4D2ZombieClass_Boomer))
+	{
+		mask |= view_as<int>(PlayerSkillsSiPool_Boomer);
+	}
+	if (Skills_IsVersusSpecialLimitEnabled(L4D2ZombieClass_Hunter))
+	{
+		mask |= view_as<int>(PlayerSkillsSiPool_Hunter);
+	}
+	if (Skills_IsVersusSpecialLimitEnabled(L4D2ZombieClass_Spitter))
+	{
+		mask |= view_as<int>(PlayerSkillsSiPool_Spitter);
+	}
+	if (Skills_IsVersusSpecialLimitEnabled(L4D2ZombieClass_Jockey))
+	{
+		mask |= view_as<int>(PlayerSkillsSiPool_Jockey);
+	}
+	if (Skills_IsVersusSpecialLimitEnabled(L4D2ZombieClass_Charger))
+	{
+		mask |= view_as<int>(PlayerSkillsSiPool_Charger);
+	}
+
+	return mask;
+}
+
+stock int Skills_CountEnabledSiClassesFromMask(int mask)
+{
+	int count = 0;
+
+	if ((mask & view_as<int>(PlayerSkillsSiPool_Smoker)) != 0)
+	{
+		count++;
+	}
+	if ((mask & view_as<int>(PlayerSkillsSiPool_Boomer)) != 0)
+	{
+		count++;
+	}
+	if ((mask & view_as<int>(PlayerSkillsSiPool_Hunter)) != 0)
+	{
+		count++;
+	}
+	if ((mask & view_as<int>(PlayerSkillsSiPool_Spitter)) != 0)
+	{
+		count++;
+	}
+	if ((mask & view_as<int>(PlayerSkillsSiPool_Jockey)) != 0)
+	{
+		count++;
+	}
+	if ((mask & view_as<int>(PlayerSkillsSiPool_Charger)) != 0)
+	{
+		count++;
+	}
+
+	return count;
+}
+
+stock PlayerSkillsVersusContextType Skills_ClassifyVersusContext(int survivorLimit, int playerZombieLimit, int siPoolMask, int enabledSiClassCount)
+{
+	if (!Skills_IsVersusMode() || survivorLimit <= 0 || playerZombieLimit <= 0 || survivorLimit != playerZombieLimit || enabledSiClassCount <= 0)
+	{
+		return PlayerSkillsVersusContext_None;
+	}
+
+	if (survivorLimit == 1 && enabledSiClassCount == 1)
+	{
+		if ((siPoolMask & view_as<int>(PlayerSkillsSiPool_Hunter)) != 0)
+		{
+			return PlayerSkillsVersusContext_Hunter1v1;
+		}
+		if ((siPoolMask & view_as<int>(PlayerSkillsSiPool_Smoker)) != 0)
+		{
+			return PlayerSkillsVersusContext_Smoker1v1;
+		}
+		if ((siPoolMask & view_as<int>(PlayerSkillsSiPool_Boomer)) != 0)
+		{
+			return PlayerSkillsVersusContext_Boomer1v1;
+		}
+		if ((siPoolMask & view_as<int>(PlayerSkillsSiPool_Spitter)) != 0)
+		{
+			return PlayerSkillsVersusContext_Spitter1v1;
+		}
+		if ((siPoolMask & view_as<int>(PlayerSkillsSiPool_Jockey)) != 0)
+		{
+			return PlayerSkillsVersusContext_Jockey1v1;
+		}
+		if ((siPoolMask & view_as<int>(PlayerSkillsSiPool_Charger)) != 0)
+		{
+			return PlayerSkillsVersusContext_Charger1v1;
+		}
+	}
+
+	switch (survivorLimit)
+	{
+		case 1: return PlayerSkillsVersusContext_MixedPool1v1;
+		case 2: return PlayerSkillsVersusContext_MixedPool2v2;
+		case 3: return PlayerSkillsVersusContext_MixedPool3v3;
+		case 4: return PlayerSkillsVersusContext_Versus4v4;
+	}
+
+	return PlayerSkillsVersusContext_CustomTeamVersus;
+}
+
+stock void Skills_BuildCurrentModeContext(PlayerSkillsModeContextData context)
+{
+	context.Reset();
+	context.baseMode = Skills_GetCurrentGameMode();
+	context.isVersusMode = context.baseMode == PlayerSkillsGameMode_Versus;
+	context.configuredSurvivorLimit = Skills_GetConfiguredSurvivorLimit();
+	context.configuredPlayerZombieLimit = Skills_GetConfiguredPlayerZombieLimit();
+
+	if (!context.isVersusMode)
+	{
+		return;
+	}
+
+	context.siPoolMask = Skills_GetEnabledSiPoolMask();
+	context.enabledSiClassCount = Skills_CountEnabledSiClassesFromMask(context.siPoolMask);
+	context.versusTeamSize = context.configuredSurvivorLimit == context.configuredPlayerZombieLimit
+		? context.configuredSurvivorLimit
+		: 0;
+	context.versusContext = Skills_ClassifyVersusContext(
+		context.configuredSurvivorLimit,
+		context.configuredPlayerZombieLimit,
+		context.siPoolMask,
+		context.enabledSiClassCount);
+}
+
+stock void Skills_GetLifecyclePolicyForContext(PlayerSkillsModeContextData context, PlayerSkillsLifecyclePolicyData policy)
+{
+	policy.Reset();
+
+	switch (context.baseMode)
+	{
+		case PlayerSkillsGameMode_Scavenge:
+		{
+			policy.roundStartSignal = PlayerSkillsRoundStartSignal_ScavengeRoundStart;
+			policy.roundEndSignal = PlayerSkillsRoundEndSignal_ScavengeRoundFinished;
+			policy.roundLiveSignal = PlayerSkillsRoundLiveSignal_Immediate;
+		}
+		case PlayerSkillsGameMode_Versus, PlayerSkillsGameMode_Coop:
+		{
+			policy.roundStartSignal = PlayerSkillsRoundStartSignal_GenericRoundStart;
+			policy.roundEndSignal = PlayerSkillsRoundEndSignal_GenericRoundEnd;
+			policy.roundLiveSignal = PlayerSkillsRoundLiveSignal_SafeArea;
+		}
+		case PlayerSkillsGameMode_Survival:
+		{
+			policy.roundStartSignal = PlayerSkillsRoundStartSignal_GenericRoundStart;
+			policy.roundEndSignal = PlayerSkillsRoundEndSignal_GenericRoundEnd;
+			policy.roundLiveSignal = PlayerSkillsRoundLiveSignal_Immediate;
+		}
+		default:
+		{
+			policy.roundStartSignal = PlayerSkillsRoundStartSignal_GenericRoundStart;
+			policy.roundEndSignal = PlayerSkillsRoundEndSignal_GenericRoundEnd;
+			policy.roundLiveSignal = PlayerSkillsRoundLiveSignal_Immediate;
+		}
+	}
+}
+
+stock void Skills_RefreshModeContext()
+{
+	PlayerSkillsModeContextData context;
+	PlayerSkillsLifecyclePolicyData policy;
+	Skills_BuildCurrentModeContext(context);
+	Skills_GetLifecyclePolicyForContext(context, policy);
+
+	g_Runtime.baseMode = context.baseMode;
+	g_Runtime.configuredSurvivorLimit = context.configuredSurvivorLimit;
+	g_Runtime.configuredPlayerZombieLimit = context.configuredPlayerZombieLimit;
+	g_Runtime.siPoolMask = context.siPoolMask;
+	g_Runtime.enabledSiClassCount = context.enabledSiClassCount;
+	g_Runtime.versusTeamSize = context.versusTeamSize;
+	g_Runtime.versusContext = context.versusContext;
+	g_Runtime.roundStartSignal = policy.roundStartSignal;
+	g_Runtime.roundEndSignal = policy.roundEndSignal;
+	g_Runtime.roundLiveSignal = policy.roundLiveSignal;
+}
+
+stock bool Skills_ShouldHandleRoundStartEvent(const char[] eventName)
+{
+	switch (g_Runtime.roundStartSignal)
+	{
+		case PlayerSkillsRoundStartSignal_ScavengeRoundStart:
+		{
+			return StrEqual(eventName, "scavenge_round_start", false);
+		}
+		case PlayerSkillsRoundStartSignal_GenericRoundStart:
+		{
+			return StrEqual(eventName, "round_start", false);
+		}
+	}
+
+	return false;
+}
+
+stock bool Skills_ShouldHandleRoundEndEvent(const char[] eventName)
+{
+	switch (g_Runtime.roundEndSignal)
+	{
+		case PlayerSkillsRoundEndSignal_ScavengeRoundFinished:
+		{
+			return StrEqual(eventName, "scavenge_round_finished", false);
+		}
+		case PlayerSkillsRoundEndSignal_GenericRoundEnd:
+		{
+			return StrEqual(eventName, "round_end", false);
+		}
+	}
+
+	return false;
+}
+
+stock void Skills_GetModeBaseName(PlayerSkillsGameMode baseMode, char[] buffer, int maxlen)
+{
+	switch (baseMode)
+	{
+		case PlayerSkillsGameMode_Coop:
+		{
+			strcopy(buffer, maxlen, "Coop");
+		}
+		case PlayerSkillsGameMode_Versus:
+		{
+			strcopy(buffer, maxlen, "Versus");
+		}
+		case PlayerSkillsGameMode_Survival:
+		{
+			strcopy(buffer, maxlen, "Survival");
+		}
+		case PlayerSkillsGameMode_Scavenge:
+		{
+			strcopy(buffer, maxlen, "Scavenge");
+		}
+		default:
+		{
+			strcopy(buffer, maxlen, "Unknown");
+		}
+	}
+}
+
+stock void Skills_GetVersusContextName(PlayerSkillsVersusContextType context, char[] buffer, int maxlen)
+{
+	switch (context)
+	{
+		case PlayerSkillsVersusContext_Hunter1v1:
+		{
+			strcopy(buffer, maxlen, "Hunter1v1");
+		}
+		case PlayerSkillsVersusContext_Smoker1v1:
+		{
+			strcopy(buffer, maxlen, "Smoker1v1");
+		}
+		case PlayerSkillsVersusContext_Boomer1v1:
+		{
+			strcopy(buffer, maxlen, "Boomer1v1");
+		}
+		case PlayerSkillsVersusContext_Spitter1v1:
+		{
+			strcopy(buffer, maxlen, "Spitter1v1");
+		}
+		case PlayerSkillsVersusContext_Jockey1v1:
+		{
+			strcopy(buffer, maxlen, "Jockey1v1");
+		}
+		case PlayerSkillsVersusContext_Charger1v1:
+		{
+			strcopy(buffer, maxlen, "Charger1v1");
+		}
+		case PlayerSkillsVersusContext_MixedPool1v1:
+		{
+			strcopy(buffer, maxlen, "MixedPool1v1");
+		}
+		case PlayerSkillsVersusContext_MixedPool2v2:
+		{
+			strcopy(buffer, maxlen, "MixedPool2v2");
+		}
+		case PlayerSkillsVersusContext_MixedPool3v3:
+		{
+			strcopy(buffer, maxlen, "MixedPool3v3");
+		}
+		case PlayerSkillsVersusContext_Versus4v4:
+		{
+			strcopy(buffer, maxlen, "Versus4v4");
+		}
+		case PlayerSkillsVersusContext_CustomTeamVersus:
+		{
+			strcopy(buffer, maxlen, "CustomTeamVersus");
+		}
+		default:
+		{
+			strcopy(buffer, maxlen, "None");
+		}
+	}
+}
+
+stock bool Skills_IsZombieClassEnabledInCurrentContext(L4D2ZombieClassType zombieClass)
+{
+	if (g_Runtime.baseMode != PlayerSkillsGameMode_Versus)
+	{
+		return true;
+	}
+
+	switch (zombieClass)
+	{
+		case L4D2ZombieClass_Smoker:
+		{
+			return (g_Runtime.siPoolMask & view_as<int>(PlayerSkillsSiPool_Smoker)) != 0;
+		}
+		case L4D2ZombieClass_Boomer:
+		{
+			return (g_Runtime.siPoolMask & view_as<int>(PlayerSkillsSiPool_Boomer)) != 0;
+		}
+		case L4D2ZombieClass_Hunter:
+		{
+			return (g_Runtime.siPoolMask & view_as<int>(PlayerSkillsSiPool_Hunter)) != 0;
+		}
+		case L4D2ZombieClass_Spitter:
+		{
+			return (g_Runtime.siPoolMask & view_as<int>(PlayerSkillsSiPool_Spitter)) != 0;
+		}
+		case L4D2ZombieClass_Jockey:
+		{
+			return (g_Runtime.siPoolMask & view_as<int>(PlayerSkillsSiPool_Jockey)) != 0;
+		}
+		case L4D2ZombieClass_Charger:
+		{
+			return (g_Runtime.siPoolMask & view_as<int>(PlayerSkillsSiPool_Charger)) != 0;
+		}
+	}
+
+	return true;
+}
+
+/**
+ * @brief Returns whether a skill type is enabled in the current mode after applying Versus SI limits.
+ *
+ * @param type           Target skill type.
+ *
+ * @return               True when the skill type should be considered visible/rated in the current mode.
+ */
+stock bool Skills_IsSkillTypeEnabledInCurrentMode(L4D2SkillType type)
+{
+	switch (type)
+	{
+		case L4D2Skill_HunterSkeet, L4D2Skill_HunterSkeetMelee, L4D2Skill_HunterDeadstop, L4D2Skill_HunterHighPounce:
+		{
+			return Skills_IsZombieClassEnabledInCurrentContext(L4D2ZombieClass_Hunter);
+		}
+		case L4D2Skill_BoomerPop, L4D2Skill_BoomerVomitLanded:
+		{
+			return Skills_IsZombieClassEnabledInCurrentContext(L4D2ZombieClass_Boomer);
+		}
+		case L4D2Skill_ChargerLevel, L4D2Skill_ChargerInstaKill, L4D2Skill_ChargerDeathSetup:
+		{
+			return Skills_IsZombieClassEnabledInCurrentContext(L4D2ZombieClass_Charger);
+		}
+		case L4D2Skill_SmokerTongueCut, L4D2Skill_SmokerSelfClear:
+		{
+			return Skills_IsZombieClassEnabledInCurrentContext(L4D2ZombieClass_Smoker);
+		}
+		case L4D2Skill_JockeyHighPounce:
+		{
+			return Skills_IsZombieClassEnabledInCurrentContext(L4D2ZombieClass_Jockey);
+		}
+	}
+
+	return true;
+}
+
+/**
+ * @brief Returns whether a stored skill event is enabled in the current mode after applying Versus SI limits.
+ *
+ * @param eventIndex     Zero-based slot index inside g_SkillEvents.
+ *
+ * @return               True when the event should be considered visible/rated in the current mode.
+ */
+stock bool Skills_IsSkillEventEnabledInCurrentMode(int eventIndex)
+{
+	if (eventIndex < 0 || eventIndex >= L4D2_SKILLS_MAX_EVENTS || g_SkillEvents[eventIndex].id <= 0)
+	{
+		return false;
+	}
+
+	if (!Skills_IsVersusMode())
+	{
+		return true;
+	}
+
+	switch (g_SkillEvents[eventIndex].type)
+	{
+		case L4D2Skill_SpecialPinClear:
+		{
+			return Skills_IsZombieClassEnabledInCurrentContext(view_as<L4D2ZombieClassType>(g_SkillEvents[eventIndex].zombieClass));
+		}
+		case L4D2Skill_CarAlarmTriggered:
+		{
+			if (g_SkillEvents[eventIndex].reason == view_as<int>(L4D2CarAlarm_Boomer))
+			{
+				return Skills_IsZombieClassEnabledInCurrentContext(L4D2ZombieClass_Boomer);
+			}
+
+			return true;
+		}
+	}
+
+	return Skills_IsSkillTypeEnabledInCurrentMode(g_SkillEvents[eventIndex].type);
+}
+
 /**
  * @brief Returns the public 0-3 star rating for a stored skill event.
  *
@@ -530,6 +978,11 @@ stock bool Skills_IsVersusSpecialLimitEnabled(L4D2ZombieClassType zombieClass)
 stock int Skills_GetEventRating(int eventIndex)
 {
 	if (eventIndex < 0 || eventIndex >= L4D2_SKILLS_MAX_EVENTS || g_SkillEvents[eventIndex].id <= 0)
+	{
+		return 0;
+	}
+
+	if (!Skills_IsSkillEventEnabledInCurrentMode(eventIndex))
 	{
 		return 0;
 	}

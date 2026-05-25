@@ -446,6 +446,34 @@ void API_WriteWitchSessionProperties(Handle kv, int eventIndex, int sessionIndex
 	KvGoBack(kv);
 }
 
+void API_WriteEventContextBlock(Handle kv)
+{
+	if (!KvJumpToKey(kv, "context", true))
+	{
+		return;
+	}
+
+	char baseModeName[24];
+	char versusContextName[32];
+	Skills_GetModeBaseName(g_Runtime.baseMode, baseModeName, sizeof(baseModeName));
+	Skills_GetVersusContextName(g_Runtime.versusContext, versusContextName, sizeof(versusContextName));
+
+	KvSetNum(kv, "base_mode", g_Runtime.baseMode);
+	KvSetString(kv, "base_mode_name", baseModeName);
+	KvSetNum(kv, "survivor_limit", g_Runtime.configuredSurvivorLimit);
+	KvSetNum(kv, "infected_limit", g_Runtime.configuredPlayerZombieLimit);
+	KvSetNum(kv, "si_pool_mask", g_Runtime.siPoolMask);
+	KvSetNum(kv, "enabled_si_classes", g_Runtime.enabledSiClassCount);
+	KvSetNum(kv, "team_size", g_Runtime.versusTeamSize);
+	KvSetNum(kv, "versus_context", g_Runtime.versusContext);
+	KvSetString(kv, "versus_context_name", versusContextName);
+	KvSetNum(kv, "round_start_signal", g_Runtime.roundStartSignal);
+	KvSetNum(kv, "round_end_signal", g_Runtime.roundEndSignal);
+	KvSetNum(kv, "round_live_signal", g_Runtime.roundLiveSignal);
+
+	KvGoBack(kv);
+}
+
 public int Native_PlayerSkills_IsEventValid(Handle plugin, int numParams)
 {
 	return Skills_IsEventValid(GetNativeCell(1));
@@ -470,6 +498,7 @@ public int Native_PlayerSkills_FillEventKeyValues(Handle plugin, int numParams)
 	KvSetNum(kv, "id", g_SkillEvents[eventIndex].id);
 	KvSetNum(kv, "type_id", g_SkillEvents[eventIndex].type);
 
+	API_WriteEventContextBlock(kv);
 	API_SetEventPlayerKeys(kv, "actor", g_SkillEvents[eventIndex].actor);
 	API_WriteEventAssists(kv, eventIndex);
 	API_WriteEventSpecialRoles(kv, eventIndex);

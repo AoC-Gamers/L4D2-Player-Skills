@@ -328,7 +328,7 @@ void Boss_EventTankSpawn(Event event)
 
 void Boss_OnTankTakeDamagePost(int victim, int attacker, int inflictor, float damage, int damagetype)
 {
-	if (!Skills_IsEnabled() || !IsValidTank(victim) || !IsValidSurvivor(attacker))
+	if (!Skills_IsRoundLive() || !IsValidTank(victim) || !IsValidSurvivor(attacker))
 	{
 		return;
 	}
@@ -836,7 +836,7 @@ void Boss_OnWitchSetHarasser(int witch, int victim)
 
 Action Boss_OnWitchTakeDamage(int witch, int &attacker, int &inflictor, float &damage, int &damagetype)
 {
-	if (!Skills_IsEnabled() || !IsWitchEntity(witch))
+	if (!Skills_IsRoundLive() || !IsWitchEntity(witch))
 	{
 		return Plugin_Continue;
 	}
@@ -871,7 +871,7 @@ Action Boss_OnWitchTakeDamage(int witch, int &attacker, int &inflictor, float &d
 
 void Boss_OnWitchTakeDamagePost(int witch, int attacker, int inflictor, float damage, int damagetype)
 {
-	if (!Skills_IsEnabled() || !IsWitchEntity(witch))
+	if (!Skills_IsRoundLive() || !IsWitchEntity(witch))
 	{
 		return;
 	}

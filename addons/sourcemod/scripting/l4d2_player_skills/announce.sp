@@ -57,7 +57,9 @@ Action Command_Skills(int client, int args)
 
 	for (int index = 0; index < L4D2_SKILLS_MAX_EVENTS; index++)
 	{
-		if (g_SkillEvents[index].id <= 0 || !g_SkillEvents[index].actor.IsSamePersistentPlayer(target))
+		if (g_SkillEvents[index].id <= 0
+			|| !g_SkillEvents[index].actor.IsSamePersistentPlayer(target)
+			|| !Skills_IsSkillEventEnabledInCurrentMode(index))
 		{
 			continue;
 		}
@@ -140,17 +142,48 @@ void Announce_RenderSkillsTable(int client, int target)
 	Format(line, sizeof(line), "Player: %N | Team: %s", target, team == L4DTeam_Survivor ? "Survivor" : "Infected");
 	ConsolePanel_AddHeaderLine(panel, line);
 
+	char baseModeName[24];
+	char versusContextName[32];
+	Skills_GetModeBaseName(g_Runtime.baseMode, baseModeName, sizeof(baseModeName));
+	Skills_GetVersusContextName(g_Runtime.versusContext, versusContextName, sizeof(versusContextName));
+	if (g_Runtime.baseMode == PlayerSkillsGameMode_Versus && g_Runtime.versusContext != PlayerSkillsVersusContext_None)
+	{
+		Format(line, sizeof(line), "Mode: %s | Context: %s | TeamSize: %d", baseModeName, versusContextName, g_Runtime.versusTeamSize);
+	}
+	else
+	{
+		Format(line, sizeof(line), "Mode: %s", baseModeName);
+	}
+	ConsolePanel_AddHeaderLine(panel, line);
+
 	if (team == L4DTeam_Survivor)
 	{
+		bool showHunter = Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_HunterSkeet);
+		bool showBoomer = Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_BoomerPop);
+		bool showCharger = Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_ChargerLevel);
+		bool showSmoker = Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_SmokerTongueCut);
+
 		ConsoleTable_AddColumn(panel.table, "Player", 18, ConsoleTableAlignment_Left, ConsoleTableCellType_String);
-		ConsoleTable_AddColumn(panel.table, "Sk", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
-		ConsoleTable_AddColumn(panel.table, "SM", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
-		ConsoleTable_AddColumn(panel.table, "DS", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
-		ConsoleTable_AddColumn(panel.table, "BP", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
-		ConsoleTable_AddColumn(panel.table, "Lv", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
+		if (showHunter)
+		{
+			ConsoleTable_AddColumn(panel.table, "Sk", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
+			ConsoleTable_AddColumn(panel.table, "SM", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
+			ConsoleTable_AddColumn(panel.table, "DS", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
+		}
+		if (showBoomer)
+		{
+			ConsoleTable_AddColumn(panel.table, "BP", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
+		}
+		if (showCharger)
+		{
+			ConsoleTable_AddColumn(panel.table, "Lv", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
+		}
 		ConsoleTable_AddColumn(panel.table, "Cr", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
-		ConsoleTable_AddColumn(panel.table, "TC", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
-		ConsoleTable_AddColumn(panel.table, "SC", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
+		if (showSmoker)
+		{
+			ConsoleTable_AddColumn(panel.table, "TC", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
+			ConsoleTable_AddColumn(panel.table, "SC", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
+		}
 		ConsoleTable_AddColumn(panel.table, "RS", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
 
 		int players[8];
@@ -166,29 +199,83 @@ void Announce_RenderSkillsTable(int client, int target)
 			Format(playerName, sizeof(playerName), "%s%N", players[i] == target ? ">" : "", players[i]);
 
 			ConsoleTable_AddStringCell(panel.table, playerName);
-			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_HunterSkeet));
-			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_HunterSkeetMelee));
-			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_HunterDeadstop));
-			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_BoomerPop));
-			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_ChargerLevel));
+			if (showHunter)
+			{
+				ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_HunterSkeet));
+				ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_HunterSkeetMelee));
+				ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_HunterDeadstop));
+			}
+			if (showBoomer)
+			{
+				ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_BoomerPop));
+			}
+			if (showCharger)
+			{
+				ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_ChargerLevel));
+			}
 			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_WitchDead));
-			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_SmokerTongueCut));
-			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_SmokerSelfClear));
+			if (showSmoker)
+			{
+				ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_SmokerTongueCut));
+				ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_SmokerSelfClear));
+			}
 			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_TankRockSkeet));
 			ConsoleTable_EndRow(panel.table);
 		}
 
-		ConsolePanel_AddHeaderLine(panel, "Sk=Skeets SM=SkeetMelees DS=Deadstops BP=BoomerPops Lv=Levels");
-		ConsolePanel_AddHeaderLine(panel, "Cr=Crowns TC=TongueCuts SC=SmokerClears RS=RockSkeets");
+		char legendA[160];
+		char legendB[160];
+		legendA[0] = '\0';
+		legendB[0] = '\0';
+		if (showHunter)
+		{
+			StrCat(legendA, sizeof(legendA), "Sk=Skeets SM=SkeetMelees DS=Deadstops ");
+		}
+		if (showBoomer)
+		{
+			StrCat(legendA, sizeof(legendA), "BP=BoomerPops ");
+		}
+		if (showCharger)
+		{
+			StrCat(legendA, sizeof(legendA), "Lv=Levels ");
+		}
+		StrCat(legendB, sizeof(legendB), "Cr=Crowns ");
+		if (showSmoker)
+		{
+			StrCat(legendB, sizeof(legendB), "TC=TongueCuts SC=SmokerClears ");
+		}
+		StrCat(legendB, sizeof(legendB), "RS=RockSkeets");
+		if (legendA[0] != '\0')
+		{
+			ConsolePanel_AddHeaderLine(panel, legendA);
+		}
+		ConsolePanel_AddHeaderLine(panel, legendB);
 	}
 	else
 	{
+		bool showHunter = Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_HunterHighPounce);
+		bool showJockey = Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_JockeyHighPounce);
+		bool showBoomer = Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_BoomerVomitLanded);
+		bool showCharger = Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_ChargerInstaKill);
+
 		ConsoleTable_AddColumn(panel.table, "Player", 18, ConsoleTableAlignment_Left, ConsoleTableCellType_String);
-		ConsoleTable_AddColumn(panel.table, "HP", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
-		ConsoleTable_AddColumn(panel.table, "JP", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
-		ConsoleTable_AddColumn(panel.table, "BV", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
-		ConsoleTable_AddColumn(panel.table, "IK", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
-		ConsoleTable_AddColumn(panel.table, "DS", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
+		if (showHunter)
+		{
+			ConsoleTable_AddColumn(panel.table, "HP", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
+		}
+		if (showJockey)
+		{
+			ConsoleTable_AddColumn(panel.table, "JP", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
+		}
+		if (showBoomer)
+		{
+			ConsoleTable_AddColumn(panel.table, "BV", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
+		}
+		if (showCharger)
+		{
+			ConsoleTable_AddColumn(panel.table, "IK", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
+			ConsoleTable_AddColumn(panel.table, "DS", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
+		}
 		ConsoleTable_AddColumn(panel.table, "CA", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
 		ConsoleTable_AddColumn(panel.table, "RH", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
 
@@ -205,18 +292,54 @@ void Announce_RenderSkillsTable(int client, int target)
 			Format(playerName, sizeof(playerName), "%s%N", players[i] == target ? ">" : "", players[i]);
 
 			ConsoleTable_AddStringCell(panel.table, playerName);
-			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_HunterHighPounce));
-			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_JockeyHighPounce));
-			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_BoomerVomitLanded));
-			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_ChargerInstaKill));
-			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_ChargerDeathSetup));
+			if (showHunter)
+			{
+				ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_HunterHighPounce));
+			}
+			if (showJockey)
+			{
+				ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_JockeyHighPounce));
+			}
+			if (showBoomer)
+			{
+				ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_BoomerVomitLanded));
+			}
+			if (showCharger)
+			{
+				ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_ChargerInstaKill));
+				ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_ChargerDeathSetup));
+			}
 			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_CarAlarmTriggered));
 			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_TankRockHit));
 			ConsoleTable_EndRow(panel.table);
 		}
 
-		ConsolePanel_AddHeaderLine(panel, "HP=HunterPounces JP=JockeyPounces BV=BoomerVomit IK=InstaKills");
-		ConsolePanel_AddHeaderLine(panel, "DS=DeathSetups CA=CarAlarms RH=RockHits");
+		char legendA[160];
+		char legendB[160];
+		legendA[0] = '\0';
+		legendB[0] = '\0';
+		if (showHunter)
+		{
+			StrCat(legendA, sizeof(legendA), "HP=HunterPounces ");
+		}
+		if (showJockey)
+		{
+			StrCat(legendA, sizeof(legendA), "JP=JockeyPounces ");
+		}
+		if (showBoomer)
+		{
+			StrCat(legendA, sizeof(legendA), "BV=BoomerVomit ");
+		}
+		if (showCharger)
+		{
+			StrCat(legendB, sizeof(legendB), "IK=InstaKills DS=DeathSetups ");
+		}
+		StrCat(legendB, sizeof(legendB), "CA=CarAlarms RH=RockHits");
+		if (legendA[0] != '\0')
+		{
+			ConsolePanel_AddHeaderLine(panel, legendA);
+		}
+		ConsolePanel_AddHeaderLine(panel, legendB);
 	}
 
 	ConsolePanel_RenderToClient(panel, client);
@@ -254,6 +377,11 @@ void Announce_AppendSkillStat(int client, char[] line, int maxlen, const int cou
 		return;
 	}
 
+	if (!Skills_IsSkillTypeEnabledInCurrentMode(type))
+	{
+		return;
+	}
+
 	char label[48];
 	FormatEx(label, sizeof(label), "%T", phrase, client);
 
@@ -275,10 +403,18 @@ int Announce_CountSkillTypeForClient(int client, L4D2SkillType type)
 		return 0;
 	}
 
+	if (!Skills_IsSkillTypeEnabledInCurrentMode(type))
+	{
+		return 0;
+	}
+
 	int count = 0;
 	for (int index = 0; index < L4D2_SKILLS_MAX_EVENTS; index++)
 	{
-		if (g_SkillEvents[index].id <= 0 || g_SkillEvents[index].type != type || !g_SkillEvents[index].actor.IsSamePersistentPlayer(client))
+		if (g_SkillEvents[index].id <= 0
+			|| g_SkillEvents[index].type != type
+			|| !g_SkillEvents[index].actor.IsSamePersistentPlayer(client)
+			|| !Skills_IsSkillEventEnabledInCurrentMode(index))
 		{
 			continue;
 		}

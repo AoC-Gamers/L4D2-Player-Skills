@@ -92,6 +92,54 @@ enum PlayerSkillsGameMode
 	PlayerSkillsGameMode_Scavenge
 }
 
+enum PlayerSkillsSiPoolFlag
+{
+	PlayerSkillsSiPool_None = 0,
+	PlayerSkillsSiPool_Smoker = 1 << 0,
+	PlayerSkillsSiPool_Boomer = 1 << 1,
+	PlayerSkillsSiPool_Hunter = 1 << 2,
+	PlayerSkillsSiPool_Spitter = 1 << 3,
+	PlayerSkillsSiPool_Jockey = 1 << 4,
+	PlayerSkillsSiPool_Charger = 1 << 5
+}
+
+enum PlayerSkillsVersusContextType
+{
+	PlayerSkillsVersusContext_None = 0,
+	PlayerSkillsVersusContext_Hunter1v1,
+	PlayerSkillsVersusContext_Smoker1v1,
+	PlayerSkillsVersusContext_Boomer1v1,
+	PlayerSkillsVersusContext_Spitter1v1,
+	PlayerSkillsVersusContext_Jockey1v1,
+	PlayerSkillsVersusContext_Charger1v1,
+	PlayerSkillsVersusContext_MixedPool1v1,
+	PlayerSkillsVersusContext_MixedPool2v2,
+	PlayerSkillsVersusContext_MixedPool3v3,
+	PlayerSkillsVersusContext_Versus4v4,
+	PlayerSkillsVersusContext_CustomTeamVersus
+}
+
+enum PlayerSkillsRoundStartSignalType
+{
+	PlayerSkillsRoundStartSignal_None = 0,
+	PlayerSkillsRoundStartSignal_GenericRoundStart,
+	PlayerSkillsRoundStartSignal_ScavengeRoundStart
+}
+
+enum PlayerSkillsRoundEndSignalType
+{
+	PlayerSkillsRoundEndSignal_None = 0,
+	PlayerSkillsRoundEndSignal_GenericRoundEnd,
+	PlayerSkillsRoundEndSignal_ScavengeRoundFinished
+}
+
+enum PlayerSkillsRoundLiveSignalType
+{
+	PlayerSkillsRoundLiveSignal_None = 0,
+	PlayerSkillsRoundLiveSignal_Immediate,
+	PlayerSkillsRoundLiveSignal_SafeArea
+}
+
 enum PlayerSkillsCvarScope
 {
 	PlayerSkillsCvarScope_Global = 0,
@@ -99,6 +147,74 @@ enum PlayerSkillsCvarScope
 	PlayerSkillsCvarScope_Versus,
 	PlayerSkillsCvarScope_Survival,
 	PlayerSkillsCvarScope_Scavenge
+}
+
+enum struct PlayerSkillsModeContextData
+{
+	PlayerSkillsGameMode baseMode;
+	bool isVersusMode;
+	int configuredSurvivorLimit;
+	int configuredPlayerZombieLimit;
+	int siPoolMask;
+	int enabledSiClassCount;
+	int versusTeamSize;
+	PlayerSkillsVersusContextType versusContext;
+
+	void Reset()
+	{
+		this.baseMode = PlayerSkillsGameMode_Unknown;
+		this.isVersusMode = false;
+		this.configuredSurvivorLimit = 0;
+		this.configuredPlayerZombieLimit = 0;
+		this.siPoolMask = view_as<int>(PlayerSkillsSiPool_None);
+		this.enabledSiClassCount = 0;
+		this.versusTeamSize = 0;
+		this.versusContext = PlayerSkillsVersusContext_None;
+	}
+}
+
+enum struct PlayerSkillsLifecyclePolicyData
+{
+	PlayerSkillsRoundStartSignalType roundStartSignal;
+	PlayerSkillsRoundEndSignalType roundEndSignal;
+	PlayerSkillsRoundLiveSignalType roundLiveSignal;
+
+	void Reset()
+	{
+		this.roundStartSignal = PlayerSkillsRoundStartSignal_None;
+		this.roundEndSignal = PlayerSkillsRoundEndSignal_None;
+		this.roundLiveSignal = PlayerSkillsRoundLiveSignal_None;
+	}
+}
+
+enum struct PlayerSkillsRuntimeState
+{
+	PlayerSkillsGameMode baseMode;
+	bool roundLive;
+	int configuredSurvivorLimit;
+	int configuredPlayerZombieLimit;
+	int siPoolMask;
+	int enabledSiClassCount;
+	int versusTeamSize;
+	PlayerSkillsVersusContextType versusContext;
+	PlayerSkillsRoundStartSignalType roundStartSignal;
+	PlayerSkillsRoundEndSignalType roundEndSignal;
+	PlayerSkillsRoundLiveSignalType roundLiveSignal;
+
+	void Reset()
+	{
+		this.baseMode = PlayerSkillsGameMode_Unknown;
+		this.roundLive = false;
+		this.configuredSurvivorLimit = 0;
+		this.configuredPlayerZombieLimit = 0;
+		this.siPoolMask = view_as<int>(PlayerSkillsSiPool_None);
+		this.enabledSiClassCount = 0;
+		this.versusTeamSize = 0;
+		this.versusContext = PlayerSkillsVersusContext_None;
+		this.roundStartSignal = PlayerSkillsRoundStartSignal_None;
+		this.roundEndSignal = PlayerSkillsRoundEndSignal_None;
+		this.roundLiveSignal = PlayerSkillsRoundLiveSignal_None;
+	}
 }
 
 /**
