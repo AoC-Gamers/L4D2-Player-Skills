@@ -482,6 +482,16 @@ void Boss_EventWitchKilled(Event event)
 		return;
 	}
 
+	// If the Witch session already produced a visible announce path (for example
+	// the remaining-health summary triggered on incap), do not emit an additional
+	// death-side announce for the same Witch lifecycle.
+	if (g_BossSessions[sessionIndex].printed)
+	{
+		g_BossSessions[sessionIndex].lastHealth = 0;
+		g_BossSessions[sessionIndex].state = L4D2BossState_Printed;
+		return;
+	}
+
 	if (IsValidTank(killer))
 	{
 		Announce_WitchKilledByTank(sessionIndex, killer);
@@ -497,6 +507,14 @@ void Boss_EventWitchKilled(Event event)
 	}
 
 	Boss_CreateWitchDeadEvent(sessionIndex, killer);
+
+	if (g_BossSessions[sessionIndex].crownDetected)
+	{
+		g_BossSessions[sessionIndex].lastHealth = 0;
+		g_BossSessions[sessionIndex].printed = true;
+		g_BossSessions[sessionIndex].state = L4D2BossState_Printed;
+		return;
+	}
 
 	g_BossSessions[sessionIndex].lastHealth = 0;
 	g_BossSessions[sessionIndex].state = L4D2BossState_Dead;
@@ -529,7 +547,7 @@ int Boss_EnsureTankSession(int client)
 		return -1;
 	}
 
-	int maxHealth = GetClientHealth(client);
+	int maxHealth = Skills_GetSpecialMaxHealth(L4D2ZombieClass_Tank);
 	L4D2BossSession(slot).Start(L4D2Boss_Tank, client, userid, maxHealth);
 	Skills_Debug(PlayerSkillsDebug_Boss, "Started Tank session. session=%d userid=%d client=%d maxhp=%d", g_BossSessions[slot].id, userid, client, maxHealth);
 	return slot;
@@ -537,6 +555,17 @@ int Boss_EnsureTankSession(int client)
 
 int Boss_EnsureWitchSession(int entity)
 {
+	if (!IsWitchEntity(entity))
+	{
+		return -1;
+	}
+
+	int health = GetEntProp(entity, Prop_Data, "m_iHealth");
+	if (health <= 0)
+	{
+		return -1;
+	}
+
 	int sessionIndex = Boss_FindWitchSessionByEntity(entity);
 	if (sessionIndex != -1)
 	{

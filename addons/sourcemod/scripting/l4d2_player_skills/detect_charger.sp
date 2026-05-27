@@ -318,6 +318,8 @@ void Detect_HandleChargerHurt(int victim, int attacker, int damageType, int appl
 				Announce_Skill(eventId);
 			}
 		}
+
+		Detect_MarkSimpleKillSuppressed(victim);
 	}
 
 	if (postHealth > 0)

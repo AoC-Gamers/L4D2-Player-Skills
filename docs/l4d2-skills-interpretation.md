@@ -170,3 +170,74 @@ Esta interpretación se usa como referencia para:
 - refactor de enums;
 - API pública;
 - y copy visible al jugador.
+
+---
+
+## 10. Announce Precedence
+
+Además de interpretar qué `skill type` representa una jugada, el proyecto necesita limitar announces redundantes cuando una misma secuencia podría producir:
+
+- una `skill` rica o principal;
+- una `kill` simple de SI;
+- o un resumen de sesión o boss.
+
+La regla general es:
+
+- si una secuencia ya produjo una jugada más rica y específica, no se debe anunciar además la variante genérica;
+- el evento puede seguir existiendo como dato interno o de API, pero el announce visible debe preferir una sola lectura principal de la jugada.
+
+### 10.1. Orden de precedencia
+
+El orden actual de precedencia es:
+
+1. `skill` rica o principal
+2. `kill` simple resumida
+3. resumen de sesión o boss
+
+En otras palabras:
+
+- una `skill` rica gana sobre una `kill` simple;
+- una `kill` rica de boss gana sobre el resumen general del mismo lifecycle;
+- un resumen de sesión solo debe salir cuando la secuencia no quedó ya representada por un announce más fuerte del mismo lifecycle.
+
+### 10.2. Matriz actual
+
+| Secuencia | Announce permitido | Announce suprimido |
+|---|---|---|
+| `HunterSkeet` | `HunterSkeet` | `HunterKill` |
+| `HunterSkeetMelee` | `HunterSkeetMelee` | `HunterKill` |
+| `SmokerSelfClear` con kill | `SmokerSelfClear` | `SmokerKill` |
+| `BoomerPop` | `BoomerPop` | `BoomerKill` |
+| `ChargerLevel` | `ChargerLevel` | `ChargerKill` |
+| `WitchIncap` con resumen de vida restante | resumen de `Witch` en incap | `WitchDead` o resumen posterior de la misma sesión |
+| `WitchCrown` | `WitchCrown` | resumen completo de daño de la misma `Witch` |
+
+### 10.3. Casos que sí pueden coexistir
+
+No toda secuencia múltiple implica duplicado.
+
+Ejemplos aceptables:
+
+- `BoomerVomitLanded` no representa la misma jugada que `BoomerKill`
+  - por eso puede coexistir con la muerte del Boomer si no hubo `BoomerPop`
+- `TankRockHit` o `TankRockSkeet` no representan lo mismo que el resumen final de daño del `Tank`
+  - por eso pueden coexistir con el cierre de sesión del boss
+- `SpecialPinClear` no representa lo mismo que una simple kill del infectado fuera de control
+  - pero si el mismo kill ya quedó representado por una jugada más específica, la versión genérica no debe volver a imprimirse
+
+### 10.4. Regla de implementación
+
+Cuando se agregue una nueva detección, se debe responder primero:
+
+> ¿esta jugada describe mejor la misma secuencia que otra salida ya existente?
+
+Si la respuesta es sí:
+
+- definir precedencia explícita;
+- elegir qué announce sobrevive;
+- suprimir el announce genérico o resumido.
+
+Si la respuesta es no:
+
+- ambas salidas pueden coexistir;
+- pero deben describir capas distintas del gameplay y no repetir la misma lectura del evento.

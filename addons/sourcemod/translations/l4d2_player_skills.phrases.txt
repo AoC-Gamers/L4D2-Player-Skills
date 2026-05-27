@@ -527,6 +527,48 @@
 		"es"		"{olive}{1}{default} fue golpeado por una {red}roca del Tank{default}."
 	}
 
+	"SpecialInfectedKill"
+	{
+		"#format"	"{1:s},{2:s},{3:d}"
+		"en"		"{red}{1}{default} was killed by {olive}{2}{default} [{green}{3}{default} dmg]."
+		"es"		"{red}{1}{default} fue asesinado por {olive}{2}{default} [{green}{3}{default} dmg]."
+	}
+
+	"SpecialInfectedKillAssist"
+	{
+		"#format"	"{1:s},{2:s},{3:d},{4:s},{5:d}"
+		"en"		"{red}{1}{default} was killed by {olive}{2}{default} [{green}{3}{default} dmg], assisted by {olive}{4}{default} [{green}{5}{default} dmg]."
+		"es"		"{red}{1}{default} fue asesinado por {olive}{2}{default} [{green}{3}{default} dmg], asistido por {olive}{4}{default} [{green}{5}{default} dmg]."
+	}
+
+	"SpecialInfectedKillAssistMulti"
+	{
+		"#format"	"{1:s},{2:s},{3:d},{4:s},{5:d},{6:s},{7:d}"
+		"en"		"{red}{1}{default} was killed by {olive}{2}{default} [{green}{3}{default} dmg], assisted by {olive}{4}{default} [{green}{5}{default} dmg], {olive}{6}{default} [{green}{7}{default} dmg]."
+		"es"		"{red}{1}{default} fue asesinado por {olive}{2}{default} [{green}{3}{default} dmg], asistido por {olive}{4}{default} [{green}{5}{default} dmg], {olive}{6}{default} [{green}{7}{default} dmg]."
+	}
+
+	"SpecialInfectedKillLead"
+	{
+		"#format"	"{1:s},{2:s},{3:d}"
+		"en"		"{red}{1}{default} was killed by {olive}{2}{default} [{green}{3}{default} dmg]"
+		"es"		"{red}{1}{default} fue asesinado por {olive}{2}{default} [{green}{3}{default} dmg]"
+	}
+
+	"SpecialInfectedKillAssistHead"
+	{
+		"#format"	"{1:s},{2:d}"
+		"en"		", assisted by {olive}{1}{default} [{green}{2}{default} dmg]"
+		"es"		", asistido por {olive}{1}{default} [{green}{2}{default} dmg]"
+	}
+
+	"SpecialInfectedKillAssistTail"
+	{
+		"#format"	"{1:s},{2:d}"
+		"en"		", {olive}{1}{default} [{green}{2}{default} dmg]"
+		"es"		", {olive}{1}{default} [{green}{2}{default} dmg]"
+	}
+
 	"BossTankHealthRemaining"
 	{
 		"#format"	"{1:s},{2:d}"

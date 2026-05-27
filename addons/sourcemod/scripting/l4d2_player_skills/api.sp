@@ -54,6 +54,34 @@ void API_CreateNatives()
 
 Action API_FireSkillDetected(int eventId, L4D2SkillType type)
 {
+	int eventIndex = Skills_GetEventIndex(eventId);
+	if (eventIndex != -1)
+	{
+		char typeName[48];
+		char actorName[64];
+		char victimName[64];
+		char assisterName[64];
+		char pinVictimName[64];
+		Skills_GetSkillTypeName(type, typeName, sizeof(typeName));
+		Skills_FormatEventPlayerRoleName(eventIndex, 0, actorName, sizeof(actorName));
+		Skills_FormatEventPlayerRoleName(eventIndex, 1, victimName, sizeof(victimName));
+		Skills_FormatEventPlayerRoleName(eventIndex, 2, assisterName, sizeof(assisterName));
+		Skills_FormatEventPlayerRoleName(eventIndex, 3, pinVictimName, sizeof(pinVictimName));
+
+		Skills_Debug(PlayerSkillsDebug_Core,
+			"Skill detected. id=%d type=%s actor=%s victim=%s assister=%s pin=%s damage=%d shots=%d amount=%d reason=%d",
+			eventId,
+			typeName,
+			actorName,
+			victimName,
+			assisterName,
+			pinVictimName,
+			g_SkillEvents[eventIndex].damage,
+			g_SkillEvents[eventIndex].shots,
+			g_SkillEvents[eventIndex].amount,
+			g_SkillEvents[eventIndex].reason);
+	}
+
 	if (g_hForwardSkillDetected == INVALID_HANDLE)
 	{
 		return Plugin_Continue;
@@ -66,11 +94,30 @@ Action API_FireSkillDetected(int eventId, L4D2SkillType type)
 	Call_PushCell(type);
 	Call_Finish(result);
 
+	if (eventIndex != -1)
+	{
+		char typeName[48];
+		Skills_GetSkillTypeName(type, typeName, sizeof(typeName));
+		Skills_Debug(PlayerSkillsDebug_Api, "Skill forward finished. id=%d type=%s result=%d", eventId, typeName, result);
+	}
+
 	return result;
 }
 
 void API_FireSkillAnnounced(int eventId, L4D2SkillType type)
 {
+	int eventIndex = Skills_GetEventIndex(eventId);
+	if (eventIndex != -1)
+	{
+		char typeName[48];
+		char actorName[64];
+		char victimName[64];
+		Skills_GetSkillTypeName(type, typeName, sizeof(typeName));
+		Skills_FormatEventPlayerRoleName(eventIndex, 0, actorName, sizeof(actorName));
+		Skills_FormatEventPlayerRoleName(eventIndex, 1, victimName, sizeof(victimName));
+		Skills_Debug(PlayerSkillsDebug_Announce, "Skill announced. id=%d type=%s actor=%s victim=%s", eventId, typeName, actorName, victimName);
+	}
+
 	if (g_hForwardSkillAnnounced == INVALID_HANDLE)
 	{
 		return;
@@ -189,7 +236,7 @@ void API_SetEventPlayerKeys(Handle kv, const char[] prefix, L4D2PlayerRef player
 
 void API_WriteEventAssists(Handle kv, int eventIndex)
 {
-	int assistsCount = g_SkillEvents[eventIndex].assister.userid > 0 ? 1 : 0;
+	int assistsCount = g_SkillEvents[eventIndex].assistsCount;
 	KvSetNum(kv, "assists_count", assistsCount);
 
 	if (!KvJumpToKey(kv, "assists", true))
@@ -197,17 +244,18 @@ void API_WriteEventAssists(Handle kv, int eventIndex)
 		return;
 	}
 
-	if (assistsCount == 1)
+	for (int i = 0; i < assistsCount && i < L4D2_SKILLS_MAX_EVENT_ASSISTS; i++)
 	{
 		char indexKey[8];
-		IntToString(0, indexKey, sizeof(indexKey));
+		IntToString(i, indexKey, sizeof(indexKey));
 
 		if (KvJumpToKey(kv, indexKey, true))
 		{
-			KvSetNum(kv, "userid", g_SkillEvents[eventIndex].assister.userid);
-			KvSetNum(kv, "accountid", g_SkillEvents[eventIndex].assister.accountId);
-			KvSetString(kv, "name", g_SkillEvents[eventIndex].assister.name);
-			KvSetNum(kv, "bot", g_SkillEvents[eventIndex].assister.bot ? 1 : 0);
+			KvSetNum(kv, "userid", g_SkillEvents[eventIndex].assists[i].userid);
+			KvSetNum(kv, "accountid", g_SkillEvents[eventIndex].assists[i].accountId);
+			KvSetString(kv, "name", g_SkillEvents[eventIndex].assists[i].name);
+			KvSetNum(kv, "bot", g_SkillEvents[eventIndex].assists[i].bot ? 1 : 0);
+			KvSetNum(kv, "damage", g_SkillEvents[eventIndex].assistDamage[i]);
 			KvGoBack(kv);
 		}
 	}
@@ -235,6 +283,16 @@ void API_WriteEventSkillProperties(Handle kv, int eventIndex)
 	if (g_SkillEvents[eventIndex].damage > 0)
 	{
 		KvSetNum(kv, "damage", g_SkillEvents[eventIndex].damage);
+	}
+
+	if (g_SkillEvents[eventIndex].actorDamage > 0)
+	{
+		KvSetNum(kv, "actor_damage", g_SkillEvents[eventIndex].actorDamage);
+	}
+
+	if (g_SkillEvents[eventIndex].assisterDamage > 0)
+	{
+		KvSetNum(kv, "assister_damage", g_SkillEvents[eventIndex].assisterDamage);
 	}
 
 	if (g_SkillEvents[eventIndex].chipDamage > 0)

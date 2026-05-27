@@ -29,6 +29,12 @@ enum L4D2SkillType
 	L4D2Skill_BoomerVomitLanded,
 	L4D2Skill_BunnyHopStreak,
 	L4D2Skill_CarAlarmTriggered,
+	L4D2Skill_SmokerKill,
+	L4D2Skill_BoomerKill,
+	L4D2Skill_HunterKill,
+	L4D2Skill_SpitterKill,
+	L4D2Skill_JockeyKill,
+	L4D2Skill_ChargerKill,
 
 	L4D2Skill_Size
 }
@@ -59,7 +65,13 @@ stock char g_sL4D2SkillType[L4D2Skill_Size][] =
 	"SpecialPinClear",
 	"BoomerVomitLanded",
 	"BunnyHopStreak",
-	"CarAlarmTriggered"
+	"CarAlarmTriggered",
+	"SmokerKill",
+	"BoomerKill",
+	"HunterKill",
+	"SpitterKill",
+	"JockeyKill",
+	"ChargerKill"
 };
 
 /**

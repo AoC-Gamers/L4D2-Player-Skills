@@ -630,46 +630,18 @@ stock int Skills_CountEnabledSiClassesFromMask(int mask)
 	return count;
 }
 
-stock PlayerSkillsVersusContextType Skills_ClassifyVersusContext(int survivorLimit, int playerZombieLimit, int siPoolMask, int enabledSiClassCount)
+stock PlayerSkillsVersusContextType Skills_ClassifyVersusContext(int survivorLimit, int playerZombieLimit, int enabledSiClassCount)
 {
 	if (!Skills_IsVersusMode() || survivorLimit <= 0 || playerZombieLimit <= 0 || survivorLimit != playerZombieLimit || enabledSiClassCount <= 0)
 	{
 		return PlayerSkillsVersusContext_None;
 	}
 
-	if (survivorLimit == 1 && enabledSiClassCount == 1)
-	{
-		if ((siPoolMask & view_as<int>(PlayerSkillsSiPool_Hunter)) != 0)
-		{
-			return PlayerSkillsVersusContext_Hunter1v1;
-		}
-		if ((siPoolMask & view_as<int>(PlayerSkillsSiPool_Smoker)) != 0)
-		{
-			return PlayerSkillsVersusContext_Smoker1v1;
-		}
-		if ((siPoolMask & view_as<int>(PlayerSkillsSiPool_Boomer)) != 0)
-		{
-			return PlayerSkillsVersusContext_Boomer1v1;
-		}
-		if ((siPoolMask & view_as<int>(PlayerSkillsSiPool_Spitter)) != 0)
-		{
-			return PlayerSkillsVersusContext_Spitter1v1;
-		}
-		if ((siPoolMask & view_as<int>(PlayerSkillsSiPool_Jockey)) != 0)
-		{
-			return PlayerSkillsVersusContext_Jockey1v1;
-		}
-		if ((siPoolMask & view_as<int>(PlayerSkillsSiPool_Charger)) != 0)
-		{
-			return PlayerSkillsVersusContext_Charger1v1;
-		}
-	}
-
 	switch (survivorLimit)
 	{
-		case 1: return PlayerSkillsVersusContext_MixedPool1v1;
-		case 2: return PlayerSkillsVersusContext_MixedPool2v2;
-		case 3: return PlayerSkillsVersusContext_MixedPool3v3;
+		case 1: return PlayerSkillsVersusContext_Versus1v1;
+		case 2: return PlayerSkillsVersusContext_Versus2v2;
+		case 3: return PlayerSkillsVersusContext_Versus3v3;
 		case 4: return PlayerSkillsVersusContext_Versus4v4;
 	}
 
@@ -697,7 +669,6 @@ stock void Skills_BuildCurrentModeContext(PlayerSkillsModeContextData context)
 	context.versusContext = Skills_ClassifyVersusContext(
 		context.configuredSurvivorLimit,
 		context.configuredPlayerZombieLimit,
-		context.siPoolMask,
 		context.enabledSiClassCount);
 }
 
@@ -818,41 +789,17 @@ stock void Skills_GetVersusContextName(PlayerSkillsVersusContextType context, ch
 {
 	switch (context)
 	{
-		case PlayerSkillsVersusContext_Hunter1v1:
+		case PlayerSkillsVersusContext_Versus1v1:
 		{
-			strcopy(buffer, maxlen, "Hunter1v1");
+			strcopy(buffer, maxlen, "Versus1v1");
 		}
-		case PlayerSkillsVersusContext_Smoker1v1:
+		case PlayerSkillsVersusContext_Versus2v2:
 		{
-			strcopy(buffer, maxlen, "Smoker1v1");
+			strcopy(buffer, maxlen, "Versus2v2");
 		}
-		case PlayerSkillsVersusContext_Boomer1v1:
+		case PlayerSkillsVersusContext_Versus3v3:
 		{
-			strcopy(buffer, maxlen, "Boomer1v1");
-		}
-		case PlayerSkillsVersusContext_Spitter1v1:
-		{
-			strcopy(buffer, maxlen, "Spitter1v1");
-		}
-		case PlayerSkillsVersusContext_Jockey1v1:
-		{
-			strcopy(buffer, maxlen, "Jockey1v1");
-		}
-		case PlayerSkillsVersusContext_Charger1v1:
-		{
-			strcopy(buffer, maxlen, "Charger1v1");
-		}
-		case PlayerSkillsVersusContext_MixedPool1v1:
-		{
-			strcopy(buffer, maxlen, "MixedPool1v1");
-		}
-		case PlayerSkillsVersusContext_MixedPool2v2:
-		{
-			strcopy(buffer, maxlen, "MixedPool2v2");
-		}
-		case PlayerSkillsVersusContext_MixedPool3v3:
-		{
-			strcopy(buffer, maxlen, "MixedPool3v3");
+			strcopy(buffer, maxlen, "Versus3v3");
 		}
 		case PlayerSkillsVersusContext_Versus4v4:
 		{
@@ -867,6 +814,192 @@ stock void Skills_GetVersusContextName(PlayerSkillsVersusContextType context, ch
 			strcopy(buffer, maxlen, "None");
 		}
 	}
+}
+
+stock void Skills_GetZombieClassName(L4D2ZombieClassType zombieClass, char[] buffer, int maxlen)
+{
+	switch (zombieClass)
+	{
+		case L4D2ZombieClass_Smoker: strcopy(buffer, maxlen, "Smoker");
+		case L4D2ZombieClass_Boomer: strcopy(buffer, maxlen, "Boomer");
+		case L4D2ZombieClass_Hunter: strcopy(buffer, maxlen, "Hunter");
+		case L4D2ZombieClass_Spitter: strcopy(buffer, maxlen, "Spitter");
+		case L4D2ZombieClass_Jockey: strcopy(buffer, maxlen, "Jockey");
+		case L4D2ZombieClass_Charger: strcopy(buffer, maxlen, "Charger");
+		case L4D2ZombieClass_Witch: strcopy(buffer, maxlen, "Witch");
+		case L4D2ZombieClass_Tank: strcopy(buffer, maxlen, "Tank");
+		default: strcopy(buffer, maxlen, "Infected");
+	}
+}
+
+stock void Skills_FormatInfectedPlayerRefName(L4D2PlayerRef player, L4D2ZombieClassType zombieClass, char[] buffer, int maxlen)
+{
+	char className[32];
+	Skills_GetZombieClassName(zombieClass, className, sizeof(className));
+
+	if (player.bot)
+	{
+		FormatEx(buffer, maxlen, "%s (IA)", className);
+		return;
+	}
+
+	if (player.name[0] != '\0')
+	{
+		FormatEx(buffer, maxlen, "%s (%s)", className, player.name);
+		return;
+	}
+
+	strcopy(buffer, maxlen, className);
+}
+
+stock void Skills_GetSkillTypeName(L4D2SkillType type, char[] buffer, int maxlen)
+{
+	switch (type)
+	{
+		case L4D2Skill_HunterSkeet: strcopy(buffer, maxlen, "HunterSkeet");
+		case L4D2Skill_HunterSkeetMelee: strcopy(buffer, maxlen, "HunterSkeetMelee");
+		case L4D2Skill_HunterDeadstop: strcopy(buffer, maxlen, "HunterDeadstop");
+		case L4D2Skill_BoomerPop: strcopy(buffer, maxlen, "BoomerPop");
+		case L4D2Skill_ChargerLevel: strcopy(buffer, maxlen, "ChargerLevel");
+		case L4D2Skill_TankDead: strcopy(buffer, maxlen, "TankDead");
+		case L4D2Skill_WitchDead: strcopy(buffer, maxlen, "WitchDead");
+		case L4D2Skill_WitchIncap: strcopy(buffer, maxlen, "WitchIncap");
+		case L4D2Skill_SmokerTongueCut: strcopy(buffer, maxlen, "SmokerTongueCut");
+		case L4D2Skill_SmokerSelfClear: strcopy(buffer, maxlen, "SmokerSelfClear");
+		case L4D2Skill_TankRockSkeet: strcopy(buffer, maxlen, "TankRockSkeet");
+		case L4D2Skill_TankRockHit: strcopy(buffer, maxlen, "TankRockHit");
+		case L4D2Skill_HunterHighPounce: strcopy(buffer, maxlen, "HunterHighPounce");
+		case L4D2Skill_JockeyHighPounce: strcopy(buffer, maxlen, "JockeyHighPounce");
+		case L4D2Skill_ChargerInstaKill: strcopy(buffer, maxlen, "ChargerInstaKill");
+		case L4D2Skill_ChargerDeathSetup: strcopy(buffer, maxlen, "ChargerDeathSetup");
+		case L4D2Skill_SpecialPinClear: strcopy(buffer, maxlen, "SpecialPinClear");
+		case L4D2Skill_BoomerVomitLanded: strcopy(buffer, maxlen, "BoomerVomitLanded");
+		case L4D2Skill_BunnyHopStreak: strcopy(buffer, maxlen, "BunnyHopStreak");
+		case L4D2Skill_CarAlarmTriggered: strcopy(buffer, maxlen, "CarAlarmTriggered");
+		case L4D2Skill_SmokerKill: strcopy(buffer, maxlen, "SmokerKill");
+		case L4D2Skill_BoomerKill: strcopy(buffer, maxlen, "BoomerKill");
+		case L4D2Skill_HunterKill: strcopy(buffer, maxlen, "HunterKill");
+		case L4D2Skill_SpitterKill: strcopy(buffer, maxlen, "SpitterKill");
+		case L4D2Skill_JockeyKill: strcopy(buffer, maxlen, "JockeyKill");
+		case L4D2Skill_ChargerKill: strcopy(buffer, maxlen, "ChargerKill");
+		default: strcopy(buffer, maxlen, "None");
+	}
+}
+
+stock void Skills_FormatEventPlayerRoleName(int eventIndex, int slot, char[] buffer, int maxlen)
+{
+	buffer[0] = '\0';
+
+	if (eventIndex < 0 || eventIndex >= L4D2_SKILLS_MAX_EVENTS || g_SkillEvents[eventIndex].id <= 0)
+	{
+		return;
+	}
+
+	L4D2PlayerRef player;
+	Skills_GetEventPlayerRefBySlot(eventIndex, view_as<int>(slot), player);
+	if (player.userid <= 0 && player.name[0] == '\0')
+	{
+		return;
+	}
+
+	if (slot == 1)
+	{
+		L4D2ZombieClassType zombieClass = L4D2ZombieClass_NotInfected;
+
+		switch (g_SkillEvents[eventIndex].type)
+		{
+			case L4D2Skill_HunterSkeet, L4D2Skill_HunterSkeetMelee, L4D2Skill_HunterDeadstop, L4D2Skill_HunterHighPounce:
+			{
+				zombieClass = L4D2ZombieClass_Hunter;
+			}
+			case L4D2Skill_BoomerPop, L4D2Skill_BoomerVomitLanded:
+			{
+				zombieClass = L4D2ZombieClass_Boomer;
+			}
+			case L4D2Skill_SmokerTongueCut, L4D2Skill_SmokerSelfClear:
+			{
+				zombieClass = L4D2ZombieClass_Smoker;
+			}
+			case L4D2Skill_JockeyHighPounce:
+			{
+				zombieClass = L4D2ZombieClass_Jockey;
+			}
+			case L4D2Skill_ChargerLevel, L4D2Skill_ChargerInstaKill, L4D2Skill_ChargerDeathSetup:
+			{
+				zombieClass = L4D2ZombieClass_Charger;
+			}
+			case L4D2Skill_SmokerKill:
+			{
+				zombieClass = L4D2ZombieClass_Smoker;
+			}
+			case L4D2Skill_BoomerKill:
+			{
+				zombieClass = L4D2ZombieClass_Boomer;
+			}
+			case L4D2Skill_HunterKill:
+			{
+				zombieClass = L4D2ZombieClass_Hunter;
+			}
+			case L4D2Skill_SpitterKill:
+			{
+				zombieClass = L4D2ZombieClass_Spitter;
+			}
+			case L4D2Skill_JockeyKill:
+			{
+				zombieClass = L4D2ZombieClass_Jockey;
+			}
+			case L4D2Skill_ChargerKill:
+			{
+				zombieClass = L4D2ZombieClass_Charger;
+			}
+			case L4D2Skill_TankRockSkeet, L4D2Skill_TankRockHit, L4D2Skill_TankDead:
+			{
+				zombieClass = L4D2ZombieClass_Tank;
+			}
+		}
+
+		if (zombieClass != L4D2ZombieClass_NotInfected)
+		{
+			Skills_FormatInfectedPlayerRefName(player, zombieClass, buffer, maxlen);
+			return;
+		}
+	}
+	else if (slot == 0)
+	{
+		L4D2ZombieClassType zombieClass = L4D2ZombieClass_NotInfected;
+
+		switch (g_SkillEvents[eventIndex].type)
+		{
+			case L4D2Skill_HunterHighPounce:
+			{
+				zombieClass = L4D2ZombieClass_Hunter;
+			}
+			case L4D2Skill_JockeyHighPounce:
+			{
+				zombieClass = L4D2ZombieClass_Jockey;
+			}
+			case L4D2Skill_BoomerVomitLanded:
+			{
+				zombieClass = L4D2ZombieClass_Boomer;
+			}
+			case L4D2Skill_ChargerInstaKill, L4D2Skill_ChargerDeathSetup:
+			{
+				zombieClass = L4D2ZombieClass_Charger;
+			}
+			case L4D2Skill_TankDead:
+			{
+				zombieClass = L4D2ZombieClass_Tank;
+			}
+		}
+
+		if (zombieClass != L4D2ZombieClass_NotInfected)
+		{
+			Skills_FormatInfectedPlayerRefName(player, zombieClass, buffer, maxlen);
+			return;
+		}
+	}
+
+	strcopy(buffer, maxlen, player.name);
 }
 
 stock bool Skills_IsZombieClassEnabledInCurrentContext(L4D2ZombieClassType zombieClass)
@@ -934,9 +1067,33 @@ stock bool Skills_IsSkillTypeEnabledInCurrentMode(L4D2SkillType type)
 		{
 			return Skills_IsZombieClassEnabledInCurrentContext(L4D2ZombieClass_Smoker);
 		}
+		case L4D2Skill_SmokerKill:
+		{
+			return Skills_IsZombieClassEnabledInCurrentContext(L4D2ZombieClass_Smoker);
+		}
 		case L4D2Skill_JockeyHighPounce:
 		{
 			return Skills_IsZombieClassEnabledInCurrentContext(L4D2ZombieClass_Jockey);
+		}
+		case L4D2Skill_JockeyKill:
+		{
+			return Skills_IsZombieClassEnabledInCurrentContext(L4D2ZombieClass_Jockey);
+		}
+		case L4D2Skill_SpitterKill:
+		{
+			return Skills_IsZombieClassEnabledInCurrentContext(L4D2ZombieClass_Spitter);
+		}
+		case L4D2Skill_BoomerKill:
+		{
+			return Skills_IsZombieClassEnabledInCurrentContext(L4D2ZombieClass_Boomer);
+		}
+		case L4D2Skill_HunterKill:
+		{
+			return Skills_IsZombieClassEnabledInCurrentContext(L4D2ZombieClass_Hunter);
+		}
+		case L4D2Skill_ChargerKill:
+		{
+			return Skills_IsZombieClassEnabledInCurrentContext(L4D2ZombieClass_Charger);
 		}
 	}
 
@@ -1055,12 +1212,23 @@ stock int Skills_GetEventRating(int eventIndex)
 		}
 		case L4D2Skill_BoomerVomitLanded:
 		{
-			if (g_SkillEvents[eventIndex].amount >= 4)
+			int survivorLimit = Skills_GetConfiguredSurvivorLimit();
+			if (survivorLimit <= 0)
+			{
+				survivorLimit = 4;
+			}
+
+			if (g_SkillEvents[eventIndex].amount >= survivorLimit)
 			{
 				return 2;
 			}
 
-			return g_SkillEvents[eventIndex].amount >= 3 ? 1 : 0;
+			if (survivorLimit <= 1)
+			{
+				return g_SkillEvents[eventIndex].amount >= 1 ? 1 : 0;
+			}
+
+			return g_SkillEvents[eventIndex].amount >= (survivorLimit - 1) ? 1 : 0;
 		}
 		case L4D2Skill_BoomerPop:
 		{

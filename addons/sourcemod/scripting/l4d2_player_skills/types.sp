@@ -6,6 +6,7 @@
 #define L4D2_SKILLS_MAX_BOSSES		   64
 #define L4D2_SKILLS_MAX_DAMAGE_ENTRIES 32
 #define L4D2_SKILLS_MAX_EVENTS		   256
+#define L4D2_SKILLS_MAX_EVENT_ASSISTS  8
 #define L4D2_SKILLS_SHOTGUN_BLAST_TIME 0.1
 #define L4D2_SKILLS_DEFAULT_BOOMER_HEALTH 50
 #define L4D2_SKILLS_DEFAULT_SMOKER_HEALTH 250
@@ -42,6 +43,12 @@ enum L4D2SkillType
 	L4D2Skill_BoomerVomitLanded,
 	L4D2Skill_BunnyHopStreak,
 	L4D2Skill_CarAlarmTriggered,
+	L4D2Skill_SmokerKill,
+	L4D2Skill_BoomerKill,
+	L4D2Skill_HunterKill,
+	L4D2Skill_SpitterKill,
+	L4D2Skill_JockeyKill,
+	L4D2Skill_ChargerKill,
 
 	L4D2Skill_Size
 }
@@ -91,7 +98,8 @@ enum PlayerSkillsAnnounceHunterFlag
 	PlayerSkillsAnnounceHunter_SkeetMelee = 1 << 1,
 	PlayerSkillsAnnounceHunter_Deadstop = 1 << 2,
 	PlayerSkillsAnnounceHunter_HighPounce = 1 << 3,
-	PlayerSkillsAnnounceHunter_SpecialClear = 1 << 4
+	PlayerSkillsAnnounceHunter_SpecialClear = 1 << 4,
+	PlayerSkillsAnnounceHunter_Kill = 1 << 5
 }
 
 enum PlayerSkillsAnnounceSmokerFlag
@@ -99,21 +107,30 @@ enum PlayerSkillsAnnounceSmokerFlag
 	PlayerSkillsAnnounceSmoker_None = 0,
 	PlayerSkillsAnnounceSmoker_TongueCut = 1 << 0,
 	PlayerSkillsAnnounceSmoker_SelfClear = 1 << 1,
-	PlayerSkillsAnnounceSmoker_SpecialClear = 1 << 2
+	PlayerSkillsAnnounceSmoker_SpecialClear = 1 << 2,
+	PlayerSkillsAnnounceSmoker_Kill = 1 << 3
 }
 
 enum PlayerSkillsAnnounceBoomerFlag
 {
 	PlayerSkillsAnnounceBoomer_None = 0,
 	PlayerSkillsAnnounceBoomer_Pop = 1 << 0,
-	PlayerSkillsAnnounceBoomer_Vomit = 1 << 1
+	PlayerSkillsAnnounceBoomer_Vomit = 1 << 1,
+	PlayerSkillsAnnounceBoomer_Kill = 1 << 2
+}
+
+enum PlayerSkillsAnnounceSpitterFlag
+{
+	PlayerSkillsAnnounceSpitter_None = 0,
+	PlayerSkillsAnnounceSpitter_Kill = 1 << 0
 }
 
 enum PlayerSkillsAnnounceJockeyFlag
 {
 	PlayerSkillsAnnounceJockey_None = 0,
 	PlayerSkillsAnnounceJockey_HighPounce = 1 << 0,
-	PlayerSkillsAnnounceJockey_SpecialClear = 1 << 1
+	PlayerSkillsAnnounceJockey_SpecialClear = 1 << 1,
+	PlayerSkillsAnnounceJockey_Kill = 1 << 2
 }
 
 enum PlayerSkillsAnnounceChargerFlag
@@ -122,7 +139,8 @@ enum PlayerSkillsAnnounceChargerFlag
 	PlayerSkillsAnnounceCharger_Level = 1 << 0,
 	PlayerSkillsAnnounceCharger_InstaKill = 1 << 1,
 	PlayerSkillsAnnounceCharger_DeathSetup = 1 << 2,
-	PlayerSkillsAnnounceCharger_SpecialClear = 1 << 3
+	PlayerSkillsAnnounceCharger_SpecialClear = 1 << 3,
+	PlayerSkillsAnnounceCharger_Kill = 1 << 4
 }
 
 enum PlayerSkillsAnnounceOtherFlag
@@ -165,15 +183,9 @@ enum PlayerSkillsSiPoolFlag
 enum PlayerSkillsVersusContextType
 {
 	PlayerSkillsVersusContext_None = 0,
-	PlayerSkillsVersusContext_Hunter1v1,
-	PlayerSkillsVersusContext_Smoker1v1,
-	PlayerSkillsVersusContext_Boomer1v1,
-	PlayerSkillsVersusContext_Spitter1v1,
-	PlayerSkillsVersusContext_Jockey1v1,
-	PlayerSkillsVersusContext_Charger1v1,
-	PlayerSkillsVersusContext_MixedPool1v1,
-	PlayerSkillsVersusContext_MixedPool2v2,
-	PlayerSkillsVersusContext_MixedPool3v3,
+	PlayerSkillsVersusContext_Versus1v1,
+	PlayerSkillsVersusContext_Versus2v2,
+	PlayerSkillsVersusContext_Versus3v3,
 	PlayerSkillsVersusContext_Versus4v4,
 	PlayerSkillsVersusContext_CustomTeamVersus
 }
@@ -558,9 +570,14 @@ enum struct L4D2SkillEventData
 	L4D2PlayerRef actor;
 	L4D2PlayerRef victim;
 	L4D2PlayerRef assister;
+	L4D2PlayerRef assists[L4D2_SKILLS_MAX_EVENT_ASSISTS];
 	L4D2PlayerRef pinVictim;
 	int			  actor2;
 	int			  victim2;
+	int			  assistsCount;
+	int			  actorDamage;
+	int			  assisterDamage;
+	int			  assistDamage[L4D2_SKILLS_MAX_EVENT_ASSISTS];
 	int			  damage;
 	int			  chipDamage;
 	int			  shots;
@@ -608,6 +625,9 @@ enum struct L4D2SkillEventData
 		this.pinVictim.Reset();
 		this.actor2					= 0;
 		this.victim2				= 0;
+		this.assistsCount			= 0;
+		this.actorDamage			= 0;
+		this.assisterDamage			= 0;
 		this.damage					= 0;
 		this.chipDamage			 	= 0;
 		this.shots					= 0;
@@ -639,5 +659,11 @@ enum struct L4D2SkillEventData
 		this.distance				= 0.0;
 		this.maxVelocity			= 0.0;
 		this.createdAt				= 0.0;
+
+		for (int i = 0; i < L4D2_SKILLS_MAX_EVENT_ASSISTS; i++)
+		{
+			this.assists[i].Reset();
+			this.assistDamage[i] = 0;
+		}
 	}
 }
