@@ -20,6 +20,12 @@
 		"es"		"No hay skills detectadas para {olive}{1}{default} en este mapa todavia."
 	}
 
+	"SkillsComparableTableUnavailable"
+	{
+		"en"		"No comparable skill table is available for that team."
+		"es"		"No hay una tabla comparable de skills disponible para ese equipo."
+	}
+
 	"SkillsLabelSkeet"
 	{
 		"en"		"Skeet"
@@ -551,22 +557,22 @@
 	"BossDamageEntry"
 	{
 		"#format"	"{1:d},{2:d},{3:s}"
-		"en"		"{blue}[{default}{1}{blue}] ({default}{2}%{blue}) {olive}{3}"
-		"es"		"{blue}[{default}{1}{blue}] ({default}{2}%{blue}) {olive}{3}"
+		"en"		"{blue}[{default}{1}{blue}] ({default}{2}%%{blue}) {olive}{3}"
+		"es"		"{blue}[{default}{1}{blue}] ({default}{2}%%{blue}) {olive}{3}"
 	}
 
 	"BossDamageEntryCrown"
 	{
 		"#format"	"{1:d},{2:d},{3:s}"
-		"en"		"{blue}[{default}{1}{blue}] ({default}{2}%{blue}) {olive}{3} {green}(Crown){default}"
-		"es"		"{blue}[{default}{1}{blue}] ({default}{2}%{blue}) {olive}{3} {green}(Crown){default}"
+		"en"		"{blue}[{default}{1}{blue}] ({default}{2}%%{blue}) {olive}{3} {green}(Crown){default}"
+		"es"		"{blue}[{default}{1}{blue}] ({default}{2}%%{blue}) {olive}{3} {green}(Crown){default}"
 	}
 
 	"BossWitchDamageCombined"
 	{
 		"#format"	"{1:d},{2:d},{3:s}"
-		"en"		"{blue}[{default}{1}{blue}] ({default}{2}%{blue}) {green}{3}"
-		"es"		"{blue}[{default}{1}{blue}] ({default}{2}%{blue}) {green}{3}"
+		"en"		"{blue}[{default}{1}{blue}] ({default}{2}%%{blue}) {green}{3}"
+		"es"		"{blue}[{default}{1}{blue}] ({default}{2}%%{blue}) {green}{3}"
 	}
 
 	"BossWitchDamageCombinedName"

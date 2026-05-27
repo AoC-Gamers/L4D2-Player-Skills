@@ -8,26 +8,8 @@ Handle g_hForwardSkillAnnounced = INVALID_HANDLE;
 Handle g_hForwardBossDamageFinalized = INVALID_HANDLE;
 Handle g_hForwardBossDamageAnnounced = INVALID_HANDLE;
 
-public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
-{
-	g_Runtime.isLate = late;
-	RegPluginLibrary("l4d2_player_skills");
-	API_CreateForwards();
-	API_CreateNatives();
-	return APLRes_Success;
-}
-
-void API_Init()
-{
-}
-
 void API_CreateForwards()
 {
-	if (g_hForwardSkillDetected != INVALID_HANDLE)
-	{
-		return;
-	}
-
 	g_hForwardSkillDetected = CreateGlobalForward("PlayerSkills_OnSkillDetected", ET_Event, Param_Cell, Param_Cell);
 	g_hForwardSkillAnnounced = CreateGlobalForward("PlayerSkills_OnSkillAnnounced", ET_Ignore, Param_Cell, Param_Cell);
 	g_hForwardBossDamageFinalized = CreateGlobalForward("PlayerSkills_OnBossDamageFinalized", ET_Event, Param_Cell, Param_Cell);

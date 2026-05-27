@@ -270,26 +270,6 @@ ConVar g_cvDetectBHopMinInitSpeed = null;
 ConVar g_cvDetectBHopContSpeed = null;
 float g_fDetectLastCarAlarm = 0.0;
 
-// Initialization and reset.
-void Detect_Init()
-{
-	g_smDetectCarAlarmTargets = new StringMap();
-	g_smDetectCarGlassParents = new StringMap();
-	g_smDetectCarPendingSurvivor = new StringMap();
-	g_smDetectCarPendingReason = new StringMap();
-	g_smDetectCarPendingInfected = new StringMap();
-	g_smDetectCarPendingFlags = new StringMap();
-	g_cvDetectPounceInterrupt = FindConVar("z_pounce_damage_interrupt");
-	g_cvDetectMaxPounceDistance = FindConVar("z_pounce_damage_range_max");
-	g_cvDetectMinPounceDistance = FindConVar("z_pounce_damage_range_min");
-	g_cvDetectInstaKillHeight = CreateConVar("l4d2_player_skills_charger_instakill_height", "400", "Minimum vertical drop for ChargerInstaKill.");
-	g_cvDetectDeathSetupHeight = CreateConVar("l4d2_player_skills_charger_death_setup_height", "100", "Minimum vertical drop for ChargerDeathSetup incap classification.");
-	g_cvDetectBHopMinStreak = CreateConVar("l4d2_player_skills_bhop_streak_min", "3", "Minimum amount of successful hops for BunnyHopStreak.");
-	g_cvDetectBHopMinInitSpeed = CreateConVar("l4d2_player_skills_bhop_init_speed", "150", "Minimum initial jump speed to start tracking BunnyHopStreak.");
-	g_cvDetectBHopContSpeed = CreateConVar("l4d2_player_skills_bhop_keep_speed", "300", "Minimum speed that keeps a hop streak even without acceleration.");
-	Detect_ResetAll();
-}
-
 void Detect_ResetAll()
 {
 	Detect_ResetRocks();
@@ -361,7 +341,6 @@ void Detect_ResetRocks()
 	}
 }
 
-// Client lifecycle.
 void Detect_OnClientPutInServer(int client)
 {
 	if (client <= 0 || client > MaxClients)
@@ -1148,10 +1127,10 @@ void Detect_EventBoomerExploded(Event event)
 	}
 
 	float timeAlive = g_DetectBoomer[boomer].spawnTime > 0.0 ? (GetGameTime() - g_DetectBoomer[boomer].spawnTime) : 0.0;
-	if (Skills_IsCompetitiveMode() && timeAlive > L4D2_SKILLS_COMPETITIVE_POP_MAX_TIME)
+	if (timeAlive > L4D2_SKILLS_COMPETITIVE_POP_MAX_TIME)
 	{
 		Skills_Debug(PlayerSkillsDebug_Detect,
-			"Ignoring boomer pop outside competitive window. boomer=%d attacker=%d time_alive=%.2f max=%.2f",
+			"Ignoring boomer pop outside allowed window. boomer=%d attacker=%d time_alive=%.2f max=%.2f",
 			boomer, attacker, timeAlive, L4D2_SKILLS_COMPETITIVE_POP_MAX_TIME);
 		Detect_ResetBoomer(boomer);
 		return;
@@ -1308,10 +1287,3 @@ void Detect_OnTakeDamagePost_Client(int victim, int attacker, int inflictor, flo
 	}
 }
 
-// Subdomain modules included below this shared coordinator.
-#include "l4d2_player_skills/detect_hunter.sp"
-#include "l4d2_player_skills/detect_charger.sp"
-#include "l4d2_player_skills/detect_caralarm.sp"
-#include "l4d2_player_skills/detect_movement.sp"
-#include "l4d2_player_skills/detect_rocks.sp"
-#include "l4d2_player_skills/detect_smoker.sp"

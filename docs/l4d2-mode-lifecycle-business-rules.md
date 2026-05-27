@@ -66,6 +66,21 @@ El alcance correcto depende del modo:
 - match multi-mitad en un solo mapa
 - múltiples intentos en el mismo mapa
 
+### Sub-modo
+
+Una variante operativa que hereda el ciclo de vida del modo base.
+
+Ejemplos:
+
+- competitivo sobre `Versus`
+- competitivo sobre `Scavenge`
+
+Regla general:
+
+- un sub-modo no redefine la identidad base del modo
+- solo ajusta reglas operativas, contexto competitivo o señales auxiliares
+- el flujo principal debe seguir anclado al modo base
+
 ### Unidad Temporal Dominante
 
 La unidad temporal dominante es la escala que organiza el progreso real del modo.
@@ -137,11 +152,25 @@ Señales útiles:
 - `map_transition`
 - `finale_win`
 
+Flujo de referencia:
+
+```mermaid
+flowchart TD
+    A[round_start] --> B[Pre-live]
+    B --> C[Survivor leaves saferoom]
+    C --> D[Live chapter attempt]
+    D --> E{Outcome}
+    E -->|mission_lost| F[Restart same chapter]
+    F --> A
+    E -->|map_transition or finale_win| G[Next chapter or campaign end]
+```
+
 ### Versus
 
 Modelo de juego:
 
 - modo competitivo simétrico
+- puede tener un sub-modo competitivo encima sin dejar de ser `Versus`
 - las rondas son mitades
 - cada mitad pertenece a una secuencia competitiva mayor
 - el tamaño del equipo y el pool de SI pueden variar por reglas del servidor
@@ -155,6 +184,8 @@ Características importantes del lifecycle:
 - la fase pre-live es importante
 - la transición a live puede estar retrasada por sistemas externos como `readyup`
 - el halftime no es un restart
+- los jugadores se invierten de equipo entre mitades
+- al invertirse los equipos, la capa de tracking survivor debe empezar un registro nuevo para la mitad siguiente
 - los restarts administrativos deben tratarse por separado del progreso de juego
 - la persistencia entre mapas no debe entenderse como economía de recursos, sino como continuidad competitiva de la serie
 
@@ -186,11 +217,26 @@ Señales útiles:
 - `versus_match_finished`
 - votos exitosos de restart
 
+Flujo de referencia:
+
+```mermaid
+flowchart TD
+    A[round_start or versus_round_start] --> B[Pre-live half]
+    B --> C[ReadyUp live or saferoom fallback]
+    C --> D[Live survivor half]
+    D --> E{Outcome}
+    E -->|round_end| F[Next half or next map]
+    E -->|admin restart or vote| G[Replay same half]
+    G --> A
+    F --> H[Competitive series continues]
+```
+
 ### Scavenge
 
 Modelo de juego:
 
 - modo competitivo con flujo explícito de mitades
+- puede tener un sub-modo competitivo encima sin dejar de ser `Scavenge`
 - no está basado en fallo de campaña
 - normalmente opera como un match multi-mitad sobre un solo mapa
 
@@ -202,9 +248,14 @@ Características importantes del lifecycle:
 
 - pueden existir eventos genéricos de ronda, pero los eventos propios de `Scavenge` son más autoritativos
 - el halftime es parte normal de la estructura del match
+- los jugadores se invierten de equipo entre mitades
+- al invertirse los equipos, la capa de tracking survivor debe empezar un registro nuevo para la mitad siguiente
 - el fin del match no es lo mismo que el fin de una mitad
 - el replay o restart es administrativo, no producto de fallo de capítulo
 - el tiempo es un recurso explícito del modo, no solo una métrica externa
+- el estado de primera mitad vs segunda mitad es parte explícita del contexto de negocio
+- el número de ronda del match y la meta de bidones son contexto útil, no solo detalle técnico del motor
+- overtime y empates de score son hitos relevantes del modo y deben poder observarse de forma explícita
 
 Alcance natural de persistencia:
 
@@ -216,8 +267,25 @@ Persistencia natural del modo:
 - bidones o progreso equivalente de la mitad
 - tiempo restante o tiempo consumido
 - resultado por rondas del match
+- meta de bidones del round
+- mitad actual dentro de la ronda
+- estado de overtime o empate si ocurren
 
 En `Scavenge`, la persistencia natural está más cerca de un match corto por rondas que de una campaña.
+
+Datos observables recomendados:
+
+- `scavenge_round_number`
+- `second_half`
+- `items_goal`
+- `overtime`
+- `score_tied`
+
+Métricas específicas de jugador que son naturales en `Scavenge`:
+
+- bidones vertidos
+- bidones soltados
+- bidones destruidos
 
 Significado de restart:
 
@@ -229,7 +297,32 @@ Señales útiles:
 - `scavenge_round_halftime`
 - `scavenge_round_finished`
 - `scavenge_match_finished`
+- `begin_scavenge_overtime`
+- `scavenge_score_tied`
+- `gascan_pour_completed`
+- `gascan_dropped`
+- `scavenge_gas_can_destroyed`
 - votos exitosos de restart
+
+Flujo de referencia:
+
+```mermaid
+flowchart TD
+    A[scavenge_round_start first half] --> B[Live first half]
+    B --> C{Half result}
+    C -->|scavenge_round_halftime| D[Second half begins]
+    D --> E[Live second half]
+    E --> F{Round result}
+    F -->|scavenge_round_finished| G[Round stored]
+    G --> H{More rounds in match}
+    H -->|Yes| I[Next scavenge_round_start]
+    I --> B
+    H -->|No| J[scavenge_match_finished]
+    B --> K[begin_scavenge_overtime or scavenge_score_tied]
+    E --> K
+    B --> L[gascan_pour_completed / gascan_dropped / gascan_destroyed]
+    E --> L
+```
 
 ### Survival
 
@@ -274,6 +367,19 @@ Señales útiles:
 - señales específicas del modo si alguna integración externa las expone
 - votos exitosos de restart
 
+Flujo de referencia:
+
+```mermaid
+flowchart TD
+    A[round_start] --> B[Run begins]
+    B --> C[Live survival run]
+    C --> D{Outcome}
+    D -->|round_end| E[Run stored with survived time]
+    E --> F{Play again?}
+    F -->|Yes| A
+    F -->|No| G[Map session ends]
+```
+
 ## Semántica del Lifecycle por Modo
 
 | Modo | Unidad natural de ronda | Agregado natural | Significado de restart |
@@ -282,6 +388,20 @@ Señales útiles:
 | Versus | mitad survivor | serie competitiva multi-mapa | repetición administrativa |
 | Scavenge | mitad de scavenge | match en un solo mapa | repetición administrativa |
 | Survival | run de survival | historial de runs del mismo mapa | repetición del run |
+
+## Modo Base vs Sub-modo
+
+Para efectos de lifecycle:
+
+- `Versus` y `Scavenge` son modos base
+- “competitivo” debe tratarse como un sub-modo
+- ese sub-modo puede vivir sobre `Versus` o sobre `Scavenge`
+
+Implicancia:
+
+- no corresponde modelar “competitivo” como un modo base separado
+- el flujo de ronda, live, halftime, cierre y restart debe seguir el modo base
+- lo competitivo agrega contexto, reglas y señales auxiliares, pero no cambia la ontología principal del modo
 
 ## Implicancias de Negocio
 
@@ -340,6 +460,9 @@ Modelo recomendado:
 
 - los eventos específicos de `Scavenge` deben preferirse sobre eventos genéricos
 - el halftime es parte del flujo normal, no un fallo
+- la segunda mitad no debe modelarse como restart
+- el fin del match no debe borrar prematuramente el contexto histórico de la última ronda
+- los eventos de bidones deben tratarse como métricas propias del modo, no como soporte genérico o utilidades comunes
 
 ### Survival
 
@@ -401,99 +524,8 @@ Regla general:
 Ejemplos:
 
 - en `Scavenge`, preferir `scavenge_round_start` sobre `round_start`
+- en `Scavenge`, preferir `scavenge_round_finished` sobre `round_end`
+- en `Scavenge`, usar `scavenge_match_finished` como señal fuerte de boundary del match
+- en `Scavenge`, tratar `gascan_pour_completed` como señal autoritativa de progreso de objetivo por jugador
 - en `Versus`, preferir señales de match-live o readyup sobre “la ronda ya existe”
 - en `Coop`, preferir señales de fallo o transición antes que asumir semánticas competitivas
-
-## Reglas Oficiales vs Reglas Comunitarias
-
-Los modos tienen una capa oficial y, en muchos servidores, una capa comunitaria o competitiva encima.
-
-Eso importa porque:
-
-- un modo puede conservar la misma identidad de negocio
-- pero cambiar sus reglas operativas por scripts, configs o plugins
-
-Ejemplos conceptuales:
-
-- `Versus` puede jugarse como `4v4`, `3v3`, `2v2` o `1v1`
-- `Scavenge` puede ajustar tiempos, tamaños de equipo o ritmo del match
-- `Coop` puede recibir reglas especiales por mutaciones o scripting
-
-Regla general:
-
-- una variante comunitaria no necesariamente crea un modo nuevo
-- muchas veces sigue siendo una variante de negocio del mismo modo base
-
-Ejemplo claro:
-
-- `1v1`, `2v2` y `3v3` siguen siendo variantes de `Versus`
-- no deben modelarse automáticamente como modos completamente distintos
-
-## Diferencias entre Implementación Oficial y Contexto de Servidor
-
-Un sistema reusable debería asumir que existen al menos dos capas:
-
-1. reglas oficiales del modo
-2. reglas operativas del servidor o de la comunidad
-
-Eso implica que cualquier integración seria debería poder responder preguntas como:
-
-- cuál es el modo base
-- cuál es la variante competitiva o comunitaria
-- cuál es la unidad de ronda real en este servidor
-- cuál es la señal canónica de live en este contexto
-
-En otras palabras:
-
-- el modo define el marco de negocio
-- el servidor define, muchas veces, el detalle operativo
-
-## Guía de Persistencia
-
-### Datos por ronda
-
-Usarlos cuando la pregunta sea:
-
-- qué ocurrió en esta mitad
-- qué ocurrió en este intento
-- qué ocurrió en este run
-
-### Datos históricos agregados
-
-Usarlos cuando la pregunta sea:
-
-- qué ocurrió a lo largo de una campaña
-- qué ocurrió a lo largo de todas las mitades del match
-- qué ocurrió a lo largo de múltiples intentos
-
-El alcance debe respetar el modelo natural del modo:
-
-- campaña para `Coop`
-- serie competitiva para `Versus`
-- match de un mapa para `Scavenge`
-- historial de runs del mismo mapa para `Survival`
-
-## Reglas Prácticas para Plugins
-
-Cualquier plugin construido sobre estas reglas debería:
-
-- tratar el modo como un input de primera clase
-- tratar la variante del servidor como un segundo input relevante
-- separar “la ronda existe” de “la ronda está live”
-- separar `restart` de `next half`
-- separar `restart` de `next map`
-- preferir eventos específicos del modo cuando existan
-- evitar reutilizar señales de fallo de campaña como si fueran restart competitivo
-- evitar asumir que el mismo alcance agregado sirve para todos los modos
-
-## Patrón Recomendado de Extensión
-
-Si un plugin necesita comportamiento específico por modo, debería introducir configuración en categorías neutrales como:
-
-- si el modo está soportado
-- qué evento se considera inicio canónico de ronda
-- qué evento se considera fin canónico de ronda
-- qué evento se considera restart
-- qué alcance agregado se expone al usuario
-
-Los nombres concretos de esas configuraciones deben quedar como decisión de implementación de cada plugin.

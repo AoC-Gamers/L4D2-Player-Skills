@@ -1150,5 +1150,16 @@ stock void Skills_Debug(PlayerSkillsDebugCategory category, const char[] fmt, an
 
 	char buffer[256];
 	VFormat(buffer, sizeof(buffer), fmt, 3);
-	LogToFileEx(g_sDebugLogPath, "[l4d2_player_skills] %s", buffer);
+	LogToFileEx(g_sDebugLogPath, "tick=%d %s", GetGameTickCount(), buffer);
+}
+
+void LoadPluginTranslations()
+{
+	char sPath[PLATFORM_MAX_PATH];
+	BuildPath(Path_SM, sPath, sizeof sPath, "translations/"...TRANSLATION_FILE... ".txt");
+	if (!FileExists(sPath))
+	{
+		SetFailState("Missing translation file \""...TRANSLATION_FILE...".txt\"");
+	}
+	LoadTranslations(TRANSLATION_FILE);
 }

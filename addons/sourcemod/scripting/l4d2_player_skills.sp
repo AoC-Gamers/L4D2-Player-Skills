@@ -9,6 +9,8 @@
 #include <left4dhooks>
 
 #define LIBRARY_LEFT4DHOOKS "left4dhooks"
+#define LOG_DIRECTORY "logs/l4d2_player_skills.log"
+#define TRANSLATION_FILE "l4d2_player_skills.phrases"
 
 #include "l4d2_player_skills/types.sp"
 
@@ -23,8 +25,14 @@ int	g_iNextEventSlot	= 0;
 
 ConVar	g_cvEnable				 = null;
 ConVar	g_cvDebug				 = null;
-ConVar	g_cvAnnounceSkills		 = null;
-ConVar	g_cvAnnounceBossDamage	 = null;
+ConVar	g_cvAnnounceWitch		 = null;
+ConVar	g_cvAnnounceTank		 = null;
+ConVar	g_cvAnnounceHunter		 = null;
+ConVar	g_cvAnnounceSmoker		 = null;
+ConVar	g_cvAnnounceBoomer		 = null;
+ConVar	g_cvAnnounceJockey		 = null;
+ConVar	g_cvAnnounceCharger		 = null;
+ConVar	g_cvAnnounceOther		 = null;
 ConVar	g_cvBoomerHealth		 = null;
 ConVar	g_cvSmokerHealth		 = null;
 ConVar	g_cvHunterHealth		 = null;
@@ -44,9 +52,7 @@ ConVar	g_cvVersusJockeyLimit	 = null;
 ConVar	g_cvVersusChargerLimit	 = null;
 ConVar	g_cvHunterHighPounceHeight = null;
 ConVar	g_cvJockeyHighPounceHeight = null;
-
-int		g_iWitchPrintMinimum	 = 0;
-int		g_iWitchPrintMaxLines	 = 0;
+ConVar	g_cvWitchPrintMaxEntries = null;
 bool	g_bWitchPrintOnIncap	 = true;
 char	g_sDebugLogPath[PLATFORM_MAX_PATH];
 
@@ -201,13 +207,81 @@ public Plugin myinfo =
 	url			= "https://github.com/AoC-Gamers/L4D2-Player-Skills"
 };
 
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
+{
+	g_Runtime.isLate = late;
+	RegPluginLibrary("l4d2_player_skills");
+	API_CreateForwards();
+	API_CreateNatives();
+	return APLRes_Success;
+}
+
+#include "l4d2_player_skills/helpers.sp"
+#include "l4d2_player_skills/api.sp"
+#include "l4d2_player_skills/announce.sp"
+#include "l4d2_player_skills/boss.sp"
+#include "l4d2_player_skills/detect.sp"
+#include "l4d2_player_skills/detect_hunter.sp"
+#include "l4d2_player_skills/detect_charger.sp"
+#include "l4d2_player_skills/detect_caralarm.sp"
+#include "l4d2_player_skills/detect_movement.sp"
+#include "l4d2_player_skills/detect_rocks.sp"
+#include "l4d2_player_skills/detect_smoker.sp"
+
 public void OnPluginStart()
 {
-	bool isLate = g_Runtime.isLate;
-	g_Runtime.Reset();
-	g_Runtime.isLate = isLate;
-	BuildPath(Path_SM, g_sDebugLogPath, sizeof(g_sDebugLogPath), "logs/l4d2_player_skills_debug.log");
-	LoadTranslations("l4d2_player_skills.phrases");
+	LoadPluginTranslations();
+	BuildPath(Path_SM, g_sDebugLogPath, sizeof(g_sDebugLogPath), LOG_DIRECTORY);
+
+	g_smDetectCarAlarmTargets = new StringMap();
+	g_smDetectCarGlassParents = new StringMap();
+	g_smDetectCarPendingSurvivor = new StringMap();
+	g_smDetectCarPendingReason = new StringMap();
+	g_smDetectCarPendingInfected = new StringMap();
+	g_smDetectCarPendingFlags = new StringMap();
+
+	g_cvDebug			   		= CreateConVar("l4d2_player_skills_debug", "255", "Debug bitmask for l4d2_player_skills. 0=None 1=Core 2=Event 4=Detect 8=Boss 16=Pin 32=Physics 64=Api 128=Announce 255=all.");
+	g_cvEnable			   		= CreateConVar("l4d2_player_skills_enable", "1", "Enable the l4d2_player_skills plugin.");
+	g_cvAnnounceWitch			= CreateConVar("l4d2_player_skills_announce_wich", "7", "Bitmask for Witch announcements. 1=damage 2=misc 4=crown 7=all.");
+	g_cvAnnounceTank			= CreateConVar("l4d2_player_skills_announce_tank", "7", "Bitmask for Tank announcements. 1=damage 2=rock_skeet 4=rock_hit 7=all.");
+	g_cvAnnounceHunter			= CreateConVar("l4d2_player_skills_announce_hunter", "31", "Bitmask for Hunter announcements. 1=skeet 2=skeet_melee 4=deadstop 8=high_pounce 16=special_clear 31=all.");
+	g_cvAnnounceSmoker			= CreateConVar("l4d2_player_skills_announce_smoker", "7", "Bitmask for Smoker announcements. 1=tongue_cut 2=self_clear 4=special_clear 7=all.");
+	g_cvAnnounceBoomer			= CreateConVar("l4d2_player_skills_announce_boomer", "3", "Bitmask for Boomer announcements. 1=pop 2=vomit 3=all.");
+	g_cvAnnounceJockey			= CreateConVar("l4d2_player_skills_announce_jockey", "3", "Bitmask for Jockey announcements. 1=high_pounce 2=special_clear 3=all.");
+	g_cvAnnounceCharger			= CreateConVar("l4d2_player_skills_announce_charger", "15", "Bitmask for Charger announcements. 1=level 2=insta_kill 4=death_setup 8=special_clear 15=all.");
+	g_cvAnnounceOther			= CreateConVar("l4d2_player_skills_announce_other", "3", "Bitmask for other announcements. 1=bunnyhop 2=car_alarm 3=all.");
+	g_cvWitchPrintMaxEntries	= CreateConVar("l4d2_player_skills_witch_print_max_entries", "4", "Maximum number of Witch damage entries to print before combining the rest as others.");
+	g_cvHunterHighPounceHeight	= CreateConVar("l4d2_player_skills_hunter_high_pounce_height", "400", "Minimum vertical height for HunterHighPounce.");
+	g_cvJockeyHighPounceHeight	= CreateConVar("l4d2_player_skills_jockey_high_pounce_height", "300", "Minimum vertical height for JockeyHighPounce.");
+	g_cvDetectInstaKillHeight	= CreateConVar("l4d2_player_skills_charger_instakill_height", "400", "Minimum vertical drop for ChargerInstaKill.");
+	g_cvDetectDeathSetupHeight	= CreateConVar("l4d2_player_skills_charger_death_setup_height", "100", "Minimum vertical drop for ChargerDeathSetup incap classification.");
+	g_cvDetectBHopMinStreak		= CreateConVar("l4d2_player_skills_bhop_streak_min", "3", "Minimum amount of successful hops for BunnyHopStreak.");
+	g_cvDetectBHopMinInitSpeed	= CreateConVar("l4d2_player_skills_bhop_init_speed", "150", "Minimum initial jump speed to start tracking BunnyHopStreak.");
+	g_cvDetectBHopContSpeed		= CreateConVar("l4d2_player_skills_bhop_keep_speed", "300", "Minimum speed that keeps a hop streak even without acceleration.");
+
+	g_cvHunterMaxPounceBonusDamage = FindConVar("z_hunter_max_pounce_bonus_damage");
+
+	g_cvDetectPounceInterrupt 	= FindConVar("z_pounce_damage_interrupt");
+	g_cvDetectMaxPounceDistance = FindConVar("z_pounce_damage_range_max");
+	g_cvDetectMinPounceDistance = FindConVar("z_pounce_damage_range_min");
+
+	g_cvBoomerHealth	   = FindConVar("z_exploding_health");
+	g_cvSmokerHealth	   = FindConVar("z_gas_health");
+	g_cvHunterHealth	   = FindConVar("z_hunter_health");
+	g_cvSpitterHealth	   = FindConVar("z_spitter_health");
+	g_cvJockeyHealth	   = FindConVar("z_jockey_health");
+	g_cvChargerHealth	   = FindConVar("z_charger_health");
+	g_cvTankHealth		   = FindConVar("z_tank_health");
+	g_cvWitchHealth		   = FindConVar("z_witch_health");
+
+	g_cvSurvivorLimit      = FindConVar("survivor_limit");
+	g_cvMaxPlayerZombies   = FindConVar("z_max_player_zombies");
+	g_cvVersusBoomerLimit  = FindConVar("z_versus_boomer_limit");
+	g_cvVersusSmokerLimit  = FindConVar("z_versus_smoker_limit");
+	g_cvVersusHunterLimit  = FindConVar("z_versus_hunter_limit");
+	g_cvVersusSpitterLimit = FindConVar("z_versus_spitter_limit");
+	g_cvVersusJockeyLimit  = FindConVar("z_versus_jockey_limit");
+	g_cvVersusChargerLimit = FindConVar("z_versus_charger_limit");
 
 	HookEvent("round_start", Event_RoundStart, EventHookMode_PostNoCopy);
 	HookEvent("round_end", Event_RoundEnd, EventHookMode_PostNoCopy);
@@ -233,46 +307,10 @@ public void OnPluginStart()
 	HookEvent("choke_start", Event_ChokeStart, EventHookMode_Post);
 	HookEvent("tongue_pull_stopped", Event_TonguePullStopped, EventHookMode_Post);
 
-	g_cvEnable			   = CreateConVar("l4d2_player_skills_enable", "1", "Enable the l4d2_player_skills plugin.");
-	g_cvDebug			   = CreateConVar("l4d2_player_skills_debug", "0", "Debug bitmask for l4d2_player_skills. 0=None 1=Core 2=Detect 4=Boss 8=Pin 16=Physics 32=Api 64=Announce.");
-	g_cvAnnounceSkills	   = CreateConVar("l4d2_player_skills_announce_skills", "1", "Announce detected skills in chat.");
-	g_cvAnnounceBossDamage = CreateConVar("l4d2_player_skills_announce_boss_damage", "1", "Announce boss damage summaries in chat.");
-
-	g_cvBoomerHealth	   = FindConVar("z_exploding_health");
-	g_cvSmokerHealth	   = FindConVar("z_gas_health");
-	g_cvHunterHealth	   = FindConVar("z_hunter_health");
-	g_cvHunterMaxPounceBonusDamage = FindConVar("z_hunter_max_pounce_bonus_damage");
-	g_cvSpitterHealth	   = FindConVar("z_spitter_health");
-	g_cvJockeyHealth	   = FindConVar("z_jockey_health");
-	g_cvChargerHealth	   = FindConVar("z_charger_health");
-	g_cvTankHealth		   = FindConVar("z_tank_health");
-	g_cvWitchHealth		   = FindConVar("z_witch_health");
-	g_cvSurvivorLimit      = FindConVar("survivor_limit");
-	g_cvMaxPlayerZombies   = FindConVar("z_max_player_zombies");
-	g_cvVersusBoomerLimit  = FindConVar("z_versus_boomer_limit");
-	g_cvVersusSmokerLimit  = FindConVar("z_versus_smoker_limit");
-	g_cvVersusHunterLimit  = FindConVar("z_versus_hunter_limit");
-	g_cvVersusSpitterLimit = FindConVar("z_versus_spitter_limit");
-	g_cvVersusJockeyLimit  = FindConVar("z_versus_jockey_limit");
-	g_cvVersusChargerLimit = FindConVar("z_versus_charger_limit");
-	g_cvHunterHighPounceHeight = CreateConVar("l4d2_player_skills_hunter_high_pounce_height", "400", "Minimum vertical height for HunterHighPounce.");
-	g_cvJockeyHighPounceHeight = CreateConVar("l4d2_player_skills_jockey_high_pounce_height", "300", "Minimum vertical height for JockeyHighPounce.");
-
-	g_cvSurvivorLimit.AddChangeHook(ConVarChange_ModeContext);
-	g_cvMaxPlayerZombies.AddChangeHook(ConVarChange_ModeContext);
-	g_cvVersusBoomerLimit.AddChangeHook(ConVarChange_ModeContext);
-	g_cvVersusSmokerLimit.AddChangeHook(ConVarChange_ModeContext);
-	g_cvVersusHunterLimit.AddChangeHook(ConVarChange_ModeContext);
-	g_cvVersusSpitterLimit.AddChangeHook(ConVarChange_ModeContext);
-	g_cvVersusJockeyLimit.AddChangeHook(ConVarChange_ModeContext);
-	g_cvVersusChargerLimit.AddChangeHook(ConVarChange_ModeContext);
+	RegConsoleCmd("sm_skills", Command_Skills, "Print the detected skills summary in chat and the comparative skills table in console.");
 
 	AutoExecConfig(false, "l4d2_player_skills");
-
-	API_Init();
-	Regcmd_Init();
 	Boss_Init();
-	Detect_Init();
 
 	if (!g_Runtime.isLate)
 	{
@@ -287,8 +325,6 @@ public void OnPluginStart()
 public void OnAllPluginsLoaded()
 {
 	g_Runtime.hasLeft4DHooks = LibraryExists(LIBRARY_LEFT4DHOOKS);
-	Skills_RefreshModeContext();
-	Skills_RefreshRoundLiveState();
 }
 
 public void OnLibraryAdded(const char[] name)
@@ -317,9 +353,7 @@ public void OnLibraryRemoved(const char[] name)
 
 public void OnMapStart()
 {
-	Skills_RefreshModeContext();
 	g_Runtime.roundLive = false;
-	Skills_RefreshRoundLiveState();
 	Skills_ResetEvents();
 	Boss_ResetAll();
 	Detect_ResetAll();
@@ -341,6 +375,7 @@ public void OnConfigsExecuted()
 
 public void L4D_OnGameModeChange(int gamemode)
 {
+	Skills_Debug(PlayerSkillsDebug_Event, "[L4D_OnGameModeChange] gamemode=%d", gamemode);
 	Skills_RefreshModeContext();
 	Skills_RefreshRoundLiveState();
 }
@@ -355,6 +390,8 @@ public void OnPluginEnd()
 
 public void L4D_OnFirstSurvivorLeftSafeArea_Post(int client)
 {
+	Skills_Debug(PlayerSkillsDebug_Event, "[L4D_OnFirstSurvivorLeftSafeArea_Post] client=%d", client);
+
 	if (!Skills_IsEnabled()
 		|| g_Runtime.roundLive
 		|| g_Runtime.roundLiveSignal != PlayerSkillsRoundLiveSignal_SafeArea)
@@ -567,6 +604,14 @@ public void L4D_TankRock_OnDetonate(int tank, int rock)
 
 void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 {
+	char objective[64];
+	event.GetString("objective", objective, sizeof(objective));
+	Skills_Debug(PlayerSkillsDebug_Event, "[%s] timelimit=%d fraglimit=%d objective=%s",
+		name,
+		event.GetInt("timelimit"),
+		event.GetInt("fraglimit"),
+		objective);
+
 	if (!Skills_ShouldHandleRoundStartEvent(name))
 	{
 		return;
@@ -584,6 +629,15 @@ void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 
 void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 {
+	char message[128];
+	event.GetString("message", message, sizeof(message));
+	Skills_Debug(PlayerSkillsDebug_Event, "[%s] winner=%d reason=%d message=%s time=%.1f",
+		name,
+		event.GetInt("winner"),
+		event.GetInt("reason"),
+		message,
+		event.GetFloat("time"));
+
 	if (g_Runtime.baseMode == PlayerSkillsGameMode_Versus)
 	{
 		return;
@@ -601,6 +655,8 @@ void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 
 public void L4D2_OnEndVersusModeRound_Post()
 {
+	Skills_Debug(PlayerSkillsDebug_Event, "[L4D2_OnEndVersusModeRound_Post]");
+
 	if (g_Runtime.baseMode != PlayerSkillsGameMode_Versus)
 	{
 		return;
@@ -613,18 +669,17 @@ public void L4D2_OnEndVersusModeRound_Post()
 
 void Event_ScavengeRoundStart(Event event, const char[] name, bool dontBroadcast)
 {
+	Skills_Debug(PlayerSkillsDebug_Event, "[%s] round=%d firsthalf=%d",
+		name,
+		event.GetInt("round"),
+		event.GetBool("firsthalf"));
 	Event_RoundStart(event, name, dontBroadcast);
 }
 
 void Event_ScavengeRoundFinished(Event event, const char[] name, bool dontBroadcast)
 {
+	Skills_Debug(PlayerSkillsDebug_Event, "[%s]", name);
 	Event_RoundEnd(event, name, dontBroadcast);
-}
-
-public void ConVarChange_ModeContext(ConVar convar, const char[] oldValue, const char[] newValue)
-{
-	Skills_RefreshModeContext();
-	Skills_RefreshRoundLiveState();
 }
 
 void Event_TankSpawn(Event event, const char[] name, bool dontBroadcast)
@@ -809,8 +864,107 @@ void Event_TonguePullStopped(Event event, const char[] name, bool dontBroadcast)
 	Detect_EventTonguePullStopped(event);
 }
 
-#include "l4d2_player_skills/helpers.sp"
-#include "l4d2_player_skills/api.sp"
-#include "l4d2_player_skills/announce.sp"
-#include "l4d2_player_skills/boss.sp"
-#include "l4d2_player_skills/detect.sp"
+Action Command_Skills(int client, int args)
+{
+	if (client <= 0 || !IsValidClient(client))
+	{
+		Announce_ReplyCommand(client, "%t sm_skills is in-game only.", "Tag");
+		return Plugin_Handled;
+	}
+
+	if (!Skills_IsEnabled())
+	{
+		Announce_ReplyCommand(client, "%t {red}Plugin disabled.{default}", "Tag");
+		return Plugin_Handled;
+	}
+
+	int target = client;
+	if (args >= 1)
+	{
+		char pattern[MAX_TARGET_LENGTH];
+		GetCmdArg(1, pattern, sizeof(pattern));
+
+		int targets[1];
+		char targetName[MAX_TARGET_LENGTH];
+		bool targetNameMl = false;
+		int found = ProcessTargetString(pattern, client, targets, sizeof(targets), COMMAND_FILTER_CONNECTED, targetName, sizeof(targetName), targetNameMl);
+		if (found != 1)
+		{
+			ReplyToTargetError(client, found);
+			return Plugin_Handled;
+		}
+
+		target = targets[0];
+	}
+
+	char targetName[MAX_NAME_LENGTH];
+	GetClientName(target, targetName, sizeof(targetName));
+
+	int counts[L4D2Skill_Size];
+	int total = 0;
+
+	for (int index = 0; index < L4D2_SKILLS_MAX_EVENTS; index++)
+	{
+		if (g_SkillEvents[index].id <= 0
+			|| !g_SkillEvents[index].actor.IsSamePersistentPlayer(target)
+			|| !Skills_IsSkillEventEnabledInCurrentMode(index))
+		{
+			continue;
+		}
+
+		switch (g_SkillEvents[index].type)
+		{
+			case L4D2Skill_WitchDead:
+			{
+				if (!g_SkillEvents[index].crown)
+				{
+					continue;
+				}
+			}
+
+			case L4D2Skill_TankDead, L4D2Skill_WitchIncap, L4D2Skill_TankRockHit:
+			{
+				continue;
+			}
+		}
+
+		counts[g_SkillEvents[index].type]++;
+		total++;
+	}
+
+	if (total <= 0)
+	{
+		Announce_ReplyCommand(client, "%t %t", "Tag", "SkillsSummaryEmpty", targetName);
+		return Plugin_Handled;
+	}
+
+	Announce_ReplyCommand(client, "%t %t", "Tag", "SkillsSummaryHeader", targetName);
+
+	Announce_PrintSkillsSummaryLine(client, counts,
+		L4D2Skill_HunterSkeet, "SkillsLabelSkeet",
+		L4D2Skill_HunterSkeetMelee, "SkillsLabelSkeetMelee",
+		L4D2Skill_HunterDeadstop, "SkillsLabelDeadstop",
+		L4D2Skill_BoomerPop, "SkillsLabelPop",
+		L4D2Skill_ChargerLevel, "SkillsLabelLevel",
+		L4D2Skill_WitchDead, "SkillsLabelCrown");
+
+	Announce_PrintSkillsSummaryLine(client, counts,
+		L4D2Skill_SmokerTongueCut, "SkillsLabelTongueCut",
+		L4D2Skill_SmokerSelfClear, "SkillsLabelSelfClear",
+		L4D2Skill_ChargerInstaKill, "SkillsLabelInstaKill",
+		L4D2Skill_ChargerDeathSetup, "SkillsLabelDeathSetup",
+		L4D2Skill_SpecialPinClear, "SkillsLabelPinClear",
+		L4D2Skill_BunnyHopStreak, "SkillsLabelBHop");
+
+	Announce_PrintSkillsSummaryLine(client, counts,
+		L4D2Skill_HunterHighPounce, "SkillsLabelHunterHighPounce",
+		L4D2Skill_JockeyHighPounce, "SkillsLabelJockeyHighPounce",
+		L4D2Skill_BoomerVomitLanded, "SkillsLabelVomit",
+		L4D2Skill_CarAlarmTriggered, "SkillsLabelCarAlarm",
+		L4D2Skill_TankRockSkeet, "SkillsLabelRockSkeet",
+		L4D2Skill_None, "");
+
+	Announce_RenderSkillsTable(client, target);
+
+	return Plugin_Handled;
+}

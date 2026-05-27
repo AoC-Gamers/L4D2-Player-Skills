@@ -75,12 +75,71 @@ enum PlayerSkillsDebugCategory
 {
 	PlayerSkillsDebug_None		= 0,
 	PlayerSkillsDebug_Core		= 1 << 0,
-	PlayerSkillsDebug_Detect	= 1 << 1,
-	PlayerSkillsDebug_Boss		= 1 << 2,
-	PlayerSkillsDebug_Pin		= 1 << 3,
-	PlayerSkillsDebug_Physics	= 1 << 4,
-	PlayerSkillsDebug_Api		= 1 << 5,
-	PlayerSkillsDebug_Announce	= 1 << 6
+	PlayerSkillsDebug_Event		= 1 << 1,
+	PlayerSkillsDebug_Detect	= 1 << 2,
+	PlayerSkillsDebug_Boss		= 1 << 3,
+	PlayerSkillsDebug_Pin		= 1 << 4,
+	PlayerSkillsDebug_Physics	= 1 << 5,
+	PlayerSkillsDebug_Api		= 1 << 6,
+	PlayerSkillsDebug_Announce	= 1 << 7
+}
+
+enum PlayerSkillsAnnounceHunterFlag
+{
+	PlayerSkillsAnnounceHunter_None = 0,
+	PlayerSkillsAnnounceHunter_Skeet = 1 << 0,
+	PlayerSkillsAnnounceHunter_SkeetMelee = 1 << 1,
+	PlayerSkillsAnnounceHunter_Deadstop = 1 << 2,
+	PlayerSkillsAnnounceHunter_HighPounce = 1 << 3,
+	PlayerSkillsAnnounceHunter_SpecialClear = 1 << 4
+}
+
+enum PlayerSkillsAnnounceSmokerFlag
+{
+	PlayerSkillsAnnounceSmoker_None = 0,
+	PlayerSkillsAnnounceSmoker_TongueCut = 1 << 0,
+	PlayerSkillsAnnounceSmoker_SelfClear = 1 << 1,
+	PlayerSkillsAnnounceSmoker_SpecialClear = 1 << 2
+}
+
+enum PlayerSkillsAnnounceBoomerFlag
+{
+	PlayerSkillsAnnounceBoomer_None = 0,
+	PlayerSkillsAnnounceBoomer_Pop = 1 << 0,
+	PlayerSkillsAnnounceBoomer_Vomit = 1 << 1
+}
+
+enum PlayerSkillsAnnounceJockeyFlag
+{
+	PlayerSkillsAnnounceJockey_None = 0,
+	PlayerSkillsAnnounceJockey_HighPounce = 1 << 0,
+	PlayerSkillsAnnounceJockey_SpecialClear = 1 << 1
+}
+
+enum PlayerSkillsAnnounceChargerFlag
+{
+	PlayerSkillsAnnounceCharger_None = 0,
+	PlayerSkillsAnnounceCharger_Level = 1 << 0,
+	PlayerSkillsAnnounceCharger_InstaKill = 1 << 1,
+	PlayerSkillsAnnounceCharger_DeathSetup = 1 << 2,
+	PlayerSkillsAnnounceCharger_SpecialClear = 1 << 3
+}
+
+enum PlayerSkillsAnnounceOtherFlag
+{
+	PlayerSkillsAnnounceOther_None = 0,
+	PlayerSkillsAnnounceOther_BunnyHop = 1 << 0,
+	PlayerSkillsAnnounceOther_CarAlarm = 1 << 1
+}
+
+enum PlayerSkillsAnnounceBossFlag
+{
+	PlayerSkillsAnnounceBoss_None = 0,
+	PlayerSkillsAnnounceBoss_Damage = 1 << 0,
+	PlayerSkillsAnnounceBoss_Misc = 1 << 1,
+	PlayerSkillsAnnounceBoss_Crown = 1 << 2,
+	PlayerSkillsAnnounceBoss_RockSkeet = 1 << 2,
+	PlayerSkillsAnnounceBoss_RockHit = 1 << 3
 }
 
 enum PlayerSkillsGameMode

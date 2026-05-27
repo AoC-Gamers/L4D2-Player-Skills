@@ -3,122 +3,147 @@
 #endif
 #define _l4d2_player_skills_announce_included
 
-// Announce and chat-command coordinator. This file formats visible output for
-// skill events, boss summaries, and lightweight player-facing commands.
-
 int g_iAnnounceSortSession = -1;
 
-// Initialization and commands.
-void Regcmd_Init()
+bool Announce_HasMask(ConVar cvar, int bit)
 {
-	RegConsoleCmd("sm_skills", Command_Skills, "Print the detected skills summary in chat and the comparative skills table in console.");
+	return cvar != null && (cvar.IntValue & bit) != 0;
 }
 
-Action Command_Skills(int client, int args)
+bool Announce_ShouldAnnounceSkill(int eventIndex)
 {
-	if (client <= 0 || !IsValidClient(client))
+	if (eventIndex < 0 || eventIndex >= L4D2_SKILLS_MAX_EVENTS || g_SkillEvents[eventIndex].id <= 0)
 	{
-		char tag[32];
-		FormatEx(tag, sizeof(tag), "%T", "Tag", LANG_SERVER);
-		ReplyToCommand(client, "%s sm_skills is in-game only.", tag);
-		return Plugin_Handled;
+		return false;
 	}
 
-	if (!Skills_IsEnabled())
+	switch (g_SkillEvents[eventIndex].type)
 	{
-		CPrintToChat(client, "%t {red}Plugin disabled.{default}", "Tag");
-		return Plugin_Handled;
-	}
-
-	int target = client;
-	if (args >= 1)
-	{
-		char pattern[MAX_TARGET_LENGTH];
-		GetCmdArg(1, pattern, sizeof(pattern));
-
-		int targets[1];
-		char targetName[MAX_TARGET_LENGTH];
-		bool targetNameMl = false;
-		int found = ProcessTargetString(pattern, client, targets, sizeof(targets), COMMAND_FILTER_CONNECTED, targetName, sizeof(targetName), targetNameMl);
-		if (found != 1)
+		case L4D2Skill_HunterSkeet:
 		{
-			ReplyToTargetError(client, found);
-			return Plugin_Handled;
+			return Announce_HasMask(g_cvAnnounceHunter, view_as<int>(PlayerSkillsAnnounceHunter_Skeet));
 		}
-
-		target = targets[0];
-	}
-
-	char targetName[MAX_NAME_LENGTH];
-	GetClientName(target, targetName, sizeof(targetName));
-
-	int counts[L4D2Skill_Size];
-	int total = 0;
-
-	for (int index = 0; index < L4D2_SKILLS_MAX_EVENTS; index++)
-	{
-		if (g_SkillEvents[index].id <= 0
-			|| !g_SkillEvents[index].actor.IsSamePersistentPlayer(target)
-			|| !Skills_IsSkillEventEnabledInCurrentMode(index))
+		case L4D2Skill_HunterSkeetMelee:
 		{
-			continue;
+			return Announce_HasMask(g_cvAnnounceHunter, view_as<int>(PlayerSkillsAnnounceHunter_SkeetMelee));
 		}
-
-		switch (g_SkillEvents[index].type)
+		case L4D2Skill_HunterDeadstop:
 		{
-			case L4D2Skill_WitchDead:
+			return Announce_HasMask(g_cvAnnounceHunter, view_as<int>(PlayerSkillsAnnounceHunter_Deadstop));
+		}
+		case L4D2Skill_HunterHighPounce:
+		{
+			return Announce_HasMask(g_cvAnnounceHunter, view_as<int>(PlayerSkillsAnnounceHunter_HighPounce));
+		}
+		case L4D2Skill_BoomerPop:
+		{
+			return Announce_HasMask(g_cvAnnounceBoomer, view_as<int>(PlayerSkillsAnnounceBoomer_Pop));
+		}
+		case L4D2Skill_BoomerVomitLanded:
+		{
+			return Announce_HasMask(g_cvAnnounceBoomer, view_as<int>(PlayerSkillsAnnounceBoomer_Vomit));
+		}
+		case L4D2Skill_SmokerTongueCut:
+		{
+			return Announce_HasMask(g_cvAnnounceSmoker, view_as<int>(PlayerSkillsAnnounceSmoker_TongueCut));
+		}
+		case L4D2Skill_SmokerSelfClear:
+		{
+			return Announce_HasMask(g_cvAnnounceSmoker, view_as<int>(PlayerSkillsAnnounceSmoker_SelfClear));
+		}
+		case L4D2Skill_JockeyHighPounce:
+		{
+			return Announce_HasMask(g_cvAnnounceJockey, view_as<int>(PlayerSkillsAnnounceJockey_HighPounce));
+		}
+		case L4D2Skill_ChargerLevel:
+		{
+			return Announce_HasMask(g_cvAnnounceCharger, view_as<int>(PlayerSkillsAnnounceCharger_Level));
+		}
+		case L4D2Skill_ChargerInstaKill:
+		{
+			return Announce_HasMask(g_cvAnnounceCharger, view_as<int>(PlayerSkillsAnnounceCharger_InstaKill));
+		}
+		case L4D2Skill_ChargerDeathSetup:
+		{
+			return Announce_HasMask(g_cvAnnounceCharger, view_as<int>(PlayerSkillsAnnounceCharger_DeathSetup));
+		}
+		case L4D2Skill_SpecialPinClear:
+		{
+			switch (view_as<L4D2ZombieClassType>(g_SkillEvents[eventIndex].zombieClass))
 			{
-				if (!g_SkillEvents[index].crown)
+				case L4D2ZombieClass_Hunter:
 				{
-					continue;
+					return Announce_HasMask(g_cvAnnounceHunter, view_as<int>(PlayerSkillsAnnounceHunter_SpecialClear));
+				}
+				case L4D2ZombieClass_Smoker:
+				{
+					return Announce_HasMask(g_cvAnnounceSmoker, view_as<int>(PlayerSkillsAnnounceSmoker_SpecialClear));
+				}
+				case L4D2ZombieClass_Jockey:
+				{
+					return Announce_HasMask(g_cvAnnounceJockey, view_as<int>(PlayerSkillsAnnounceJockey_SpecialClear));
+				}
+				case L4D2ZombieClass_Charger:
+				{
+					return Announce_HasMask(g_cvAnnounceCharger, view_as<int>(PlayerSkillsAnnounceCharger_SpecialClear));
 				}
 			}
 
-			case L4D2Skill_TankDead, L4D2Skill_WitchIncap, L4D2Skill_TankRockHit:
-			{
-				continue;
-			}
+			return false;
 		}
-
-		counts[g_SkillEvents[index].type]++;
-		total++;
+		case L4D2Skill_WitchDead:
+		{
+			return g_SkillEvents[eventIndex].crown
+				&& Announce_HasMask(g_cvAnnounceWitch, view_as<int>(PlayerSkillsAnnounceBoss_Crown));
+		}
+		case L4D2Skill_TankRockSkeet:
+		{
+			return Announce_HasMask(g_cvAnnounceTank, view_as<int>(PlayerSkillsAnnounceBoss_RockSkeet));
+		}
+		case L4D2Skill_TankRockHit:
+		{
+			return Announce_HasMask(g_cvAnnounceTank, view_as<int>(PlayerSkillsAnnounceBoss_RockHit));
+		}
+		case L4D2Skill_BunnyHopStreak:
+		{
+			return Announce_HasMask(g_cvAnnounceOther, view_as<int>(PlayerSkillsAnnounceOther_BunnyHop));
+		}
+		case L4D2Skill_CarAlarmTriggered:
+		{
+			return Announce_HasMask(g_cvAnnounceOther, view_as<int>(PlayerSkillsAnnounceOther_CarAlarm));
+		}
 	}
 
-	if (total <= 0)
+	return false;
+}
+
+bool Announce_ShouldAnnounceBoss(int sessionIndex)
+{
+	if (sessionIndex < 0 || sessionIndex >= L4D2_SKILLS_MAX_BOSSES || g_BossSessions[sessionIndex].id == 0)
 	{
-		CPrintToChat(client, "%t %t", "Tag", "SkillsSummaryEmpty", targetName);
-		return Plugin_Handled;
+		return false;
 	}
 
-	CPrintToChat(client, "%t %t", "Tag", "SkillsSummaryHeader", targetName);
+	switch (g_BossSessions[sessionIndex].type)
+	{
+		case L4D2Boss_Tank:
+		{
+			return g_cvAnnounceTank != null && g_cvAnnounceTank.IntValue != 0;
+		}
+		case L4D2Boss_Witch:
+		{
+			return g_cvAnnounceWitch != null && g_cvAnnounceWitch.IntValue != 0;
+		}
+	}
 
-	Announce_PrintSkillsSummaryLine(client, counts,
-		L4D2Skill_HunterSkeet, "SkillsLabelSkeet",
-		L4D2Skill_HunterSkeetMelee, "SkillsLabelSkeetMelee",
-		L4D2Skill_HunterDeadstop, "SkillsLabelDeadstop",
-		L4D2Skill_BoomerPop, "SkillsLabelPop",
-		L4D2Skill_ChargerLevel, "SkillsLabelLevel",
-		L4D2Skill_WitchDead, "SkillsLabelCrown");
+	return false;
+}
 
-	Announce_PrintSkillsSummaryLine(client, counts,
-		L4D2Skill_SmokerTongueCut, "SkillsLabelTongueCut",
-		L4D2Skill_SmokerSelfClear, "SkillsLabelSelfClear",
-		L4D2Skill_ChargerInstaKill, "SkillsLabelInstaKill",
-		L4D2Skill_ChargerDeathSetup, "SkillsLabelDeathSetup",
-		L4D2Skill_SpecialPinClear, "SkillsLabelPinClear",
-		L4D2Skill_BunnyHopStreak, "SkillsLabelBHop");
-
-	Announce_PrintSkillsSummaryLine(client, counts,
-		L4D2Skill_HunterHighPounce, "SkillsLabelHunterHighPounce",
-		L4D2Skill_JockeyHighPounce, "SkillsLabelJockeyHighPounce",
-		L4D2Skill_BoomerVomitLanded, "SkillsLabelVomit",
-		L4D2Skill_CarAlarmTriggered, "SkillsLabelCarAlarm",
-		L4D2Skill_TankRockSkeet, "SkillsLabelRockSkeet",
-		L4D2Skill_None, "");
-
-	Announce_RenderSkillsTable(client, target);
-
-	return Plugin_Handled;
+void Announce_ReplyCommand(int client, const char[] message, any ...)
+{
+	char buffer[256];
+	VFormat(buffer, sizeof(buffer), message, 3);
+	CReplyToCommand(client, "%s", buffer);
 }
 
 void Announce_RenderSkillsTable(int client, int target)
@@ -126,7 +151,7 @@ void Announce_RenderSkillsTable(int client, int target)
 	L4DTeam team = GetClientL4DTeam(target);
 	if (team != L4DTeam_Survivor && team != L4DTeam_Infected)
 	{
-		ConsolePanel_PrintMessage(client, "[l4d2_player_skills] No comparable skill table is available for that team.");
+		Announce_ReplyCommand(client, "%t %t", "Tag", "SkillsComparableTableUnavailable");
 		return;
 	}
 
@@ -366,7 +391,7 @@ void Announce_PrintSkillsSummaryLine(int client, const int counts[L4D2Skill_Size
 
 	if (hasAny)
 	{
-		CPrintToChat(client, "%t %s", "Tag", line);
+		Announce_ReplyCommand(client, "%t %s", "Tag", line);
 	}
 }
 
@@ -513,13 +538,13 @@ void Announce_GetSkillTag(int eventIndex, char[] buffer, int maxlen)
 
 void Announce_Skill(int eventId)
 {
-	if (g_cvAnnounceSkills == null || !g_cvAnnounceSkills.BoolValue)
+	int eventIndex = Skills_GetEventIndex(eventId);
+	if (eventIndex == -1)
 	{
 		return;
 	}
 
-	int eventIndex = Skills_GetEventIndex(eventId);
-	if (eventIndex == -1)
+	if (!Announce_ShouldAnnounceSkill(eventIndex))
 	{
 		return;
 	}
@@ -883,7 +908,7 @@ void Announce_Skill(int eventId)
 // Boss announce flow.
 void Announce_BossDamage(int sessionIndex)
 {
-	if (g_cvAnnounceBossDamage == null || !g_cvAnnounceBossDamage.BoolValue)
+	if (!Announce_ShouldAnnounceBoss(sessionIndex))
 	{
 		return;
 	}
@@ -946,14 +971,20 @@ void Announce_TankDamage(int sessionIndex, bool tankAlive)
 
 	if (tankAlive)
 	{
-		CPrintToChatAll("%t %t", "Tag", "BossTankHealthRemaining",
-			bossName,
-			g_BossSessions[sessionIndex].lastHealth);
+		if (Announce_HasMask(g_cvAnnounceTank, view_as<int>(PlayerSkillsAnnounceBoss_Damage)))
+		{
+			CPrintToChatAll("%t %t", "Tag", "BossTankHealthRemaining",
+				bossName,
+				g_BossSessions[sessionIndex].lastHealth);
+		}
 	}
 	else
 	{
-		CPrintToChatAll("%t %t", "Tag", "BossTankDamageTitle",
-			bossName);
+		if (Announce_HasMask(g_cvAnnounceTank, view_as<int>(PlayerSkillsAnnounceBoss_Damage)))
+		{
+			CPrintToChatAll("%t %t", "Tag", "BossTankDamageTitle",
+				bossName);
+		}
 	}
 
 	int survivorEntries[L4D2_SKILLS_MAX_DAMAGE_ENTRIES];
@@ -1002,10 +1033,13 @@ void Announce_TankDamage(int sessionIndex, bool tankAlive)
 
 		lastPercent = percent;
 
-		CPrintToChatAll("%t", "BossDamageEntry",
-			damage,
-			percent,
-			g_BossDamage[sessionIndex][entry].player.name);
+		if (Announce_HasMask(g_cvAnnounceTank, view_as<int>(PlayerSkillsAnnounceBoss_Damage)))
+		{
+			CPrintToChatAll("%t", "BossDamageEntry",
+				damage,
+				percent,
+				g_BossDamage[sessionIndex][entry].player.name);
+		}
 	}
 
 	g_BossSessions[sessionIndex].printed = true;
@@ -1023,12 +1057,18 @@ void Announce_WitchDamage(int sessionIndex, bool witchAlive)
 
 	if (witchAlive)
 	{
-		CPrintToChatAll("%t %t", "Tag", "BossWitchHealthRemaining",
-			g_BossSessions[sessionIndex].lastHealth);
+		if (Announce_HasMask(g_cvAnnounceWitch, view_as<int>(PlayerSkillsAnnounceBoss_Damage)))
+		{
+			CPrintToChatAll("%t %t", "Tag", "BossWitchHealthRemaining",
+				g_BossSessions[sessionIndex].lastHealth);
+		}
 	}
 	else
 	{
-		CPrintToChatAll("%t %t", "Tag", "BossWitchDamageTitle");
+		if (Announce_HasMask(g_cvAnnounceWitch, view_as<int>(PlayerSkillsAnnounceBoss_Damage)))
+		{
+			CPrintToChatAll("%t %t", "Tag", "BossWitchDamageTitle");
+		}
 	}
 
 	int survivorEntries[L4D2_SKILLS_MAX_DAMAGE_ENTRIES];
@@ -1059,7 +1099,17 @@ void Announce_WitchDamage(int sessionIndex, bool witchAlive)
 	int lastPercent = 100;
 	int restDamage = 0;
 	int restPercent = 0;
+	int maxEntries = 4;
 	char combinedName[64];
+
+	if (g_cvWitchPrintMaxEntries != null)
+	{
+		maxEntries = g_cvWitchPrintMaxEntries.IntValue;
+		if (maxEntries < 1)
+		{
+			maxEntries = 1;
+		}
+	}
 
 	Format(combinedName, sizeof(combinedName), "%T", "BossWitchDamageCombinedName", LANG_SERVER);
 
@@ -1081,22 +1131,24 @@ void Announce_WitchDamage(int sessionIndex, bool witchAlive)
 
 		lastPercent = percent;
 
-		if ((g_iWitchPrintMinimum > 0 && percent < g_iWitchPrintMinimum)
-			|| (g_iWitchPrintMaxLines > 0 && survivorCount > g_iWitchPrintMaxLines && i + 1 >= g_iWitchPrintMaxLines))
+		if (survivorCount > maxEntries && i >= maxEntries)
 		{
 			restDamage += damage;
 			restPercent += percent;
 			continue;
 		}
 
-		CPrintToChatAll("%t",
-			Announce_IsWitchCrownerEntry(sessionIndex, entry) ? "BossDamageEntryCrown" : "BossDamageEntry",
-			damage,
-			percent,
-			g_BossDamage[sessionIndex][entry].player.name);
+		if (Announce_HasMask(g_cvAnnounceWitch, view_as<int>(PlayerSkillsAnnounceBoss_Damage)))
+		{
+			CPrintToChatAll("%t",
+				Announce_IsWitchCrownerEntry(sessionIndex, entry) ? "BossDamageEntryCrown" : "BossDamageEntry",
+				damage,
+				percent,
+				g_BossDamage[sessionIndex][entry].player.name);
+		}
 	}
 
-	if (restDamage > 0)
+	if (restDamage > 0 && Announce_HasMask(g_cvAnnounceWitch, view_as<int>(PlayerSkillsAnnounceBoss_Damage)))
 	{
 		CPrintToChatAll("%t", "BossWitchDamageCombined",
 			restDamage,
@@ -1124,7 +1176,10 @@ void Announce_WitchKilledByTank(int sessionIndex, int tank)
 
 	char tankName[MAX_NAME_LENGTH];
 	GetClientName(tank, tankName, sizeof(tankName));
-	CPrintToChatAll("%t %t", "Tag", "WitchKilledByTank", tankName);
+	if (Announce_HasMask(g_cvAnnounceWitch, view_as<int>(PlayerSkillsAnnounceBoss_Misc)))
+	{
+		CPrintToChatAll("%t %t", "Tag", "WitchKilledByTank", tankName);
+	}
 }
 
 int Announce_GetDamagePercent(int sessionIndex, int damage)
