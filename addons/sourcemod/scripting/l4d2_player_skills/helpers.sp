@@ -57,6 +57,42 @@ stock bool IsValidClient(int client)
 	return client > 0 && client <= MaxClients && IsClientInGame(client);
 }
 
+stock bool Skills_IsShotgunWeaponId(int wepid)
+{
+	switch (wepid)
+	{
+		case WEPID_PUMPSHOTGUN, WEPID_AUTOSHOTGUN, WEPID_SHOTGUN_CHROME, WEPID_SHOTGUN_SPAS:
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+stock bool Skills_IsRangedShotWeaponId(int wepid)
+{
+	switch (wepid)
+	{
+		case WEPID_PISTOL, WEPID_PISTOL_MAGNUM,
+			WEPID_SMG, WEPID_SMG_SILENCED, WEPID_SMG_MP5,
+			WEPID_PUMPSHOTGUN, WEPID_AUTOSHOTGUN, WEPID_SHOTGUN_CHROME, WEPID_SHOTGUN_SPAS,
+			WEPID_RIFLE, WEPID_RIFLE_AK47, WEPID_RIFLE_DESERT, WEPID_RIFLE_SG552, WEPID_RIFLE_M60,
+			WEPID_HUNTING_RIFLE, WEPID_SNIPER_MILITARY, WEPID_SNIPER_AWP, WEPID_SNIPER_SCOUT,
+			WEPID_GRENADE_LAUNCHER, WEPID_MACHINEGUN:
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+stock int Skills_GetWeaponIdFromEventName(const char[] weaponName)
+{
+	return weaponName[0] != '\0' ? WeaponNameToId(weaponName) : WEPID_NONE;
+}
+
 /**
  * @brief Clears the circular runtime buffer of detected skill events.
  *
@@ -882,6 +918,8 @@ stock void Skills_GetSkillTypeName(L4D2SkillType type, char[] buffer, int maxlen
 		case L4D2Skill_SpitterKill: strcopy(buffer, maxlen, "SpitterKill");
 		case L4D2Skill_JockeyKill: strcopy(buffer, maxlen, "JockeyKill");
 		case L4D2Skill_ChargerKill: strcopy(buffer, maxlen, "ChargerKill");
+		case L4D2Skill_JockeyJumpStop: strcopy(buffer, maxlen, "JockeyJumpStop");
+		case L4D2Skill_JockeySkeetMelee: strcopy(buffer, maxlen, "JockeySkeetMelee");
 		default: strcopy(buffer, maxlen, "None");
 	}
 }
@@ -920,7 +958,7 @@ stock void Skills_FormatEventPlayerRoleName(int eventIndex, int slot, char[] buf
 			{
 				zombieClass = L4D2ZombieClass_Smoker;
 			}
-			case L4D2Skill_JockeyHighPounce:
+			case L4D2Skill_JockeyHighPounce, L4D2Skill_JockeyJumpStop, L4D2Skill_JockeySkeetMelee:
 			{
 				zombieClass = L4D2ZombieClass_Jockey;
 			}
@@ -1071,7 +1109,7 @@ stock bool Skills_IsSkillTypeEnabledInCurrentMode(L4D2SkillType type)
 		{
 			return Skills_IsZombieClassEnabledInCurrentContext(L4D2ZombieClass_Smoker);
 		}
-		case L4D2Skill_JockeyHighPounce:
+		case L4D2Skill_JockeyHighPounce, L4D2Skill_JockeyJumpStop, L4D2Skill_JockeySkeetMelee:
 		{
 			return Skills_IsZombieClassEnabledInCurrentContext(L4D2ZombieClass_Jockey);
 		}
@@ -1209,6 +1247,14 @@ stock int Skills_GetEventRating(int eventIndex)
 			}
 
 			return 1;
+		}
+		case L4D2Skill_JockeyJumpStop:
+		{
+			return 1;
+		}
+		case L4D2Skill_JockeySkeetMelee:
+		{
+			return 3;
 		}
 		case L4D2Skill_BoomerVomitLanded:
 		{

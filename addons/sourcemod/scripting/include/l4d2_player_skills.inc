@@ -35,6 +35,8 @@ enum L4D2SkillType
 	L4D2Skill_SpitterKill,
 	L4D2Skill_JockeyKill,
 	L4D2Skill_ChargerKill,
+	L4D2Skill_JockeyJumpStop,
+	L4D2Skill_JockeySkeetMelee,
 
 	L4D2Skill_Size
 }
@@ -71,7 +73,9 @@ stock char g_sL4D2SkillType[L4D2Skill_Size][] =
 	"HunterKill",
 	"SpitterKill",
 	"JockeyKill",
-	"ChargerKill"
+	"ChargerKill",
+	"JockeyJumpStop",
+	"JockeySkeetMelee"
 };
 
 /**
@@ -215,6 +219,18 @@ forward Action PlayerSkills_OnBossDamageFinalized(int sessionId, L4D2BossType ty
  * @noreturn
  */
 forward void PlayerSkills_OnBossDamageAnnounced(int sessionId, L4D2BossType type);
+
+/**
+ * @brief Called whenever a round or half summary is finalized.
+ * @remarks Fires after the runtime skill/boss state has been frozen into a compact
+ *          summary snapshot and before the next round start resets runtime state.
+ * @remarks This forward is notification-only; use the summary natives to inspect payload.
+ *
+ * @param summaryId      Unique runtime identifier for the finalized summary.
+ *
+ * @noreturn
+ */
+forward void PlayerSkills_OnSummaryFinalized(int summaryId);
 
 /**
  * @brief Returns whether a skill event identifier currently resolves to a valid event.
@@ -556,6 +572,29 @@ native void PlayerSkills_GetBossDamageEntryName(int sessionId, int entry, char[]
  */
 native void PlayerSkills_GetBossDamageEntryAuth(int sessionId, int entry, char[] buffer, int maxlen);
 
+/**
+ * @brief Returns whether a summary identifier currently resolves to a valid snapshot.
+ *
+ * @param summaryId      Runtime summary identifier.
+ *
+ * @return               True if the summary is still available, false otherwise.
+ */
+native bool PlayerSkills_IsSummaryValid(int summaryId);
+
+/**
+ * @brief Fills a KeyValues handle with the structured payload of a finalized summary.
+ * @remarks The native rewinds the handle and writes a "summary" section.
+ * @remarks The payload includes mode context, map name, total event count and
+ *          aggregated per-actor skill counts. Infected bots are compacted into
+ *          a single IA entry per team.
+ *
+ * @param summaryId      Runtime summary identifier.
+ * @param kv             KeyValues handle to populate.
+ *
+ * @return               True on success, false if the summary or handle is invalid.
+ */
+native bool PlayerSkills_FillSummaryKeyValues(int summaryId, Handle kv);
+
 public SharedPlugin __pl_l4d2_player_skills =
 {
 	name = "l4d2_player_skills",
@@ -602,5 +641,7 @@ public void __pl_l4d2_player_skills_SetNTVOptional()
 	MarkNativeAsOptional("PlayerSkills_IsBossDamageEntryBot");
 	MarkNativeAsOptional("PlayerSkills_GetBossDamageEntryName");
 	MarkNativeAsOptional("PlayerSkills_GetBossDamageEntryAuth");
+	MarkNativeAsOptional("PlayerSkills_IsSummaryValid");
+	MarkNativeAsOptional("PlayerSkills_FillSummaryKeyValues");
 }
 #endif

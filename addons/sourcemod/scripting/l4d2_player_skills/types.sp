@@ -7,6 +7,8 @@
 #define L4D2_SKILLS_MAX_DAMAGE_ENTRIES 32
 #define L4D2_SKILLS_MAX_EVENTS		   256
 #define L4D2_SKILLS_MAX_EVENT_ASSISTS  8
+#define L4D2_SKILLS_MAX_SUMMARIES	   16
+#define L4D2_SKILLS_MAX_SUMMARY_ENTRIES 24
 #define L4D2_SKILLS_SHOTGUN_BLAST_TIME 0.1
 #define L4D2_SKILLS_DEFAULT_BOOMER_HEALTH 50
 #define L4D2_SKILLS_DEFAULT_SMOKER_HEALTH 250
@@ -49,6 +51,8 @@ enum L4D2SkillType
 	L4D2Skill_SpitterKill,
 	L4D2Skill_JockeyKill,
 	L4D2Skill_ChargerKill,
+	L4D2Skill_JockeyJumpStop,
+	L4D2Skill_JockeySkeetMelee,
 
 	L4D2Skill_Size
 }
@@ -130,7 +134,9 @@ enum PlayerSkillsAnnounceJockeyFlag
 	PlayerSkillsAnnounceJockey_None = 0,
 	PlayerSkillsAnnounceJockey_HighPounce = 1 << 0,
 	PlayerSkillsAnnounceJockey_SpecialClear = 1 << 1,
-	PlayerSkillsAnnounceJockey_Kill = 1 << 2
+	PlayerSkillsAnnounceJockey_Kill = 1 << 2,
+	PlayerSkillsAnnounceJockey_JumpStop = 1 << 3,
+	PlayerSkillsAnnounceJockey_SkeetMelee = 1 << 4
 }
 
 enum PlayerSkillsAnnounceChargerFlag
@@ -575,9 +581,14 @@ enum struct L4D2SkillEventData
 	int			  actor2;
 	int			  victim2;
 	int			  assistsCount;
+	int			  actorWeaponId;
 	int			  actorDamage;
 	int			  assisterDamage;
+	int			  assisterWeaponId;
 	int			  assistDamage[L4D2_SKILLS_MAX_EVENT_ASSISTS];
+	int			  assistWeaponId[L4D2_SKILLS_MAX_EVENT_ASSISTS];
+	int			  assisterShots;
+	int			  assistShots[L4D2_SKILLS_MAX_EVENT_ASSISTS];
 	int			  damage;
 	int			  chipDamage;
 	int			  shots;
@@ -626,8 +637,11 @@ enum struct L4D2SkillEventData
 		this.actor2					= 0;
 		this.victim2				= 0;
 		this.assistsCount			= 0;
+		this.actorWeaponId			= WEPID_NONE;
 		this.actorDamage			= 0;
 		this.assisterDamage			= 0;
+		this.assisterWeaponId		= WEPID_NONE;
+		this.assisterShots			= 0;
 		this.damage					= 0;
 		this.chipDamage			 	= 0;
 		this.shots					= 0;
@@ -664,6 +678,70 @@ enum struct L4D2SkillEventData
 		{
 			this.assists[i].Reset();
 			this.assistDamage[i] = 0;
+			this.assistWeaponId[i] = WEPID_NONE;
+			this.assistShots[i] = 0;
+		}
+	}
+}
+
+enum struct L4D2SkillSummaryEntryData
+{
+	bool active;
+	L4DTeam team;
+	L4D2PlayerRef player;
+	int counts[L4D2Skill_Size];
+
+	void Reset()
+	{
+		this.active = false;
+		this.team = L4DTeam_Unassigned;
+		this.player.Reset();
+
+		for (int i = 0; i < view_as<int>(L4D2Skill_Size); i++)
+		{
+			this.counts[i] = 0;
+		}
+	}
+}
+
+enum struct L4D2SkillSummaryData
+{
+	int id;
+	char map[64];
+	PlayerSkillsGameMode baseMode;
+	int configuredSurvivorLimit;
+	int configuredPlayerZombieLimit;
+	int siPoolMask;
+	int enabledSiClassCount;
+	int versusTeamSize;
+	PlayerSkillsVersusContextType versusContext;
+	PlayerSkillsRoundStartSignalType roundStartSignal;
+	PlayerSkillsRoundEndSignalType roundEndSignal;
+	PlayerSkillsRoundLiveSignalType roundLiveSignal;
+	int totalEvents;
+	float createdAt;
+	L4D2SkillSummaryEntryData entries[L4D2_SKILLS_MAX_SUMMARY_ENTRIES];
+
+	void Reset()
+	{
+		this.id = 0;
+		this.map[0] = '\0';
+		this.baseMode = PlayerSkillsGameMode_Unknown;
+		this.configuredSurvivorLimit = 0;
+		this.configuredPlayerZombieLimit = 0;
+		this.siPoolMask = view_as<int>(PlayerSkillsSiPool_None);
+		this.enabledSiClassCount = 0;
+		this.versusTeamSize = 0;
+		this.versusContext = PlayerSkillsVersusContext_None;
+		this.roundStartSignal = PlayerSkillsRoundStartSignal_None;
+		this.roundEndSignal = PlayerSkillsRoundEndSignal_None;
+		this.roundLiveSignal = PlayerSkillsRoundLiveSignal_None;
+		this.totalEvents = 0;
+		this.createdAt = 0.0;
+
+		for (int i = 0; i < L4D2_SKILLS_MAX_SUMMARY_ENTRIES; i++)
+		{
+			this.entries[i].Reset();
 		}
 	}
 }

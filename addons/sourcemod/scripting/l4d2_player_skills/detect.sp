@@ -15,12 +15,14 @@
 #define L4D2_SKILLS_CHARGE_INCAP_WINDOW 12.0
 #define L4D2_SKILLS_CHARGE_MAP_RECHECK_WINDOW 0.25
 #define L4D2_SKILLS_CHARGE_MIN_MAP_DAMAGE 100
+#define L4D2_SKILLS_CHARGER_LEVEL_GRACE_TIME 0.15
 #define L4D2_SKILLS_BOOMER_VOMIT_WINDOW 2.25
 #define L4D2_SKILLS_SI_KILL_ASSIST_WINDOW 5.0
 #define L4D2_SKILLS_CARALARM_WINDOW 0.11
 #define L4D2_SKILLS_HOP_CHECK_TIME 0.1
 #define L4D2_SKILLS_HOPEND_CHECK_TIME 0.1
 #define L4D2_SKILLS_HOP_ACCEL_THRESH 0.01
+#define L4D2_SKILLS_HUNTER_POUNCE_GRACE_TIME 0.05
 #define CARFLAG_INDIRECT        (1 << 0)
 #define CARFLAG_FORCED          (1 << 1)
 
@@ -231,7 +233,10 @@ enum struct DetectSiAssistState
 {
 	int attacker[L4D2_SKILLS_MAX_EVENT_ASSISTS];
 	int damage[L4D2_SKILLS_MAX_EVENT_ASSISTS];
+	int shots[L4D2_SKILLS_MAX_EVENT_ASSISTS];
+	int weaponId[L4D2_SKILLS_MAX_EVENT_ASSISTS];
 	float time[L4D2_SKILLS_MAX_EVENT_ASSISTS];
+	float lastShotTime[L4D2_SKILLS_MAX_EVENT_ASSISTS];
 
 	void Reset()
 	{
@@ -239,7 +244,10 @@ enum struct DetectSiAssistState
 		{
 			this.attacker[i] = 0;
 			this.damage[i] = 0;
+			this.shots[i] = 0;
+			this.weaponId[i] = WEPID_NONE;
 			this.time[i] = 0.0;
+			this.lastShotTime[i] = 0.0;
 		}
 	}
 }
@@ -261,11 +269,25 @@ float g_fDetectSpecialClearTimeA[MAXPLAYERS + 1];
 float g_fDetectSpecialClearTimeB[MAXPLAYERS + 1];
 
 bool g_bDetectHunterPouncing[MAXPLAYERS + 1];
+float g_fDetectHunterPounceSeenAt[MAXPLAYERS + 1];
+bool g_bDetectJockeyLeaping[MAXPLAYERS + 1];
+float g_fDetectJockeyLeapSeenAt[MAXPLAYERS + 1];
+bool g_bDetectChargerCharging[MAXPLAYERS + 1];
+float g_fDetectChargerChargeSeenAt[MAXPLAYERS + 1];
+bool g_bDetectChargerKilledMelee[MAXPLAYERS + 1];
+bool g_bDetectChargerKilledCharging[MAXPLAYERS + 1];
 bool g_bDetectClientDamageHooked[MAXPLAYERS + 1];
-bool g_bDetectSuppressSimpleKill[MAXPLAYERS + 1];
+bool g_bDetectSuppressSiLifeKill[MAXPLAYERS + 1];
 bool g_bDetectShotCounted[MAXPLAYERS + 1][MAXPLAYERS + 1];
+bool g_bDetectHunterShotCounted[MAXPLAYERS + 1][MAXPLAYERS + 1];
+bool g_bDetectPendingHunterDeathEval[MAXPLAYERS + 1];
+bool g_bDetectPendingHunterDeathHeadshot[MAXPLAYERS + 1];
+bool g_bDetectPendingChargerDeathEval[MAXPLAYERS + 1];
 float g_fDetectHunterLastShove[MAXPLAYERS + 1][MAXPLAYERS + 1];
+float g_fDetectJockeyLastShove[MAXPLAYERS + 1][MAXPLAYERS + 1];
 int g_iDetectHunterSpawnHealth[MAXPLAYERS + 1];
+int g_iDetectPendingHunterDeathAttackerUserId[MAXPLAYERS + 1];
+int g_iDetectPendingChargerDeathAttackerUserId[MAXPLAYERS + 1];
 int g_iDetectSmokerOwnerByVictim[MAXPLAYERS + 1];
 int g_iDetectHunterDamage[MAXPLAYERS + 1][MAXPLAYERS + 1];
 int g_iDetectHunterShots[MAXPLAYERS + 1][MAXPLAYERS + 1];
@@ -274,6 +296,7 @@ int g_iDetectHunterShotDmg[MAXPLAYERS + 1][MAXPLAYERS + 1];
 float g_fDetectHunterShotStart[MAXPLAYERS + 1][MAXPLAYERS + 1];
 int g_iDetectHunterOverkill[MAXPLAYERS + 1];
 bool g_bDetectHunterKilledPouncing[MAXPLAYERS + 1];
+char g_sDetectPendingHunterDeathWeapon[MAXPLAYERS + 1][64];
 DetectRockTrack g_DetectRocks[L4D2_SKILLS_MAX_ROCKS];
 StringMap g_smDetectCarAlarmTargets = null;
 StringMap g_smDetectCarGlassParents = null;
@@ -331,15 +354,28 @@ void Detect_ResetAll()
 		g_fDetectSpecialClearTimeA[client] = -1.0;
 		g_fDetectSpecialClearTimeB[client] = -1.0;
 		g_bDetectHunterPouncing[client] = false;
+		g_fDetectHunterPounceSeenAt[client] = 0.0;
+		g_bDetectJockeyLeaping[client] = false;
+		g_fDetectJockeyLeapSeenAt[client] = 0.0;
+		g_bDetectChargerCharging[client] = false;
+		g_fDetectChargerChargeSeenAt[client] = 0.0;
+		g_bDetectChargerKilledMelee[client] = false;
+		g_bDetectChargerKilledCharging[client] = false;
 		g_bDetectClientDamageHooked[client] = false;
+		g_bDetectPendingHunterDeathEval[client] = false;
+		g_bDetectPendingHunterDeathHeadshot[client] = false;
+		g_bDetectPendingChargerDeathEval[client] = false;
 		g_iDetectHunterSpawnHealth[client] = 0;
+		g_iDetectPendingHunterDeathAttackerUserId[client] = 0;
+		g_iDetectPendingChargerDeathAttackerUserId[client] = 0;
+		g_sDetectPendingHunterDeathWeapon[client][0] = '\0';
 		g_DetectHunterDamageSnapshot[client].Reset();
 		g_DetectChargerDamageSnapshot[client].Reset();
 		g_DetectChargeVictim[client].Reset();
 		g_DetectSiAssist[client].Reset();
 		g_DetectSmoker[client].Reset();
 		g_iDetectSmokerOwnerByVictim[client] = 0;
-		g_bDetectSuppressSimpleKill[client] = false;
+		g_bDetectSuppressSiLifeKill[client] = false;
 		g_iDetectPendingBoomerKillEvent[client] = 0;
 		g_iDetectHunterShotDmgTeam[client] = 0;
 		g_iDetectHunterOverkill[client] = 0;
@@ -348,7 +384,9 @@ void Detect_ResetAll()
 		for (int attacker = 1; attacker <= MaxClients; attacker++)
 		{
 			g_bDetectShotCounted[client][attacker] = false;
+			g_bDetectHunterShotCounted[client][attacker] = false;
 			g_fDetectHunterLastShove[client][attacker] = 0.0;
+			g_fDetectJockeyLastShove[client][attacker] = 0.0;
 			g_iDetectHunterDamage[client][attacker] = 0;
 			g_iDetectHunterShots[client][attacker] = 0;
 			g_iDetectHunterShotDmg[client][attacker] = 0;
@@ -365,7 +403,7 @@ void Detect_ResetRocks()
 	}
 }
 
-bool Detect_IsTrackableSimpleKillClass(int client)
+bool Detect_IsTrackableSiLifeKillClass(int client)
 {
 	if (!IsValidInfected(client))
 	{
@@ -383,7 +421,7 @@ bool Detect_IsTrackableSimpleKillClass(int client)
 	return false;
 }
 
-void Detect_ResetSiKillTrack(int infected)
+void Detect_ResetSiLifeKillTrack(int infected)
 {
 	if (infected < 1 || infected > MaxClients)
 	{
@@ -391,18 +429,18 @@ void Detect_ResetSiKillTrack(int infected)
 	}
 
 	g_DetectSiAssist[infected].Reset();
-	g_bDetectSuppressSimpleKill[infected] = false;
+	g_bDetectSuppressSiLifeKill[infected] = false;
 	g_iDetectPendingBoomerKillEvent[infected] = 0;
 }
 
-void Detect_MarkSimpleKillSuppressed(int infected)
+void Detect_MarkSiLifeKillSuppressed(int infected)
 {
 	if (infected < 1 || infected > MaxClients)
 	{
 		return;
 	}
 
-	g_bDetectSuppressSimpleKill[infected] = true;
+	g_bDetectSuppressSiLifeKill[infected] = true;
 	g_iDetectPendingBoomerKillEvent[infected] = 0;
 }
 
@@ -449,35 +487,376 @@ void Detect_LogHunterSkeetDecision(int hunter, int attacker, const char[] stage,
 		detail);
 }
 
-Action Detect_TimerAnnounceBoomerKill(Handle timer, DataPack pack)
+void Detect_SetJockeyLeaping(int jockey, bool state)
 {
-	pack.Reset();
-	int boomer = pack.ReadCell();
-	int eventId = pack.ReadCell();
-
-	if (boomer < 1 || boomer > MaxClients || g_iDetectPendingBoomerKillEvent[boomer] != eventId)
+	g_bDetectJockeyLeaping[jockey] = state;
+	if (state)
 	{
+		g_fDetectJockeyLeapSeenAt[jockey] = GetGameTime();
+	}
+}
+
+bool Detect_IsJockeyEffectivelyLeaping(int jockey)
+{
+	if (g_bDetectJockeyLeaping[jockey])
+	{
+		g_fDetectJockeyLeapSeenAt[jockey] = GetGameTime();
+		return true;
+	}
+
+	return g_fDetectJockeyLeapSeenAt[jockey] > 0.0
+		&& (GetGameTime() - g_fDetectJockeyLeapSeenAt[jockey]) <= L4D2_SKILLS_HUNTER_POUNCE_GRACE_TIME;
+}
+
+void Detect_ResetJockeyLeapState(int jockey)
+{
+	g_bDetectJockeyLeaping[jockey] = false;
+	g_fDetectJockeyLeapSeenAt[jockey] = 0.0;
+	g_DetectLeap[jockey].Reset();
+
+	for (int attacker = 1; attacker <= MaxClients; attacker++)
+	{
+		g_fDetectJockeyLastShove[jockey][attacker] = 0.0;
+	}
+}
+
+Action Detect_TimerAnnounceBoomerKill(Handle timer, any userid)
+{
+	int boomer = GetClientOfUserId(userid);
+	if (boomer < 1 || boomer > MaxClients)
+	{
+		Skills_Debug(PlayerSkillsDebug_Detect,
+			"Boomer kill timer aborted. userid=%d boomer=%d reason=invalid_client",
+			userid,
+			boomer);
+		return Plugin_Stop;
+	}
+
+	int eventId = g_iDetectPendingBoomerKillEvent[boomer];
+
+	if (eventId <= 0)
+	{
+		Skills_Debug(PlayerSkillsDebug_Detect,
+			"Boomer kill timer aborted. boomer=%d event=%d pending=%d",
+			boomer,
+			eventId,
+			g_iDetectPendingBoomerKillEvent[boomer]);
 		return Plugin_Stop;
 	}
 
 	g_iDetectPendingBoomerKillEvent[boomer] = 0;
+	Skills_Debug(PlayerSkillsDebug_Detect,
+		"Boomer kill timer firing. boomer=%d event=%d valid=%d",
+		boomer,
+		eventId,
+		Skills_IsEventValid(eventId) ? 1 : 0);
 
 	if (Skills_IsEventValid(eventId))
 	{
 		Announce_Skill(eventId);
 	}
 
+	Detect_ResetSiLifeKillTrack(boomer);
+
 	return Plugin_Stop;
 }
 
-void Detect_RecordSiKillDamage(int victim, int attacker, int damage)
+Action Detect_TimerEvaluateHunterDeath(Handle timer, any userid)
 {
-	if (!Detect_IsTrackableSimpleKillClass(victim) || !IsValidSurvivor(attacker) || damage <= 0)
+	int hunter = GetClientOfUserId(userid);
+	if (hunter < 1 || hunter > MaxClients)
+	{
+		return Plugin_Stop;
+	}
+
+	if (!g_bDetectPendingHunterDeathEval[hunter])
+	{
+		Skills_Debug(PlayerSkillsDebug_Detect,
+			"Hunter death timer aborted. hunter=%d userid=%d reason=not_pending",
+			hunter,
+			userid);
+		return Plugin_Stop;
+	}
+
+	g_bDetectPendingHunterDeathEval[hunter] = false;
+	bool headshot = g_bDetectPendingHunterDeathHeadshot[hunter];
+	g_bDetectPendingHunterDeathHeadshot[hunter] = false;
+
+	int attacker = GetClientOfUserId(g_iDetectPendingHunterDeathAttackerUserId[hunter]);
+	g_iDetectPendingHunterDeathAttackerUserId[hunter] = 0;
+	char weapon[64];
+	strcopy(weapon, sizeof(weapon), g_sDetectPendingHunterDeathWeapon[hunter]);
+	g_sDetectPendingHunterDeathWeapon[hunter][0] = '\0';
+
+	Skills_Debug(PlayerSkillsDebug_Detect,
+		"Hunter death timer firing. hunter=%d attacker=%d pending=%d",
+		hunter,
+		attacker,
+		g_bDetectPendingHunterDeathEval[hunter] ? 1 : 0);
+
+	if (!IsValidZombieClass(hunter, L4D2ZombieClass_Hunter))
+	{
+		Detect_ResetHunter(hunter);
+		Detect_ResetSiLifeKillTrack(hunter);
+		return Plugin_Stop;
+	}
+
+	bool shouldEmitSiLifeKill = IsValidSurvivor(attacker) && Detect_IsTrackableSiLifeKillClass(hunter);
+	int hunterHealthBeforeDamage = 0;
+	bool hunterWasPouncingAtDeath = false;
+
+	if (shouldEmitSiLifeKill)
+	{
+		hunterHealthBeforeDamage = g_DetectHunterDamageSnapshot[hunter].lastHealthBeforeDamage > 0
+			? g_DetectHunterDamageSnapshot[hunter].lastHealthBeforeDamage
+			: g_DetectHunterDamageSnapshot[hunter].lastHealth;
+		int hunterBaselineHealth = g_iDetectHunterSpawnHealth[hunter] > 0
+			? g_iDetectHunterSpawnHealth[hunter]
+			: hunterHealthBeforeDamage;
+		if (hunterBaselineHealth <= 0)
+		{
+			hunterBaselineHealth = Skills_GetSpecialMaxHealth(L4D2ZombieClass_Hunter);
+		}
+		Skills_Debug(PlayerSkillsDebug_Detect,
+			"Hunter decision source. hunter=%d attacker=%d lastHealthBefore=%d lastHealth=%d spawnHealth=%d chosenHealthBefore=%d chosenBaseline=%d",
+			hunter,
+			attacker,
+			g_DetectHunterDamageSnapshot[hunter].lastHealthBeforeDamage,
+			g_DetectHunterDamageSnapshot[hunter].lastHealth,
+			g_iDetectHunterSpawnHealth[hunter],
+			hunterHealthBeforeDamage,
+			hunterBaselineHealth);
+		int chipDamage = hunterBaselineHealth - hunterHealthBeforeDamage;
+		if (chipDamage < 0)
+		{
+			chipDamage = 0;
+		}
+
+		float rawDamage = g_DetectHunterDamageSnapshot[hunter].lastRawDamage;
+		if (g_DetectHunterDamageSnapshot[hunter].lastAttacker != attacker)
+		{
+			rawDamage = float(hunterHealthBeforeDamage);
+		}
+
+		bool killedPouncing = g_bDetectHunterKilledPouncing[hunter] || Detect_IsHunterEffectivelyPouncing(hunter);
+		hunterWasPouncingAtDeath = killedPouncing;
+		char hunterDecision[256];
+		FormatEx(hunterDecision, sizeof(hunterDecision),
+			"weapon=%s headshot=%d killedPouncing=%d health_before=%d baseline=%d chip=%d raw=%.1f team_shot=%d killer_shot=%d shots=%d",
+			weapon,
+			headshot ? 1 : 0,
+			killedPouncing ? 1 : 0,
+			hunterHealthBeforeDamage,
+			hunterBaselineHealth,
+			chipDamage,
+			rawDamage,
+			g_iDetectHunterShotDmgTeam[hunter],
+			Detect_GetHunterPounceDamage(hunter, attacker),
+			Detect_GetHunterPounceShots(hunter, attacker));
+		Detect_LogHunterSkeetDecision(hunter, attacker, "start", hunterDecision);
+
+		if (killedPouncing && Detect_IsSkeetWeaponMelee(weapon))
+		{
+			Detect_LogHunterSkeetDecision(hunter, attacker, "melee", "classified_as=HunterSkeetMelee");
+			int eventId = Skills_CreateEvent(L4D2Skill_HunterSkeetMelee);
+			int eventIndex = Skills_GetEventIndex(eventId);
+			if (eventIndex != -1)
+			{
+				g_SkillEvents[eventIndex].actor.Capture(attacker);
+				g_SkillEvents[eventIndex].victim.Capture(hunter);
+				g_SkillEvents[eventIndex].damage = hunterHealthBeforeDamage;
+				g_SkillEvents[eventIndex].chipDamage = chipDamage;
+				g_SkillEvents[eventIndex].shots = 1;
+				g_SkillEvents[eventIndex].wouldQualifyAtBaseline = true;
+				g_SkillEvents[eventIndex].perfect = (chipDamage == 0);
+				g_SkillEvents[eventIndex].headshot = headshot;
+
+				Action meleeResult = API_FireSkillDetected(eventId, L4D2Skill_HunterSkeetMelee);
+				if (meleeResult < Plugin_Handled)
+				{
+					Announce_Skill(eventId);
+				}
+			}
+
+			Detect_MarkSiLifeKillSuppressed(hunter);
+		}
+
+		bool sniperSkeet = killedPouncing && headshot && Detect_IsSkeetWeaponSniper(weapon);
+		bool glSkeet = killedPouncing && Detect_IsSkeetWeaponGL(weapon);
+		if (!g_bDetectSuppressSiLifeKill[hunter] && (sniperSkeet || glSkeet))
+		{
+			bool qualifiesAtBaseline = rawDamage >= float(hunterBaselineHealth);
+			FormatEx(hunterDecision, sizeof(hunterDecision),
+				"sniper=%d gl=%d qualifies_at_baseline=%d raw=%.1f baseline=%d",
+				sniperSkeet ? 1 : 0,
+				glSkeet ? 1 : 0,
+				qualifiesAtBaseline ? 1 : 0,
+				rawDamage,
+				hunterBaselineHealth);
+			Detect_LogHunterSkeetDecision(hunter, attacker, "ranged", hunterDecision);
+			if (qualifiesAtBaseline)
+			{
+				Detect_LogHunterSkeetDecision(hunter, attacker, "ranged", "classified_as=HunterSkeet");
+				int eventId = Skills_CreateEvent(L4D2Skill_HunterSkeet);
+				int eventIndex = Skills_GetEventIndex(eventId);
+				if (eventIndex != -1)
+				{
+					g_SkillEvents[eventIndex].actor.Capture(attacker);
+					g_SkillEvents[eventIndex].victim.Capture(hunter);
+					g_SkillEvents[eventIndex].damage = hunterHealthBeforeDamage;
+					g_SkillEvents[eventIndex].chipDamage = chipDamage;
+					g_SkillEvents[eventIndex].shots = 1;
+					g_SkillEvents[eventIndex].wouldQualifyAtBaseline = chipDamage > 0;
+					g_SkillEvents[eventIndex].perfect = (chipDamage == 0);
+					g_SkillEvents[eventIndex].headshot = headshot;
+					g_SkillEvents[eventIndex].sniper = sniperSkeet;
+					g_SkillEvents[eventIndex].grenadeLauncher = glSkeet;
+
+					Action rangedResult = API_FireSkillDetected(eventId, L4D2Skill_HunterSkeet);
+					if (rangedResult < Plugin_Handled)
+					{
+						Announce_Skill(eventId);
+					}
+				}
+			}
+
+			Detect_MarkSiLifeKillSuppressed(hunter);
+		}
+
+		if (!g_bDetectSuppressSiLifeKill[hunter] && hunterWasPouncingAtDeath && g_iDetectHunterShotDmgTeam[hunter] > 0)
+		{
+			int interruptDamage = g_cvDetectPounceInterrupt != null ? g_cvDetectPounceInterrupt.IntValue : 150;
+			int killerDamage = Detect_GetHunterPounceDamage(hunter, attacker);
+			int teamDamage = g_iDetectHunterShotDmgTeam[hunter];
+			int shots = Detect_GetHunterPounceShots(hunter, attacker);
+			int overkillDamage = g_iDetectHunterOverkill[hunter];
+			int potentialKillerDamage = killerDamage + overkillDamage;
+			int potentialTeamDamage = teamDamage + overkillDamage;
+			bool isSingleSkeet = potentialKillerDamage >= interruptDamage;
+			bool isTeamSkeet = potentialTeamDamage > potentialKillerDamage && potentialTeamDamage >= interruptDamage;
+			bool isOverkill = overkillDamage > 0 && (isSingleSkeet || isTeamSkeet);
+			FormatEx(hunterDecision, sizeof(hunterDecision),
+				"interrupt=%d killer_damage=%d team_damage=%d overkill=%d potential_killer=%d potential_team=%d single=%d team=%d",
+				interruptDamage,
+				killerDamage,
+				teamDamage,
+				overkillDamage,
+				potentialKillerDamage,
+				potentialTeamDamage,
+				isSingleSkeet ? 1 : 0,
+				isTeamSkeet ? 1 : 0);
+			Detect_LogHunterSkeetDecision(hunter, attacker, "shotgun", hunterDecision);
+
+			if (isSingleSkeet || isTeamSkeet)
+			{
+				Detect_LogHunterSkeetDecision(hunter, attacker, "shotgun", isTeamSkeet ? "classified_as=HunterSkeet(team)" : "classified_as=HunterSkeet(single)");
+				int eventId = Skills_CreateEvent(L4D2Skill_HunterSkeet);
+				int eventIndex = Skills_GetEventIndex(eventId);
+				if (eventIndex != -1)
+				{
+					g_SkillEvents[eventIndex].actor.Capture(attacker);
+					g_SkillEvents[eventIndex].victim.Capture(hunter);
+					g_SkillEvents[eventIndex].damage = isTeamSkeet ? potentialTeamDamage : potentialKillerDamage;
+					g_SkillEvents[eventIndex].shots = shots;
+					g_SkillEvents[eventIndex].wouldQualifyAtBaseline = isOverkill;
+					g_SkillEvents[eventIndex].chipDamage = Detect_GetHunterLifeDamage(hunter, attacker) - killerDamage;
+					g_SkillEvents[eventIndex].perfect = shots == 1 && g_SkillEvents[eventIndex].chipDamage == 0 && !isTeamSkeet;
+					g_SkillEvents[eventIndex].headshot = headshot;
+
+					if (isTeamSkeet)
+					{
+						int topAssister = 0;
+						int topAssistDamage = 0;
+						for (int i = 1; i <= MaxClients; i++)
+						{
+							if (i == attacker || !IsValidSurvivor(i))
+							{
+								continue;
+							}
+
+							if (Detect_GetHunterPounceDamage(hunter, i) > topAssistDamage)
+							{
+								topAssistDamage = Detect_GetHunterPounceDamage(hunter, i);
+								topAssister = i;
+							}
+						}
+
+						if (topAssister > 0)
+						{
+							g_SkillEvents[eventIndex].assister.Capture(topAssister);
+						}
+					}
+
+					Action result = API_FireSkillDetected(eventId, g_SkillEvents[eventIndex].type);
+					if (result < Plugin_Handled)
+					{
+						Announce_Skill(eventId);
+					}
+				}
+
+				Detect_MarkSiLifeKillSuppressed(hunter);
+			}
+			else
+			{
+				Detect_LogHunterSkeetDecision(hunter, attacker, "shotgun", "classified_as=none");
+			}
+		}
+
+		Detect_LogHunterSkeetDecision(hunter, attacker, "fallback", g_bDetectSuppressSiLifeKill[hunter] ? "classified_as=suppressed" : "classified_as=HunterKill");
+		if (!g_bDetectSuppressSiLifeKill[hunter])
+		{
+			Detect_EmitHunterLifeKill(
+				hunter,
+				attacker,
+				hunterHealthBeforeDamage > 0 ? hunterHealthBeforeDamage : Skills_GetSpecialMaxHealth(L4D2ZombieClass_Hunter));
+		}
+	}
+
+	Detect_ResetHunter(hunter);
+	Detect_ResetSiLifeKillTrack(hunter);
+	return Plugin_Stop;
+}
+
+Action Detect_TimerEvaluateChargerDeath(Handle timer, any userid)
+{
+	int charger = GetClientOfUserId(userid);
+	if (charger < 1 || charger > MaxClients)
+	{
+		return Plugin_Stop;
+	}
+
+	if (!g_bDetectPendingChargerDeathEval[charger])
+	{
+		return Plugin_Stop;
+	}
+
+	g_bDetectPendingChargerDeathEval[charger] = false;
+	int attacker = GetClientOfUserId(g_iDetectPendingChargerDeathAttackerUserId[charger]);
+	g_iDetectPendingChargerDeathAttackerUserId[charger] = 0;
+
+	if (IsValidZombieClass(charger, L4D2ZombieClass_Charger)
+		&& IsValidSurvivor(attacker)
+		&& !g_bDetectSuppressSiLifeKill[charger])
+	{
+		Detect_EmitSiLifeKill(charger, attacker);
+	}
+
+	Detect_ResetCharger(charger);
+	Detect_ResetSiLifeKillTrack(charger);
+	return Plugin_Stop;
+}
+
+void Detect_RecordSiLifeKillDamage(int victim, int attacker, int damage, int weaponId, int damageType)
+{
+	if (!Detect_IsTrackableSiLifeKillClass(victim) || !IsValidSurvivor(attacker) || damage <= 0)
 	{
 		return;
 	}
 
 	float now = GetGameTime();
+	bool countRealShots = Skills_IsRangedShotWeaponId(weaponId)
+		|| (damageType & DMG_BUCKSHOT) != 0
+		|| (damageType & DMG_BULLET) != 0;
 
 	int slot = -1;
 	int staleSlot = -1;
@@ -514,19 +893,62 @@ void Detect_RecordSiKillDamage(int victim, int attacker, int damage)
 	if (slot != -1)
 	{
 		g_DetectSiAssist[victim].damage[slot] += damage;
+		if (countRealShots)
+		{
+			if (!g_bDetectShotCounted[victim][attacker])
+			{
+				g_DetectSiAssist[victim].shots[slot]++;
+				g_bDetectShotCounted[victim][attacker] = true;
+			}
+		}
+		else
+		{
+			g_DetectSiAssist[victim].shots[slot]++;
+		}
+		g_DetectSiAssist[victim].weaponId[slot] = weaponId;
 		g_DetectSiAssist[victim].time[slot] = now;
 	}
 	else if (staleSlot != -1)
 	{
 		g_DetectSiAssist[victim].attacker[staleSlot] = attacker;
 		g_DetectSiAssist[victim].damage[staleSlot] = damage;
+		g_DetectSiAssist[victim].shots[staleSlot] = 0;
+		g_DetectSiAssist[victim].weaponId[staleSlot] = weaponId;
 		g_DetectSiAssist[victim].time[staleSlot] = now;
+		g_DetectSiAssist[victim].lastShotTime[staleSlot] = 0.0;
+		if (countRealShots)
+		{
+			if (!g_bDetectShotCounted[victim][attacker])
+			{
+				g_DetectSiAssist[victim].shots[staleSlot] = 1;
+				g_bDetectShotCounted[victim][attacker] = true;
+			}
+		}
+		else
+		{
+			g_DetectSiAssist[victim].shots[staleSlot] = 1;
+		}
 	}
 	else if (damage > g_DetectSiAssist[victim].damage[weakestSlot])
 	{
 		g_DetectSiAssist[victim].attacker[weakestSlot] = attacker;
 		g_DetectSiAssist[victim].damage[weakestSlot] = damage;
+		g_DetectSiAssist[victim].shots[weakestSlot] = 0;
+		g_DetectSiAssist[victim].weaponId[weakestSlot] = weaponId;
 		g_DetectSiAssist[victim].time[weakestSlot] = now;
+		g_DetectSiAssist[victim].lastShotTime[weakestSlot] = 0.0;
+		if (countRealShots)
+		{
+			if (!g_bDetectShotCounted[victim][attacker])
+			{
+				g_DetectSiAssist[victim].shots[weakestSlot] = 1;
+				g_bDetectShotCounted[victim][attacker] = true;
+			}
+		}
+		else
+		{
+			g_DetectSiAssist[victim].shots[weakestSlot] = 1;
+		}
 	}
 
 	for (int pass = 0; pass < L4D2_SKILLS_MAX_EVENT_ASSISTS - 1; pass++)
@@ -540,20 +962,60 @@ void Detect_RecordSiKillDamage(int victim, int attacker, int damage)
 
 			int attackerTemp = g_DetectSiAssist[victim].attacker[i];
 			int damageTemp = g_DetectSiAssist[victim].damage[i];
+			int shotsTemp = g_DetectSiAssist[victim].shots[i];
+			int weaponIdTemp = g_DetectSiAssist[victim].weaponId[i];
 			float timeTemp = g_DetectSiAssist[victim].time[i];
+			float lastShotTimeTemp = g_DetectSiAssist[victim].lastShotTime[i];
 
 			g_DetectSiAssist[victim].attacker[i] = g_DetectSiAssist[victim].attacker[i + 1];
 			g_DetectSiAssist[victim].damage[i] = g_DetectSiAssist[victim].damage[i + 1];
+			g_DetectSiAssist[victim].shots[i] = g_DetectSiAssist[victim].shots[i + 1];
+			g_DetectSiAssist[victim].weaponId[i] = g_DetectSiAssist[victim].weaponId[i + 1];
 			g_DetectSiAssist[victim].time[i] = g_DetectSiAssist[victim].time[i + 1];
+			g_DetectSiAssist[victim].lastShotTime[i] = g_DetectSiAssist[victim].lastShotTime[i + 1];
 
 			g_DetectSiAssist[victim].attacker[i + 1] = attackerTemp;
 			g_DetectSiAssist[victim].damage[i + 1] = damageTemp;
+			g_DetectSiAssist[victim].shots[i + 1] = shotsTemp;
+			g_DetectSiAssist[victim].weaponId[i + 1] = weaponIdTemp;
 			g_DetectSiAssist[victim].time[i + 1] = timeTemp;
+			g_DetectSiAssist[victim].lastShotTime[i + 1] = lastShotTimeTemp;
 		}
+	}
+
+	if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
+	{
+		char summary[256];
+		summary[0] = '\0';
+		for (int i = 0; i < L4D2_SKILLS_MAX_EVENT_ASSISTS; i++)
+		{
+			if (g_DetectSiAssist[victim].attacker[i] == 0)
+			{
+				continue;
+			}
+
+			char segment[64];
+			FormatEx(segment, sizeof(segment), "%s%d:%d/%d",
+				summary[0] == '\0' ? "" : " ",
+				g_DetectSiAssist[victim].attacker[i],
+				g_DetectSiAssist[victim].damage[i],
+				g_DetectSiAssist[victim].shots[i]);
+			StrCat(summary, sizeof(summary), segment);
+		}
+
+		Skills_Debug(PlayerSkillsDebug_Detect,
+			"SI life kill damage recorded. victim=%d attacker=%d damage=%d weapon=%d damagetype=%d counted=%d summary=%s",
+			victim,
+			attacker,
+			damage,
+			weaponId,
+			damageType,
+			g_bDetectShotCounted[victim][attacker] ? 1 : 0,
+			summary);
 	}
 }
 
-L4D2SkillType Detect_GetSimpleKillSkillType(L4D2ZombieClassType zombieClass)
+L4D2SkillType Detect_GetSiLifeKillSkillType(L4D2ZombieClassType zombieClass)
 {
 	switch (zombieClass)
 	{
@@ -568,7 +1030,7 @@ L4D2SkillType Detect_GetSimpleKillSkillType(L4D2ZombieClassType zombieClass)
 	return L4D2Skill_None;
 }
 
-int Detect_GetSiContributorDamage(int victim, int client)
+int Detect_GetSiLifeContributorDamage(int victim, int client)
 {
 	if (client <= 0)
 	{
@@ -586,15 +1048,91 @@ int Detect_GetSiContributorDamage(int victim, int client)
 	return 0;
 }
 
-void Detect_EmitSimpleSiKill(int victim, int killer)
+int Detect_GetSiLifeContributorShots(int victim, int client)
 {
-	if (!Detect_IsTrackableSimpleKillClass(victim) || !IsValidSurvivor(killer))
+	if (client <= 0)
+	{
+		return 0;
+	}
+
+	for (int i = 0; i < L4D2_SKILLS_MAX_EVENT_ASSISTS; i++)
+	{
+		if (g_DetectSiAssist[victim].attacker[i] == client)
+		{
+			return g_DetectSiAssist[victim].shots[i];
+		}
+	}
+
+	return 0;
+}
+
+int Detect_GetSiLifeContributorWeaponId(int victim, int client)
+{
+	if (client <= 0)
+	{
+		return WEPID_NONE;
+	}
+
+	for (int i = 0; i < L4D2_SKILLS_MAX_EVENT_ASSISTS; i++)
+	{
+		if (g_DetectSiAssist[victim].attacker[i] == client)
+		{
+			return g_DetectSiAssist[victim].weaponId[i];
+		}
+	}
+
+	return WEPID_NONE;
+}
+
+int Detect_GetHunterLifeDamage(int victim, int client)
+{
+	if (client <= 0)
+	{
+		return 0;
+	}
+
+	return g_iDetectHunterDamage[victim][client];
+}
+
+int Detect_GetHunterLifeShots(int victim, int client)
+{
+	if (client <= 0)
+	{
+		return 0;
+	}
+
+	return g_iDetectHunterShots[victim][client];
+}
+
+int Detect_GetHunterPounceDamage(int victim, int client)
+{
+	if (client <= 0)
+	{
+		return 0;
+	}
+
+	return g_iDetectHunterShotDmg[victim][client];
+}
+
+int Detect_GetHunterPounceShots(int victim, int client)
+{
+	if (client <= 0)
+	{
+		return 0;
+	}
+
+	return g_iDetectHunterShots[victim][client];
+}
+
+void Detect_EmitSiLifeKill(int victim, int killer)
+{
+	if (!Detect_IsTrackableSiLifeKillClass(victim) || !IsValidSurvivor(killer))
 	{
 		return;
 	}
 
 	L4D2ZombieClassType zombieClass = GetClientZombieClass(victim);
-	L4D2SkillType type = Detect_GetSimpleKillSkillType(zombieClass);
+	L4D2SkillType type = Detect_GetSiLifeKillSkillType(zombieClass);
 	if (type == L4D2Skill_None)
 	{
 		return;
@@ -610,8 +1148,10 @@ void Detect_EmitSimpleSiKill(int victim, int killer)
 	g_SkillEvents[eventIndex].actor.Capture(killer);
 	g_SkillEvents[eventIndex].victim.Capture(victim);
 	g_SkillEvents[eventIndex].zombieClass = zombieClass;
-	g_SkillEvents[eventIndex].actorDamage = Detect_GetSiContributorDamage(victim, killer);
+	g_SkillEvents[eventIndex].actorWeaponId = Detect_GetSiLifeContributorWeaponId(victim, killer);
+	g_SkillEvents[eventIndex].actorDamage = Detect_GetSiLifeContributorDamage(victim, killer);
 	g_SkillEvents[eventIndex].damage = g_SkillEvents[eventIndex].actorDamage;
+	g_SkillEvents[eventIndex].shots = Detect_GetSiLifeContributorShots(victim, killer);
 
 	int contributors[L4D2_SKILLS_MAX_EVENT_ASSISTS];
 	for (int i = 0; i < L4D2_SKILLS_MAX_EVENT_ASSISTS; i++)
@@ -633,7 +1173,7 @@ void Detect_EmitSimpleSiKill(int victim, int killer)
 			continue;
 		}
 
-		int assistDamage = Detect_GetSiContributorDamage(victim, assister);
+		int assistDamage = Detect_GetSiLifeContributorDamage(victim, assister);
 		if (assistDamage <= 0)
 		{
 			continue;
@@ -646,6 +1186,8 @@ void Detect_EmitSimpleSiKill(int victim, int killer)
 
 		g_SkillEvents[eventIndex].assists[assistsFound].Capture(assister);
 		g_SkillEvents[eventIndex].assistDamage[assistsFound] = assistDamage;
+		g_SkillEvents[eventIndex].assistShots[assistsFound] = Detect_GetSiLifeContributorShots(victim, assister);
+		g_SkillEvents[eventIndex].assistWeaponId[assistsFound] = Detect_GetSiLifeContributorWeaponId(victim, assister);
 		assistsFound++;
 	}
 
@@ -654,6 +1196,35 @@ void Detect_EmitSimpleSiKill(int victim, int killer)
 	{
 		g_SkillEvents[eventIndex].assister = g_SkillEvents[eventIndex].assists[0];
 		g_SkillEvents[eventIndex].assisterDamage = g_SkillEvents[eventIndex].assistDamage[0];
+		g_SkillEvents[eventIndex].assisterShots = g_SkillEvents[eventIndex].assistShots[0];
+		g_SkillEvents[eventIndex].assisterWeaponId = g_SkillEvents[eventIndex].assistWeaponId[0];
+	}
+
+	if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
+	{
+		char assistsSummary[256];
+		assistsSummary[0] = '\0';
+		for (int i = 0; i < assistsFound; i++)
+		{
+			char segment[72];
+			FormatEx(segment, sizeof(segment), "%s%d:%d/%d",
+				assistsSummary[0] == '\0' ? "" : " ",
+				g_SkillEvents[eventIndex].assists[i].client,
+				g_SkillEvents[eventIndex].assistDamage[i],
+				g_SkillEvents[eventIndex].assistShots[i]);
+			StrCat(assistsSummary, sizeof(assistsSummary), segment);
+		}
+
+		Skills_Debug(PlayerSkillsDebug_Detect,
+			"SI life kill payload. event=%d type=%d victim=%d killer=%d dmg=%d shots=%d assists=%d [%s]",
+			eventId,
+			type,
+			victim,
+			killer,
+			g_SkillEvents[eventIndex].actorDamage,
+			g_SkillEvents[eventIndex].shots,
+			assistsFound,
+			assistsSummary);
 	}
 
 	Action result = API_FireSkillDetected(eventId, type);
@@ -662,16 +1233,123 @@ void Detect_EmitSimpleSiKill(int victim, int killer)
 		if (type == L4D2Skill_BoomerKill)
 		{
 			g_iDetectPendingBoomerKillEvent[victim] = eventId;
+			Skills_Debug(PlayerSkillsDebug_Detect,
+				"Boomer kill queued. boomer=%d event=%d delay=0.10",
+				victim,
+				eventId);
 
-			DataPack pack = new DataPack();
-			pack.WriteCell(victim);
-			pack.WriteCell(eventId);
-			CreateDataTimer(0.10, Detect_TimerAnnounceBoomerKill, pack, TIMER_FLAG_NO_MAPCHANGE);
+			CreateTimer(0.10, Detect_TimerAnnounceBoomerKill, GetClientUserId(victim), TIMER_FLAG_NO_MAPCHANGE);
 		}
 		else
 		{
 			Announce_Skill(eventId);
 		}
+	}
+}
+
+
+void Detect_EmitHunterLifeKill(int victim, int killer, int hunterHealthBeforeDamage)
+{
+	if (!IsValidSurvivor(killer))
+	{
+		return;
+	}
+
+	int eventId = Skills_CreateEvent(L4D2Skill_HunterKill);
+	int eventIndex = Skills_GetEventIndex(eventId);
+	if (eventIndex == -1)
+	{
+		return;
+	}
+
+	g_SkillEvents[eventIndex].actor.Capture(killer);
+	g_SkillEvents[eventIndex].victim.Capture(victim);
+	g_SkillEvents[eventIndex].zombieClass = L4D2ZombieClass_Hunter;
+	g_SkillEvents[eventIndex].actorDamage = Detect_GetHunterLifeDamage(victim, killer);
+	g_SkillEvents[eventIndex].damage = g_SkillEvents[eventIndex].actorDamage;
+	g_SkillEvents[eventIndex].shots = Detect_GetHunterLifeShots(victim, killer);
+
+	int assistsFound = 0;
+	int maxAssists = L4D2_SKILLS_MAX_EVENT_ASSISTS;
+	if (g_cvSurvivorLimit != null && g_cvSurvivorLimit.IntValue > 1 && g_cvSurvivorLimit.IntValue - 1 < maxAssists)
+	{
+		maxAssists = g_cvSurvivorLimit.IntValue - 1;
+	}
+
+	for (int assister = 1; assister <= MaxClients; assister++)
+	{
+		if (!IsValidSurvivor(assister) || assister == killer)
+		{
+			continue;
+		}
+
+		int assistDamage = Detect_GetHunterLifeDamage(victim, assister);
+		if (assistDamage <= 0)
+		{
+			continue;
+		}
+
+		if (assistsFound >= maxAssists || assistsFound >= L4D2_SKILLS_MAX_EVENT_ASSISTS)
+		{
+			break;
+		}
+
+		g_SkillEvents[eventIndex].assists[assistsFound].Capture(assister);
+		g_SkillEvents[eventIndex].assistDamage[assistsFound] = assistDamage;
+		g_SkillEvents[eventIndex].assistShots[assistsFound] = Detect_GetHunterLifeShots(victim, assister);
+		g_SkillEvents[eventIndex].assistWeaponId[assistsFound] = WEPID_NONE;
+		assistsFound++;
+	}
+
+	g_SkillEvents[eventIndex].assistsCount = assistsFound;
+	if (assistsFound > 0)
+	{
+		g_SkillEvents[eventIndex].assister = g_SkillEvents[eventIndex].assists[0];
+		g_SkillEvents[eventIndex].assisterDamage = g_SkillEvents[eventIndex].assistDamage[0];
+		g_SkillEvents[eventIndex].assisterShots = g_SkillEvents[eventIndex].assistShots[0];
+	}
+
+	if (g_SkillEvents[eventIndex].actorDamage <= 0)
+	{
+		g_SkillEvents[eventIndex].actorDamage = hunterHealthBeforeDamage;
+		g_SkillEvents[eventIndex].damage = hunterHealthBeforeDamage;
+		if (g_SkillEvents[eventIndex].shots <= 0)
+		{
+			g_SkillEvents[eventIndex].shots = 1;
+		}
+	}
+
+	if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
+	{
+		char assistsSummary[256];
+		assistsSummary[0] = '\0';
+		for (int i = 0; i < assistsFound; i++)
+		{
+			char segment[72];
+			FormatEx(segment, sizeof(segment), "%s%d:%d/%d",
+				assistsSummary[0] == '\0' ? "" : " ",
+				g_SkillEvents[eventIndex].assists[i].client,
+				g_SkillEvents[eventIndex].assistDamage[i],
+				g_SkillEvents[eventIndex].assistShots[i]);
+			StrCat(assistsSummary, sizeof(assistsSummary), segment);
+		}
+
+		Skills_Debug(PlayerSkillsDebug_Detect,
+			"Hunter life kill payload. event=%d victim=%d killer=%d health_before=%d killer_dmg=%d killer_shots=%d assists=%d [%s]",
+			eventId,
+			victim,
+			killer,
+			hunterHealthBeforeDamage,
+			g_SkillEvents[eventIndex].actorDamage,
+			g_SkillEvents[eventIndex].shots,
+			assistsFound,
+			assistsSummary);
+	}
+
+	Action result = API_FireSkillDetected(eventId, L4D2Skill_HunterKill);
+	if (result < Plugin_Handled)
+	{
+		Announce_Skill(eventId);
 	}
 }
 
@@ -692,16 +1370,19 @@ void Detect_OnClientPutInServer(int client)
 	Detect_ResetBoomer(client);
 	Detect_ResetBHop(client);
 	Detect_ResetHunter(client);
+	Detect_ResetJockeyLeapState(client);
 	Detect_ResetCharger(client);
 	Detect_ResetChargeTrack(client);
-	Detect_ResetSiKillTrack(client);
+	Detect_ResetSiLifeKillTrack(client);
 	Detect_ResetSmoker(client);
 	Detect_ClearSmokerVictim(client);
 
 	for (int victim = 1; victim <= MaxClients; victim++)
 	{
 		g_bDetectShotCounted[victim][client] = false;
+		g_bDetectHunterShotCounted[victim][client] = false;
 		g_fDetectHunterLastShove[victim][client] = 0.0;
+		g_fDetectJockeyLastShove[victim][client] = 0.0;
 		g_iDetectHunterDamage[victim][client] = 0;
 		g_iDetectHunterShots[victim][client] = 0;
 		g_iDetectHunterShotDmg[victim][client] = 0;
@@ -723,9 +1404,10 @@ void Detect_OnClientDisconnect(int client)
 	Detect_ResetBoomer(client);
 	Detect_ResetBHop(client);
 	Detect_ResetHunter(client);
+	Detect_ResetJockeyLeapState(client);
 	Detect_ResetCharger(client);
 	Detect_ResetChargeTrack(client);
-	Detect_ResetSiKillTrack(client);
+	Detect_ResetSiLifeKillTrack(client);
 	Detect_ResetSmoker(client);
 	Detect_ClearSmokerVictim(client);
 
@@ -733,6 +1415,7 @@ void Detect_OnClientDisconnect(int client)
 	{
 		g_bDetectShotCounted[victim][client] = false;
 		g_fDetectHunterLastShove[victim][client] = 0.0;
+		g_fDetectJockeyLastShove[victim][client] = 0.0;
 		g_iDetectHunterDamage[victim][client] = 0;
 		g_iDetectHunterShots[victim][client] = 0;
 		g_iDetectHunterShotDmg[victim][client] = 0;
@@ -821,7 +1504,7 @@ void Detect_OnPouncedOnSurvivorPost(int victim, int attacker)
 		}
 	}
 
-	g_bDetectHunterPouncing[attacker] = false;
+	Detect_SetHunterPouncing(attacker, false);
 	g_DetectLeap[attacker].Reset();
 }
 
@@ -986,6 +1669,16 @@ void Detect_EventChargerImpact(Event event)
 		return;
 	}
 
+	if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
+	{
+		Skills_Debug(PlayerSkillsDebug_Detect,
+			"Charger impact event. charger=%d victim=%d tracked_raw=%d tracked_effective=%d",
+			charger,
+			victim,
+			Detect_IsChargerCharging(charger) ? 1 : 0,
+			Detect_IsChargerEffectivelyCharging(charger) ? 1 : 0);
+	}
+
 	Detect_RecordChargeVictim(charger, victim, false);
 }
 
@@ -1018,12 +1711,58 @@ void Detect_OnEntityShovedPost(int client, int entity, int weapon, const float v
 		return;
 	}
 
-	if (!Skills_IsEnabled() || !IsValidSurvivor(client) || !IsValidZombieClass(entity, L4D2ZombieClass_Hunter))
+	if (!Skills_IsEnabled() || !IsValidSurvivor(client))
 	{
 		return;
 	}
 
-	if (!g_bDetectHunterPouncing[entity] && !bIsHighPounce)
+	if (IsValidZombieClass(entity, L4D2ZombieClass_Jockey))
+	{
+		Skills_Debug(PlayerSkillsDebug_Detect,
+			"Jockey jump-stop check. jockey=%d attacker=%d leaping=%d",
+			entity,
+			client,
+			Detect_IsJockeyEffectivelyLeaping(entity) ? 1 : 0);
+
+		if (!Detect_IsJockeyEffectivelyLeaping(entity))
+		{
+			return;
+		}
+
+		float now = GetGameTime();
+		if (now - g_fDetectJockeyLastShove[entity][client] <= L4D2_SKILLS_DEADSTOP_DOUBLE_TIME)
+		{
+			return;
+		}
+
+		g_fDetectJockeyLastShove[entity][client] = now;
+		Detect_SetJockeyLeaping(entity, false);
+
+		int eventId = Skills_CreateEvent(L4D2Skill_JockeyJumpStop);
+		int eventIndex = Skills_GetEventIndex(eventId);
+		if (eventIndex == -1)
+		{
+			return;
+		}
+
+		g_SkillEvents[eventIndex].actor.Capture(client);
+		g_SkillEvents[eventIndex].victim.Capture(entity);
+		g_SkillEvents[eventIndex].withShove = true;
+
+		Action result = API_FireSkillDetected(eventId, L4D2Skill_JockeyJumpStop);
+		if (result < Plugin_Handled)
+		{
+			Announce_Skill(eventId);
+		}
+		return;
+	}
+
+	if (!IsValidZombieClass(entity, L4D2ZombieClass_Hunter))
+	{
+		return;
+	}
+
+	if (!Detect_IsHunterEffectivelyPouncing(entity) && !bIsHighPounce)
 	{
 		return;
 	}
@@ -1035,7 +1774,7 @@ void Detect_OnEntityShovedPost(int client, int entity, int weapon, const float v
 	}
 
 	g_fDetectHunterLastShove[entity][client] = now;
-	g_bDetectHunterPouncing[entity] = false;
+	Detect_SetHunterPouncing(entity, false);
 
 	int eventId = Skills_CreateEvent(L4D2Skill_HunterDeadstop);
 	int eventIndex = Skills_GetEventIndex(eventId);
@@ -1082,17 +1821,18 @@ void Detect_EventPlayerHurt(Event event)
 	int attacker = GetClientOfUserId(event.GetInt("attacker"));
 	int damage = event.GetInt("dmg_health");
 	int damageType = event.GetInt("type");
+	char weapon[32];
+	event.GetString("weapon", weapon, sizeof(weapon));
+	int weaponId = Skills_GetWeaponIdFromEventName(weapon);
 
-	if (damage > 0 && IsValidSurvivor(attacker) && Detect_IsTrackableSimpleKillClass(victim))
+	if (damage > 0 && IsValidSurvivor(attacker) && Detect_IsTrackableSiLifeKillClass(victim))
 	{
-		Detect_RecordSiKillDamage(victim, attacker, damage);
+		Detect_RecordSiLifeKillDamage(victim, attacker, damage, weaponId, damageType);
 	}
 
 	if (IsValidSurvivor(victim) && g_DetectChargeVictim[victim].charger > 0 && damage > 0)
 	{
 		bool byTrigger = false;
-		char weapon[32];
-		event.GetString("weapon", weapon, sizeof(weapon));
 		if (StrEqual(weapon, "trigger_hurt"))
 		{
 			byTrigger = true;
@@ -1117,8 +1857,6 @@ void Detect_EventPlayerHurt(Event event)
 	{
 		if (IsValidSurvivor(victim) && IsValidTank(attacker))
 		{
-			char weapon[32];
-			event.GetString("weapon", weapon, sizeof(weapon));
 			if (StrEqual(weapon, "tank_rock"))
 			{
 				Detect_MarkTankRockHit(attacker, victim);
@@ -1138,7 +1876,7 @@ void Detect_EventPlayerDeath(Event event)
 
 	int victim = GetClientOfUserId(event.GetInt("userid"));
 	int attacker = GetClientOfUserId(event.GetInt("attacker"));
-	bool shouldEmitSimpleKill = IsValidSurvivor(attacker) && Detect_IsTrackableSimpleKillClass(victim);
+	bool shouldEmitSiLifeKill = IsValidSurvivor(attacker) && Detect_IsTrackableSiLifeKillClass(victim);
 	if (IsValidSurvivor(victim))
 	{
 		if (g_DetectChargeVictim[victim].charger > 0 && !L4D_IsPlayerIncapacitated(victim))
@@ -1183,236 +1921,108 @@ void Detect_EventPlayerDeath(Event event)
 				}
 			}
 
-			Detect_MarkSimpleKillSuppressed(victim);
+			Detect_MarkSiLifeKillSuppressed(victim);
 		}
 
 		Detect_ClearPinStateByAttacker(victim);
 		Detect_ResetSmoker(victim);
-		if (shouldEmitSimpleKill && !g_bDetectSuppressSimpleKill[victim])
+		if (shouldEmitSiLifeKill && !g_bDetectSuppressSiLifeKill[victim])
 		{
-			Detect_EmitSimpleSiKill(victim, attacker);
+			Detect_EmitSiLifeKill(victim, attacker);
 		}
-		Detect_ResetSiKillTrack(victim);
+		Detect_ResetSiLifeKillTrack(victim);
 		return;
 	}
 
 	if (!IsValidZombieClass(victim, L4D2ZombieClass_Hunter))
 	{
-		if (shouldEmitSimpleKill && !g_bDetectSuppressSimpleKill[victim])
+		if (IsValidZombieClass(victim, L4D2ZombieClass_Jockey))
 		{
-			Detect_EmitSimpleSiKill(victim, attacker);
+		if (shouldEmitSiLifeKill && IsValidSurvivor(attacker))
+		{
+			char weapon[64];
+			event.GetString("weapon", weapon, sizeof(weapon));
+			Skills_Debug(PlayerSkillsDebug_Detect,
+				"Jockey melee-skeet check. jockey=%d attacker=%d weapon=%s leaping=%d damage=%d",
+				victim,
+				attacker,
+				weapon,
+				Detect_IsJockeyEffectivelyLeaping(victim) ? 1 : 0,
+				event.GetInt("dmg_health"));
+			if (Detect_IsJockeyEffectivelyLeaping(victim) && Detect_IsSkeetWeaponMelee(weapon))
+			{
+					int eventId = Skills_CreateEvent(L4D2Skill_JockeySkeetMelee);
+					int eventIndex = Skills_GetEventIndex(eventId);
+					if (eventIndex != -1)
+					{
+						g_SkillEvents[eventIndex].actor.Capture(attacker);
+						g_SkillEvents[eventIndex].victim.Capture(victim);
+						g_SkillEvents[eventIndex].zombieClass = L4D2ZombieClass_Jockey;
+						g_SkillEvents[eventIndex].damage = Skills_GetSpecialMaxHealth(L4D2ZombieClass_Jockey);
+						g_SkillEvents[eventIndex].actorDamage = g_SkillEvents[eventIndex].damage;
+						g_SkillEvents[eventIndex].shots = 1;
+						g_SkillEvents[eventIndex].perfect = true;
+
+						Action result = API_FireSkillDetected(eventId, L4D2Skill_JockeySkeetMelee);
+						if (result < Plugin_Handled)
+						{
+							Announce_Skill(eventId);
+						}
+					}
+
+					Detect_MarkSiLifeKillSuppressed(victim);
+				}
+			}
+
+			Detect_ResetJockeyLeapState(victim);
 		}
-		Detect_ResetSiKillTrack(victim);
+
+		bool pendingBoomerKill = IsValidZombieClass(victim, L4D2ZombieClass_Boomer)
+			&& shouldEmitSiLifeKill
+			&& !g_bDetectSuppressSiLifeKill[victim];
+		bool pendingChargerKill = IsValidZombieClass(victim, L4D2ZombieClass_Charger)
+			&& shouldEmitSiLifeKill
+			&& !g_bDetectSuppressSiLifeKill[victim];
+		if (pendingChargerKill)
+		{
+			g_bDetectPendingChargerDeathEval[victim] = true;
+			g_iDetectPendingChargerDeathAttackerUserId[victim] = GetClientUserId(attacker);
+			CreateTimer(0.1, Detect_TimerEvaluateChargerDeath, GetClientUserId(victim), TIMER_FLAG_NO_MAPCHANGE);
+			return;
+		}
+		if (shouldEmitSiLifeKill && !g_bDetectSuppressSiLifeKill[victim])
+		{
+			Detect_EmitSiLifeKill(victim, attacker);
+		}
+		if (!pendingBoomerKill)
+		{
+			Detect_ResetSiLifeKillTrack(victim);
+		}
 		return;
 	}
 
-	if (IsValidSurvivor(attacker))
+	if (shouldEmitSiLifeKill)
 	{
 		char weapon[64];
 		event.GetString("weapon", weapon, sizeof(weapon));
-		bool headshot = event.GetBool("headshot");
-		int hunterHealthBeforeDamage = g_DetectHunterDamageSnapshot[victim].lastHealthBeforeDamage > 0
-			? g_DetectHunterDamageSnapshot[victim].lastHealthBeforeDamage
-			: g_DetectHunterDamageSnapshot[victim].lastHealth;
-		int hunterBaselineHealth = g_iDetectHunterSpawnHealth[victim] > 0
-			? g_iDetectHunterSpawnHealth[victim]
-			: hunterHealthBeforeDamage;
-		int chipDamage = hunterBaselineHealth - hunterHealthBeforeDamage;
-		if (chipDamage < 0)
-		{
-			chipDamage = 0;
-		}
-
-		float rawDamage = g_DetectHunterDamageSnapshot[victim].lastRawDamage;
-		if (g_DetectHunterDamageSnapshot[victim].lastAttacker != attacker)
-		{
-			rawDamage = float(hunterHealthBeforeDamage);
-		}
-
-		bool killedPouncing = g_bDetectHunterKilledPouncing[victim] || g_bDetectHunterPouncing[victim];
-		char hunterDecision[256];
-		FormatEx(hunterDecision, sizeof(hunterDecision),
-			"weapon=%s headshot=%d killedPouncing=%d health_before=%d baseline=%d chip=%d raw=%.1f team_shot=%d killer_shot=%d shots=%d",
+		g_bDetectPendingHunterDeathEval[victim] = true;
+		g_bDetectPendingHunterDeathHeadshot[victim] = event.GetBool("headshot");
+		g_iDetectPendingHunterDeathAttackerUserId[victim] = GetClientUserId(attacker);
+		strcopy(g_sDetectPendingHunterDeathWeapon[victim], sizeof(g_sDetectPendingHunterDeathWeapon[]), weapon);
+		Skills_Debug(PlayerSkillsDebug_Detect,
+			"Hunter death queued. hunter=%d attacker=%d delay=0.10 weapon=%s headshot=%d team_shot=%d killer_shot=%d",
+			victim,
+			attacker,
 			weapon,
-			headshot ? 1 : 0,
-			killedPouncing ? 1 : 0,
-			hunterHealthBeforeDamage,
-			hunterBaselineHealth,
-			chipDamage,
-			rawDamage,
+			g_bDetectPendingHunterDeathHeadshot[victim] ? 1 : 0,
 			g_iDetectHunterShotDmgTeam[victim],
-			g_iDetectHunterShotDmg[victim][attacker],
-			g_iDetectHunterShots[victim][attacker]);
-		Detect_LogHunterSkeetDecision(victim, attacker, "start", hunterDecision);
-
-		if (killedPouncing && Detect_IsSkeetWeaponMelee(weapon))
-		{
-			Detect_LogHunterSkeetDecision(victim, attacker, "melee", "classified_as=HunterSkeetMelee");
-			int eventId = Skills_CreateEvent(L4D2Skill_HunterSkeetMelee);
-			int eventIndex = Skills_GetEventIndex(eventId);
-			if (eventIndex != -1)
-			{
-				g_SkillEvents[eventIndex].actor.Capture(attacker);
-				g_SkillEvents[eventIndex].victim.Capture(victim);
-				g_SkillEvents[eventIndex].damage = hunterHealthBeforeDamage;
-				g_SkillEvents[eventIndex].chipDamage = chipDamage;
-				g_SkillEvents[eventIndex].shots = 1;
-				g_SkillEvents[eventIndex].wouldQualifyAtBaseline = true;
-				g_SkillEvents[eventIndex].perfect = (chipDamage == 0);
-				g_SkillEvents[eventIndex].headshot = headshot;
-
-				Action meleeResult = API_FireSkillDetected(eventId, L4D2Skill_HunterSkeetMelee);
-				if (meleeResult < Plugin_Handled)
-				{
-					Announce_Skill(eventId);
-				}
-			}
-
-			Detect_MarkSimpleKillSuppressed(victim);
-
-			Detect_ResetHunter(victim);
-			Detect_ResetSiKillTrack(victim);
-			return;
-		}
-
-		bool sniperSkeet = killedPouncing && headshot && Detect_IsSkeetWeaponSniper(weapon);
-		bool glSkeet = killedPouncing && Detect_IsSkeetWeaponGL(weapon);
-		if (sniperSkeet || glSkeet)
-		{
-			bool qualifiesAtBaseline = rawDamage >= float(hunterBaselineHealth);
-			FormatEx(hunterDecision, sizeof(hunterDecision),
-				"sniper=%d gl=%d qualifies_at_baseline=%d raw=%.1f baseline=%d",
-				sniperSkeet ? 1 : 0,
-				glSkeet ? 1 : 0,
-				qualifiesAtBaseline ? 1 : 0,
-				rawDamage,
-				hunterBaselineHealth);
-			Detect_LogHunterSkeetDecision(victim, attacker, "ranged", hunterDecision);
-			if (qualifiesAtBaseline)
-			{
-				Detect_LogHunterSkeetDecision(victim, attacker, "ranged", "classified_as=HunterSkeet");
-				int eventId = Skills_CreateEvent(L4D2Skill_HunterSkeet);
-				int eventIndex = Skills_GetEventIndex(eventId);
-				if (eventIndex != -1)
-				{
-					g_SkillEvents[eventIndex].actor.Capture(attacker);
-					g_SkillEvents[eventIndex].victim.Capture(victim);
-					g_SkillEvents[eventIndex].damage = hunterHealthBeforeDamage;
-					g_SkillEvents[eventIndex].chipDamage = chipDamage;
-					g_SkillEvents[eventIndex].shots = 1;
-					g_SkillEvents[eventIndex].wouldQualifyAtBaseline = chipDamage > 0;
-					g_SkillEvents[eventIndex].perfect = (chipDamage == 0);
-					g_SkillEvents[eventIndex].headshot = headshot;
-					g_SkillEvents[eventIndex].sniper = sniperSkeet;
-					g_SkillEvents[eventIndex].grenadeLauncher = glSkeet;
-
-					Action rangedResult = API_FireSkillDetected(eventId, L4D2Skill_HunterSkeet);
-					if (rangedResult < Plugin_Handled)
-					{
-						Announce_Skill(eventId);
-					}
-				}
-			}
-
-			Detect_MarkSimpleKillSuppressed(victim);
-
-			Detect_ResetHunter(victim);
-			Detect_ResetSiKillTrack(victim);
-			return;
-		}
-
-		if (g_bDetectHunterKilledPouncing[victim] && g_iDetectHunterShotDmgTeam[victim] > 0)
-		{
-			int interruptDamage = g_cvDetectPounceInterrupt != null ? g_cvDetectPounceInterrupt.IntValue : 150;
-			int killerDamage = g_iDetectHunterShotDmg[victim][attacker];
-			int teamDamage = g_iDetectHunterShotDmgTeam[victim];
-			int shots = g_iDetectHunterShots[victim][attacker];
-			int overkillDamage = g_iDetectHunterOverkill[victim];
-			int potentialKillerDamage = killerDamage + overkillDamage;
-			int potentialTeamDamage = teamDamage + overkillDamage;
-			bool isSingleSkeet = potentialKillerDamage >= interruptDamage;
-			bool isTeamSkeet = potentialTeamDamage > potentialKillerDamage && potentialTeamDamage >= interruptDamage;
-			bool isOverkill = overkillDamage > 0 && (isSingleSkeet || isTeamSkeet);
-			FormatEx(hunterDecision, sizeof(hunterDecision),
-				"interrupt=%d killer_damage=%d team_damage=%d overkill=%d potential_killer=%d potential_team=%d single=%d team=%d",
-				interruptDamage,
-				killerDamage,
-				teamDamage,
-				overkillDamage,
-				potentialKillerDamage,
-				potentialTeamDamage,
-				isSingleSkeet ? 1 : 0,
-				isTeamSkeet ? 1 : 0);
-			Detect_LogHunterSkeetDecision(victim, attacker, "shotgun", hunterDecision);
-
-			if (!isSingleSkeet && !isTeamSkeet)
-			{
-				Detect_LogHunterSkeetDecision(victim, attacker, "shotgun", "classified_as=none");
-				Detect_ResetHunter(victim);
-				return;
-			}
-
-			Detect_LogHunterSkeetDecision(victim, attacker, "shotgun", isTeamSkeet ? "classified_as=HunterSkeet(team)" : "classified_as=HunterSkeet(single)");
-			int eventId = Skills_CreateEvent(L4D2Skill_HunterSkeet);
-			int eventIndex = Skills_GetEventIndex(eventId);
-			if (eventIndex != -1)
-			{
-				g_SkillEvents[eventIndex].actor.Capture(attacker);
-				g_SkillEvents[eventIndex].victim.Capture(victim);
-				g_SkillEvents[eventIndex].damage = isTeamSkeet ? potentialTeamDamage : potentialKillerDamage;
-				g_SkillEvents[eventIndex].shots = shots;
-				g_SkillEvents[eventIndex].wouldQualifyAtBaseline = isOverkill;
-				g_SkillEvents[eventIndex].chipDamage = g_iDetectHunterDamage[victim][attacker] - killerDamage;
-				g_SkillEvents[eventIndex].perfect = shots == 1 && g_SkillEvents[eventIndex].chipDamage == 0 && !isTeamSkeet;
-				g_SkillEvents[eventIndex].headshot = headshot;
-
-				if (isTeamSkeet)
-				{
-					int topAssister = 0;
-					int topAssistDamage = 0;
-					for (int i = 1; i <= MaxClients; i++)
-					{
-						if (i == attacker || !IsValidSurvivor(i))
-						{
-							continue;
-						}
-
-						if (g_iDetectHunterShotDmg[victim][i] > topAssistDamage)
-						{
-							topAssistDamage = g_iDetectHunterShotDmg[victim][i];
-							topAssister = i;
-						}
-					}
-
-					if (topAssister > 0)
-					{
-						g_SkillEvents[eventIndex].assister.Capture(topAssister);
-					}
-				}
-
-				Action result = API_FireSkillDetected(eventId, g_SkillEvents[eventIndex].type);
-				if (result < Plugin_Handled)
-				{
-					Announce_Skill(eventId);
-				}
-			}
-
-			Detect_MarkSimpleKillSuppressed(victim);
-		}
-	}
-
-	if (IsValidSurvivor(attacker))
-	{
-		Detect_LogHunterSkeetDecision(victim, attacker, "fallback", g_bDetectSuppressSimpleKill[victim] ? "classified_as=suppressed" : "classified_as=HunterKill");
-	}
-
-	if (shouldEmitSimpleKill && !g_bDetectSuppressSimpleKill[victim])
-	{
-		Detect_EmitSimpleSiKill(victim, attacker);
+			g_iDetectHunterShotDmg[victim][attacker]);
+		CreateTimer(0.1, Detect_TimerEvaluateHunterDeath, GetClientUserId(victim), TIMER_FLAG_NO_MAPCHANGE);
+		return;
 	}
 
 	Detect_ResetHunter(victim);
-	Detect_ResetSiKillTrack(victim);
+	Detect_ResetSiLifeKillTrack(victim);
 }
 
 void Detect_EventPlayerSpawn(Event event)
@@ -1435,6 +2045,10 @@ void Detect_EventPlayerSpawn(Event event)
 			Detect_ResetHunter(client);
 			g_iDetectHunterSpawnHealth[client] = Skills_GetSpecialMaxHealth(L4D2ZombieClass_Hunter);
 			g_DetectHunterDamageSnapshot[client].lastHealth = g_iDetectHunterSpawnHealth[client];
+			Skills_Debug(PlayerSkillsDebug_Detect,
+				"Hunter spawn baseline set. hunter=%d spawn_health=%d",
+				client,
+				g_iDetectHunterSpawnHealth[client]);
 		}
 		else if (IsValidZombieClass(client, L4D2ZombieClass_Charger))
 		{
@@ -1443,13 +2057,13 @@ void Detect_EventPlayerSpawn(Event event)
 
 		if (IsValidInfected(client))
 		{
-			Detect_ResetSiKillTrack(client);
+			Detect_ResetSiLifeKillTrack(client);
 		}
 
 		return;
 	}
 
-	Detect_ResetSiKillTrack(client);
+	Detect_ResetSiLifeKillTrack(client);
 	g_DetectBoomer[client].spawnTime = GetGameTime();
 	g_DetectBoomer[client].hitSomebody = false;
 	g_DetectBoomer[client].shoveCount = 0;
@@ -1572,7 +2186,7 @@ void Detect_EventBoomerExploded(Event event)
 
 	// Preserve simple-kill suppression until player_death so a BoomerPop does not
 	// also emit the generic kill summary for the same infected death.
-	Detect_MarkSimpleKillSuppressed(boomer);
+	Detect_MarkSiLifeKillSuppressed(boomer);
 }
 
 void Detect_EventTriggeredCarAlarm()
@@ -1591,13 +2205,34 @@ void Detect_EventWeaponFire(Event event)
 	for (int victim = 1; victim <= MaxClients; victim++)
 	{
 		g_bDetectShotCounted[victim][attacker] = false;
+		g_bDetectHunterShotCounted[victim][attacker] = false;
 	}
 }
 
 // Client damage snapshots used by Hunter/Charger classification flows.
 Action Detect_OnTakeDamage_Client(int victim, int &attacker, int &inflictor, float &damage, int &damagetype)
 {
-	if (!Skills_IsRoundLive() || !IsValidInfected(victim))
+	bool roundLive = Skills_IsRoundLive();
+	bool validInfected = IsValidInfected(victim);
+	if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
+	{
+		int team = IsValidClient(victim) ? GetClientTeam(victim) : -1;
+		int zombieClass = IsValidClient(victim) ? view_as<int>(L4D2_GetPlayerZombieClass(victim)) : -1;
+		Skills_Debug(PlayerSkillsDebug_Detect,
+			"OnTakeDamage enter. victim=%d attacker=%d inflictor=%d damage=%.1f damagetype=%d round_live=%d valid_infected=%d team=%d zombie_class=%d alive=%d",
+			victim,
+			attacker,
+			inflictor,
+			damage,
+			damagetype,
+			roundLive ? 1 : 0,
+			validInfected ? 1 : 0,
+			team,
+			zombieClass,
+			(IsValidClient(victim) && IsPlayerAlive(victim)) ? 1 : 0);
+	}
+
+	if (!roundLive || !validInfected)
 	{
 		return Plugin_Continue;
 	}
@@ -1609,6 +2244,18 @@ Action Detect_OnTakeDamage_Client(int victim, int &attacker, int &inflictor, flo
 		g_DetectHunterDamageSnapshot[victim].lastAttacker = attacker;
 		g_DetectHunterDamageSnapshot[victim].lastDamageType = damagetype;
 		g_DetectHunterDamageSnapshot[victim].lastRawDamage = damage;
+		if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
+		{
+			Skills_Debug(PlayerSkillsDebug_Detect,
+				"Hunter pre-damage snapshot. hunter=%d attacker=%d current_health=%d raw=%.1f damagetype=%d spawn_health=%d last_health=%d",
+				victim,
+				attacker,
+				g_DetectHunterDamageSnapshot[victim].lastHealthBeforeDamage,
+				damage,
+				damagetype,
+				g_iDetectHunterSpawnHealth[victim],
+				g_DetectHunterDamageSnapshot[victim].lastHealth);
+		}
 	}
 	else if (zombieClass == L4D2ZombieClass_Charger)
 	{
@@ -1623,7 +2270,27 @@ Action Detect_OnTakeDamage_Client(int victim, int &attacker, int &inflictor, flo
 
 void Detect_OnTakeDamagePost_Client(int victim, int attacker, int inflictor, float damage, int damagetype)
 {
-	if (!Skills_IsRoundLive() || !IsValidInfected(victim))
+	bool roundLive = Skills_IsRoundLive();
+	bool validInfected = IsValidInfected(victim);
+	if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
+	{
+		int team = IsValidClient(victim) ? GetClientTeam(victim) : -1;
+		int zombieClass = IsValidClient(victim) ? view_as<int>(L4D2_GetPlayerZombieClass(victim)) : -1;
+		Skills_Debug(PlayerSkillsDebug_Detect,
+			"OnTakeDamagePost enter. victim=%d attacker=%d inflictor=%d damage=%.1f damagetype=%d round_live=%d valid_infected=%d team=%d zombie_class=%d alive=%d",
+			victim,
+			attacker,
+			inflictor,
+			damage,
+			damagetype,
+			roundLive ? 1 : 0,
+			validInfected ? 1 : 0,
+			team,
+			zombieClass,
+			(IsValidClient(victim) && IsPlayerAlive(victim)) ? 1 : 0);
+	}
+
+	if (!roundLive || !validInfected)
 	{
 		return;
 	}
@@ -1646,10 +2313,10 @@ void Detect_OnTakeDamagePost_Client(int victim, int attacker, int inflictor, flo
 			return;
 		}
 
-		if (!g_bDetectShotCounted[victim][attacker])
+		if (!g_bDetectHunterShotCounted[victim][attacker])
 		{
 			g_iDetectHunterShots[victim][attacker]++;
-			g_bDetectShotCounted[victim][attacker] = true;
+			g_bDetectHunterShotCounted[victim][attacker] = true;
 		}
 
 		int healthBeforeDamage = g_DetectHunterDamageSnapshot[victim].lastHealthBeforeDamage > 0
@@ -1669,7 +2336,23 @@ void Detect_OnTakeDamagePost_Client(int victim, int attacker, int inflictor, flo
 		}
 
 		int postHealth = GetClientHealth(victim);
-		if (g_bDetectHunterPouncing[victim] && (damagetype & DMG_BUCKSHOT))
+		if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
+		{
+			Skills_Debug(PlayerSkillsDebug_Detect,
+				"Hunter post-damage snapshot. hunter=%d attacker=%d applied=%d pre=%d post=%d raw=%.1f pouncing=%d effective_pouncing=%d team_shot=%d killer_shot=%d",
+				victim,
+				attacker,
+				appliedDamage,
+				healthBeforeDamage,
+				postHealth,
+				damage,
+				g_bDetectHunterPouncing[victim] ? 1 : 0,
+				Detect_IsHunterEffectivelyPouncing(victim) ? 1 : 0,
+				g_iDetectHunterShotDmgTeam[victim],
+				g_iDetectHunterShotDmg[victim][attacker]);
+		}
+
+		if (Detect_IsHunterEffectivelyPouncing(victim) && (damagetype & DMG_BUCKSHOT))
 		{
 			if (g_fDetectHunterShotStart[victim][attacker] == 0.0)
 			{

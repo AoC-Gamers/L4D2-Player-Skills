@@ -3,12 +3,31 @@
 #endif
 #define _l4d2_player_skills_detect_hunter_included
 
-void Detect_ResetHunter(int hunter)
+void Detect_SetHunterPouncing(int hunter, bool state)
+{
+	g_bDetectHunterPouncing[hunter] = state;
+	if (state)
+	{
+		g_fDetectHunterPounceSeenAt[hunter] = GetGameTime();
+	}
+}
+
+bool Detect_IsHunterEffectivelyPouncing(int hunter)
+{
+	if (g_bDetectHunterPouncing[hunter])
+	{
+		g_fDetectHunterPounceSeenAt[hunter] = GetGameTime();
+		return true;
+	}
+
+	return g_fDetectHunterPounceSeenAt[hunter] > 0.0
+		&& (GetGameTime() - g_fDetectHunterPounceSeenAt[hunter]) <= L4D2_SKILLS_HUNTER_POUNCE_GRACE_TIME;
+}
+
+void Detect_ResetHunterPounceState(int hunter)
 {
 	g_bDetectHunterPouncing[hunter] = false;
-	g_DetectLeap[hunter].Reset();
-	g_iDetectHunterSpawnHealth[hunter] = 0;
-	g_DetectHunterDamageSnapshot[hunter].Reset();
+	g_fDetectHunterPounceSeenAt[hunter] = 0.0;
 	g_iDetectHunterShotDmgTeam[hunter] = 0;
 	g_iDetectHunterOverkill[hunter] = 0;
 	g_bDetectHunterKilledPouncing[hunter] = false;
@@ -16,12 +35,25 @@ void Detect_ResetHunter(int hunter)
 	for (int attacker = 1; attacker <= MaxClients; attacker++)
 	{
 		g_bDetectShotCounted[hunter][attacker] = false;
+		g_bDetectHunterShotCounted[hunter][attacker] = false;
 		g_fDetectHunterLastShove[hunter][attacker] = 0.0;
 		g_iDetectHunterDamage[hunter][attacker] = 0;
 		g_iDetectHunterShots[hunter][attacker] = 0;
 		g_iDetectHunterShotDmg[hunter][attacker] = 0;
 		g_fDetectHunterShotStart[hunter][attacker] = 0.0;
 	}
+}
+
+void Detect_ResetHunter(int hunter)
+{
+	Detect_ResetHunterPounceState(hunter);
+	g_DetectLeap[hunter].Reset();
+	g_bDetectPendingHunterDeathEval[hunter] = false;
+	g_bDetectPendingHunterDeathHeadshot[hunter] = false;
+	g_iDetectPendingHunterDeathAttackerUserId[hunter] = 0;
+	g_sDetectPendingHunterDeathWeapon[hunter][0] = '\0';
+	g_iDetectHunterSpawnHealth[hunter] = 0;
+	g_DetectHunterDamageSnapshot[hunter].Reset();
 }
 
 float Detect_GetLeapHeight(int attacker, int victim)

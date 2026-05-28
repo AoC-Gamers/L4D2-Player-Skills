@@ -64,7 +64,7 @@ void Detect_EventAbilityUse(Event event)
 	}
 
 	int client = GetClientOfUserId(event.GetInt("userid"));
-	if (!IsValidZombieClass(client, L4D2ZombieClass_Hunter))
+	if (!IsValidZombieClass(client, L4D2ZombieClass_Hunter) && !IsValidZombieClass(client, L4D2ZombieClass_Jockey) && !IsValidZombieClass(client, L4D2ZombieClass_Charger))
 	{
 		return;
 	}
@@ -73,12 +73,31 @@ void Detect_EventAbilityUse(Event event)
 	event.GetString("ability", ability, sizeof(ability));
 	if (StrEqual(ability, "ability_lunge"))
 	{
-		Detect_ResetHunter(client);
-		g_bDetectHunterPouncing[client] = true;
-		g_DetectHunterDamageSnapshot[client].lastHealth = GetClientHealth(client);
+		Detect_ResetHunterPounceState(client);
+		Detect_SetHunterPouncing(client, true);
+		if (g_DetectHunterDamageSnapshot[client].lastHealth <= 0)
+		{
+			g_DetectHunterDamageSnapshot[client].lastHealth = GetClientHealth(client);
+		}
 		GetClientAbsOrigin(client, g_DetectLeap[client].origin);
 		g_DetectLeap[client].originSet = true;
 		CreateTimer(0.5, Timer_DetectHunterGroundedCheck, GetClientUserId(client), TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+	}
+	else if (StrEqual(ability, "ability_charge") && IsValidZombieClass(client, L4D2ZombieClass_Charger))
+	{
+		Skills_Debug(PlayerSkillsDebug_Detect,
+			"Charger charge opened from ability_use. charger=%d ability=%s",
+			client,
+			ability);
+		Detect_SetChargerCharging(client, true);
+	}
+	else if (StrEqual(ability, "ability_leap") && IsValidZombieClass(client, L4D2ZombieClass_Jockey))
+	{
+		Detect_ResetJockeyLeapState(client);
+		Detect_SetJockeyLeaping(client, true);
+		GetClientAbsOrigin(client, g_DetectLeap[client].origin);
+		g_DetectLeap[client].originSet = true;
+		CreateTimer(0.5, Timer_DetectJockeyGroundedCheck, GetClientUserId(client), TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 	}
 }
 
@@ -166,6 +185,15 @@ void Detect_EventPlayerJumpApex(Event event)
 
 	GetClientAbsOrigin(client, g_DetectLeap[client].origin);
 	g_DetectLeap[client].originSet = true;
+
+	if (IsValidZombieClass(client, L4D2ZombieClass_Jockey))
+	{
+		Skills_Debug(PlayerSkillsDebug_Detect,
+			"Jockey leap opened from jump_apex. jockey=%d",
+			client);
+		Detect_SetJockeyLeaping(client, true);
+		CreateTimer(0.5, Timer_DetectJockeyGroundedCheck, GetClientUserId(client), TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+	}
 }
 
 void Detect_EventJockeyRide(Event event)
@@ -187,6 +215,7 @@ void Detect_EventJockeyRide(Event event)
 	bool reportedHigh = height >= threshold;
 	if (!reportedHigh)
 	{
+		Detect_ResetJockeyLeapState(jockey);
 		g_DetectLeap[jockey].Reset();
 		return;
 	}
@@ -207,7 +236,46 @@ void Detect_EventJockeyRide(Event event)
 		}
 	}
 
-	g_DetectLeap[jockey].Reset();
+	Detect_ResetJockeyLeapState(jockey);
+}
+
+void Detect_EventJockeyPunched(Event event)
+{
+	if (!Skills_IsEnabled())
+	{
+		return;
+	}
+
+	int attacker = GetClientOfUserId(event.GetInt("userid"));
+	int jockey = GetClientOfUserId(event.GetInt("jockeyuserid"));
+	bool isLunging = event.GetBool("islunging");
+
+	Skills_Debug(PlayerSkillsDebug_Detect,
+		"Jockey punched event. jockey=%d attacker=%d islunging=%d tracked_leaping=%d",
+		jockey,
+		attacker,
+		isLunging ? 1 : 0,
+		(jockey > 0 && jockey <= MaxClients && Detect_IsJockeyEffectivelyLeaping(jockey)) ? 1 : 0);
+}
+
+void Detect_EventJockeyKilled(Event event)
+{
+	if (!Skills_IsEnabled())
+	{
+		return;
+	}
+
+	int jockey = GetClientOfUserId(event.GetInt("userid"));
+	int attacker = GetClientOfUserId(event.GetInt("attacker"));
+	char weapon[64];
+	event.GetString("weapon", weapon, sizeof(weapon));
+
+	Skills_Debug(PlayerSkillsDebug_Detect,
+		"Jockey killed event. jockey=%d attacker=%d weapon=%s tracked_leaping=%d",
+		jockey,
+		attacker,
+		weapon,
+		(jockey > 0 && jockey <= MaxClients && Detect_IsJockeyEffectivelyLeaping(jockey)) ? 1 : 0);
 }
 
 Action Timer_DetectHunterGroundedCheck(Handle timer, any userid)
@@ -220,7 +288,23 @@ Action Timer_DetectHunterGroundedCheck(Handle timer, any userid)
 
 	if (client > 0)
 	{
-		g_bDetectHunterPouncing[client] = false;
+		Detect_SetHunterPouncing(client, false);
+	}
+
+	return Plugin_Stop;
+}
+
+Action Timer_DetectJockeyGroundedCheck(Handle timer, any userid)
+{
+	int client = GetClientOfUserId(userid);
+	if (client > 0 && !(GetEntityFlags(client) & FL_ONGROUND))
+	{
+		return Plugin_Continue;
+	}
+
+	if (client > 0)
+	{
+		Detect_SetJockeyLeaping(client, false);
 	}
 
 	return Plugin_Stop;

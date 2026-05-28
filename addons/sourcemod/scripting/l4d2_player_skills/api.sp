@@ -7,6 +7,7 @@ Handle g_hForwardSkillDetected = INVALID_HANDLE;
 Handle g_hForwardSkillAnnounced = INVALID_HANDLE;
 Handle g_hForwardBossDamageFinalized = INVALID_HANDLE;
 Handle g_hForwardBossDamageAnnounced = INVALID_HANDLE;
+Handle g_hForwardSummaryFinalized = INVALID_HANDLE;
 
 void API_CreateForwards()
 {
@@ -14,6 +15,7 @@ void API_CreateForwards()
 	g_hForwardSkillAnnounced = CreateGlobalForward("PlayerSkills_OnSkillAnnounced", ET_Ignore, Param_Cell, Param_Cell);
 	g_hForwardBossDamageFinalized = CreateGlobalForward("PlayerSkills_OnBossDamageFinalized", ET_Event, Param_Cell, Param_Cell);
 	g_hForwardBossDamageAnnounced = CreateGlobalForward("PlayerSkills_OnBossDamageAnnounced", ET_Ignore, Param_Cell, Param_Cell);
+	g_hForwardSummaryFinalized = CreateGlobalForward("PlayerSkills_OnSummaryFinalized", ET_Ignore, Param_Cell);
 }
 
 void API_CreateNatives()
@@ -50,6 +52,8 @@ void API_CreateNatives()
 	CreateNative("PlayerSkills_IsBossDamageEntryBot", Native_PlayerSkills_IsBossDamageEntryBot);
 	CreateNative("PlayerSkills_GetBossDamageEntryName", Native_PlayerSkills_GetBossDamageEntryName);
 	CreateNative("PlayerSkills_GetBossDamageEntryAuth", Native_PlayerSkills_GetBossDamageEntryAuth);
+	CreateNative("PlayerSkills_IsSummaryValid", Native_PlayerSkills_IsSummaryValid);
+	CreateNative("PlayerSkills_FillSummaryKeyValues", Native_PlayerSkills_FillSummaryKeyValues);
 }
 
 Action API_FireSkillDetected(int eventId, L4D2SkillType type)
@@ -159,6 +163,18 @@ void API_FireBossDamageAnnounced(int sessionId, L4D2BossType type)
 	Call_Finish();
 }
 
+void API_FireSummaryFinalized(int summaryId)
+{
+	if (g_hForwardSummaryFinalized == INVALID_HANDLE)
+	{
+		return;
+	}
+
+	Call_StartForward(g_hForwardSummaryFinalized);
+	Call_PushCell(summaryId);
+	Call_Finish();
+}
+
 int API_GetEventIndexOrFail(int eventId)
 {
 	return Skills_GetEventIndex(eventId);
@@ -199,6 +215,206 @@ bool API_IsBossEntryValid(int sessionIndex, int entry)
 		&& entry >= 0
 		&& entry < L4D2_SKILLS_MAX_DAMAGE_ENTRIES
 		&& g_BossDamage[sessionIndex][entry].active;
+}
+
+int API_GetSummaryIndexById(int summaryId)
+{
+	if (summaryId <= 0)
+	{
+		return -1;
+	}
+
+	for (int index = 0; index < L4D2_SKILLS_MAX_SUMMARIES; index++)
+	{
+		if (g_SkillSummaries[index].id == summaryId)
+		{
+			return index;
+		}
+	}
+
+	return -1;
+}
+
+L4DTeam API_GetSummaryActorTeam(int eventIndex)
+{
+	switch (g_SkillEvents[eventIndex].type)
+	{
+		case L4D2Skill_HunterHighPounce,
+			L4D2Skill_JockeyHighPounce,
+			L4D2Skill_ChargerInstaKill,
+			L4D2Skill_ChargerDeathSetup,
+			L4D2Skill_BoomerVomitLanded,
+			L4D2Skill_TankRockHit:
+		{
+			return L4DTeam_Infected;
+		}
+	}
+
+	return L4DTeam_Survivor;
+}
+
+bool API_ShouldIncludeEventInSummary(int eventIndex)
+{
+	if (eventIndex < 0 || eventIndex >= L4D2_SKILLS_MAX_EVENTS || g_SkillEvents[eventIndex].id <= 0)
+	{
+		return false;
+	}
+
+	if (!Skills_IsSkillEventEnabledInCurrentMode(eventIndex))
+	{
+		return false;
+	}
+
+	if (g_SkillEvents[eventIndex].type == L4D2Skill_WitchDead && !g_SkillEvents[eventIndex].crown)
+	{
+		return false;
+	}
+
+	if (g_SkillEvents[eventIndex].type == L4D2Skill_WitchIncap)
+	{
+		return false;
+	}
+
+	return g_SkillEvents[eventIndex].actor.userid > 0
+		|| g_SkillEvents[eventIndex].actor.accountId > 0
+		|| g_SkillEvents[eventIndex].actor.bot;
+}
+
+bool API_SummaryEntryMatchesPlayer(int summaryIndex, int entryIndex, L4DTeam team, L4D2PlayerRef player)
+{
+	if (!g_SkillSummaries[summaryIndex].entries[entryIndex].active
+		|| g_SkillSummaries[summaryIndex].entries[entryIndex].team != team)
+	{
+		return false;
+	}
+
+	if (player.bot)
+	{
+		return g_SkillSummaries[summaryIndex].entries[entryIndex].player.bot;
+	}
+
+	if (g_SkillSummaries[summaryIndex].entries[entryIndex].player.bot)
+	{
+		return false;
+	}
+
+	if (g_SkillSummaries[summaryIndex].entries[entryIndex].player.accountId > 0 && player.accountId > 0)
+	{
+		return g_SkillSummaries[summaryIndex].entries[entryIndex].player.accountId == player.accountId;
+	}
+
+	return g_SkillSummaries[summaryIndex].entries[entryIndex].player.auth[0] != '\0'
+		&& player.auth[0] != '\0'
+		&& strcmp(g_SkillSummaries[summaryIndex].entries[entryIndex].player.auth, player.auth) == 0;
+}
+
+int API_FindOrCreateSummaryEntry(int summaryIndex, L4DTeam team, L4D2PlayerRef player)
+{
+	for (int entry = 0; entry < L4D2_SKILLS_MAX_SUMMARY_ENTRIES; entry++)
+	{
+		if (API_SummaryEntryMatchesPlayer(summaryIndex, entry, team, player))
+		{
+			return entry;
+		}
+	}
+
+	for (int entry = 0; entry < L4D2_SKILLS_MAX_SUMMARY_ENTRIES; entry++)
+	{
+		if (g_SkillSummaries[summaryIndex].entries[entry].active)
+		{
+			continue;
+		}
+
+		g_SkillSummaries[summaryIndex].entries[entry].Reset();
+		g_SkillSummaries[summaryIndex].entries[entry].active = true;
+		g_SkillSummaries[summaryIndex].entries[entry].team = team;
+
+		if (player.bot)
+		{
+			g_SkillSummaries[summaryIndex].entries[entry].player.bot = true;
+			g_SkillSummaries[summaryIndex].entries[entry].player.userid = 0;
+			g_SkillSummaries[summaryIndex].entries[entry].player.accountId = 0;
+			strcopy(g_SkillSummaries[summaryIndex].entries[entry].player.name, MAX_NAME_LENGTH, "IA");
+			strcopy(g_SkillSummaries[summaryIndex].entries[entry].player.auth, 32, "BOT");
+		}
+		else
+		{
+			g_SkillSummaries[summaryIndex].entries[entry].player = player;
+		}
+
+		return entry;
+	}
+
+	return -1;
+}
+
+int API_CreateSummaryFromCurrentState()
+{
+	int totalEvents = 0;
+	for (int index = 0; index < L4D2_SKILLS_MAX_EVENTS; index++)
+	{
+		if (API_ShouldIncludeEventInSummary(index))
+		{
+			totalEvents++;
+		}
+	}
+
+	if (totalEvents <= 0)
+	{
+		return 0;
+	}
+
+	int slot = g_iNextSummarySlot;
+	g_iNextSummarySlot = (g_iNextSummarySlot + 1) % L4D2_SKILLS_MAX_SUMMARIES;
+
+	g_SkillSummaries[slot].Reset();
+	g_SkillSummaries[slot].id = ++g_iSummarySerial;
+	g_SkillSummaries[slot].createdAt = GetGameTime();
+	g_SkillSummaries[slot].baseMode = g_Runtime.baseMode;
+	g_SkillSummaries[slot].configuredSurvivorLimit = g_Runtime.configuredSurvivorLimit;
+	g_SkillSummaries[slot].configuredPlayerZombieLimit = g_Runtime.configuredPlayerZombieLimit;
+	g_SkillSummaries[slot].siPoolMask = g_Runtime.siPoolMask;
+	g_SkillSummaries[slot].enabledSiClassCount = g_Runtime.enabledSiClassCount;
+	g_SkillSummaries[slot].versusTeamSize = g_Runtime.versusTeamSize;
+	g_SkillSummaries[slot].versusContext = g_Runtime.versusContext;
+	g_SkillSummaries[slot].roundStartSignal = g_Runtime.roundStartSignal;
+	g_SkillSummaries[slot].roundEndSignal = g_Runtime.roundEndSignal;
+	g_SkillSummaries[slot].roundLiveSignal = g_Runtime.roundLiveSignal;
+	g_SkillSummaries[slot].totalEvents = totalEvents;
+	GetCurrentMap(g_SkillSummaries[slot].map, sizeof(g_SkillSummaries[slot].map));
+
+	for (int index = 0; index < L4D2_SKILLS_MAX_EVENTS; index++)
+	{
+		if (!API_ShouldIncludeEventInSummary(index))
+		{
+			continue;
+		}
+
+		L4DTeam team = API_GetSummaryActorTeam(index);
+		int entry = API_FindOrCreateSummaryEntry(slot, team, g_SkillEvents[index].actor);
+		if (entry == -1)
+		{
+			continue;
+		}
+
+		g_SkillSummaries[slot].entries[entry].counts[g_SkillEvents[index].type]++;
+	}
+
+	Skills_Debug(PlayerSkillsDebug_Api, "Summary finalized. id=%d map=%s total_events=%d",
+		g_SkillSummaries[slot].id,
+		g_SkillSummaries[slot].map,
+		g_SkillSummaries[slot].totalEvents);
+
+	return g_SkillSummaries[slot].id;
+}
+
+void API_FinalizeSummaryFromCurrentState()
+{
+	int summaryId = API_CreateSummaryFromCurrentState();
+	if (summaryId > 0)
+	{
+		API_FireSummaryFinalized(summaryId);
+	}
 }
 
 void API_GetBossPlayerRefBySlot(int sessionIndex, int slot, L4D2PlayerRef player)
@@ -256,6 +472,7 @@ void API_WriteEventAssists(Handle kv, int eventIndex)
 			KvSetString(kv, "name", g_SkillEvents[eventIndex].assists[i].name);
 			KvSetNum(kv, "bot", g_SkillEvents[eventIndex].assists[i].bot ? 1 : 0);
 			KvSetNum(kv, "damage", g_SkillEvents[eventIndex].assistDamage[i]);
+			KvSetNum(kv, "shots", g_SkillEvents[eventIndex].assistShots[i]);
 			KvGoBack(kv);
 		}
 	}
@@ -293,6 +510,11 @@ void API_WriteEventSkillProperties(Handle kv, int eventIndex)
 	if (g_SkillEvents[eventIndex].assisterDamage > 0)
 	{
 		KvSetNum(kv, "assister_damage", g_SkillEvents[eventIndex].assisterDamage);
+	}
+
+	if (g_SkillEvents[eventIndex].assisterShots > 0)
+	{
+		KvSetNum(kv, "assister_shots", g_SkillEvents[eventIndex].assisterShots);
 	}
 
 	if (g_SkillEvents[eventIndex].chipDamage > 0)
@@ -515,9 +737,149 @@ void API_WriteEventContextBlock(Handle kv)
 	KvGoBack(kv);
 }
 
+void API_GetSummaryTeamName(L4DTeam team, char[] buffer, int maxlen)
+{
+	switch (team)
+	{
+		case L4DTeam_Survivor:
+		{
+			strcopy(buffer, maxlen, "survivor");
+			return;
+		}
+		case L4DTeam_Infected:
+		{
+			strcopy(buffer, maxlen, "infected");
+			return;
+		}
+	}
+
+	strcopy(buffer, maxlen, "unknown");
+}
+
+void API_WriteSummaryContextBlock(Handle kv, int summaryIndex)
+{
+	if (!KvJumpToKey(kv, "context", true))
+	{
+		return;
+	}
+
+	char baseModeName[24];
+	char versusContextName[32];
+	Skills_GetModeBaseName(g_SkillSummaries[summaryIndex].baseMode, baseModeName, sizeof(baseModeName));
+	Skills_GetVersusContextName(g_SkillSummaries[summaryIndex].versusContext, versusContextName, sizeof(versusContextName));
+
+	KvSetNum(kv, "base_mode", g_SkillSummaries[summaryIndex].baseMode);
+	KvSetString(kv, "base_mode_name", baseModeName);
+	KvSetNum(kv, "survivor_limit", g_SkillSummaries[summaryIndex].configuredSurvivorLimit);
+	KvSetNum(kv, "infected_limit", g_SkillSummaries[summaryIndex].configuredPlayerZombieLimit);
+	KvSetNum(kv, "si_pool_mask", g_SkillSummaries[summaryIndex].siPoolMask);
+	KvSetNum(kv, "enabled_si_classes", g_SkillSummaries[summaryIndex].enabledSiClassCount);
+	KvSetNum(kv, "team_size", g_SkillSummaries[summaryIndex].versusTeamSize);
+	KvSetNum(kv, "versus_context", g_SkillSummaries[summaryIndex].versusContext);
+	KvSetString(kv, "versus_context_name", versusContextName);
+	KvSetNum(kv, "round_start_signal", g_SkillSummaries[summaryIndex].roundStartSignal);
+	KvSetNum(kv, "round_end_signal", g_SkillSummaries[summaryIndex].roundEndSignal);
+	KvSetNum(kv, "round_live_signal", g_SkillSummaries[summaryIndex].roundLiveSignal);
+
+	KvGoBack(kv);
+}
+
+void API_WriteSummaryEntries(Handle kv, int summaryIndex)
+{
+	int count = 0;
+	for (int entry = 0; entry < L4D2_SKILLS_MAX_SUMMARY_ENTRIES; entry++)
+	{
+		if (g_SkillSummaries[summaryIndex].entries[entry].active)
+		{
+			count++;
+		}
+	}
+
+	KvSetNum(kv, "entries_count", count);
+	if (!KvJumpToKey(kv, "entries", true))
+	{
+		return;
+	}
+
+	int summaryEntryIndex = 0;
+	for (int entry = 0; entry < L4D2_SKILLS_MAX_SUMMARY_ENTRIES; entry++)
+	{
+		if (!g_SkillSummaries[summaryIndex].entries[entry].active)
+		{
+			continue;
+		}
+
+		char entryKey[8];
+		IntToString(summaryEntryIndex++, entryKey, sizeof(entryKey));
+		if (!KvJumpToKey(kv, entryKey, true))
+		{
+			continue;
+		}
+
+		char teamName[16];
+		API_GetSummaryTeamName(g_SkillSummaries[summaryIndex].entries[entry].team, teamName, sizeof(teamName));
+		KvSetNum(kv, "team", g_SkillSummaries[summaryIndex].entries[entry].team);
+		KvSetString(kv, "team_name", teamName);
+		KvSetNum(kv, "userid", g_SkillSummaries[summaryIndex].entries[entry].player.userid);
+		KvSetNum(kv, "accountid", g_SkillSummaries[summaryIndex].entries[entry].player.accountId);
+		KvSetString(kv, "name", g_SkillSummaries[summaryIndex].entries[entry].player.name);
+		KvSetNum(kv, "bot", g_SkillSummaries[summaryIndex].entries[entry].player.bot ? 1 : 0);
+
+		if (KvJumpToKey(kv, "counts", true))
+		{
+			for (int type = 1; type < view_as<int>(L4D2Skill_Size); type++)
+			{
+				if (g_SkillSummaries[summaryIndex].entries[entry].counts[type] > 0)
+				{
+					char typeName[48];
+					Skills_GetSkillTypeName(view_as<L4D2SkillType>(type), typeName, sizeof(typeName));
+					KvSetNum(kv, typeName, g_SkillSummaries[summaryIndex].entries[entry].counts[type]);
+				}
+			}
+			KvGoBack(kv);
+		}
+
+		KvGoBack(kv);
+	}
+
+	KvGoBack(kv);
+}
+
 public int Native_PlayerSkills_IsEventValid(Handle plugin, int numParams)
 {
 	return Skills_IsEventValid(GetNativeCell(1));
+}
+
+public int Native_PlayerSkills_IsSummaryValid(Handle plugin, int numParams)
+{
+	return API_GetSummaryIndexById(GetNativeCell(1)) != -1;
+}
+
+public int Native_PlayerSkills_FillSummaryKeyValues(Handle plugin, int numParams)
+{
+	int summaryIndex = API_GetSummaryIndexById(GetNativeCell(1));
+	Handle kv = GetNativeCell(2);
+	if (summaryIndex == -1 || kv == INVALID_HANDLE)
+	{
+		return false;
+	}
+
+	KvRewind(kv);
+	if (!KvJumpToKey(kv, "summary", true))
+	{
+		return false;
+	}
+
+	KvSetNum(kv, "id", g_SkillSummaries[summaryIndex].id);
+	KvSetString(kv, "map", g_SkillSummaries[summaryIndex].map);
+	KvSetNum(kv, "total_events", g_SkillSummaries[summaryIndex].totalEvents);
+	KvSetFloat(kv, "created_at", g_SkillSummaries[summaryIndex].createdAt);
+	API_WriteSummaryContextBlock(kv, summaryIndex);
+	API_WriteSummaryEntries(kv, summaryIndex);
+
+	KvGoBack(kv);
+	KvRewind(kv);
+	return true;
 }
 
 public int Native_PlayerSkills_FillEventKeyValues(Handle plugin, int numParams)

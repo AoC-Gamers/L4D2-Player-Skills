@@ -7,6 +7,8 @@
 #include <colors>
 #include <console_table>
 #include <left4dhooks>
+#include <l4d2util_weapons>
+#include <l4d2util_constants>
 
 #define LIBRARY_LEFT4DHOOKS "left4dhooks"
 #define LOG_DIRECTORY "logs/l4d2_player_skills.log"
@@ -17,11 +19,14 @@
 L4D2BossSessionData g_BossSessions[L4D2_SKILLS_MAX_BOSSES];
 L4D2DamageEntry		g_BossDamage[L4D2_SKILLS_MAX_BOSSES][L4D2_SKILLS_MAX_DAMAGE_ENTRIES];
 L4D2SkillEventData	g_SkillEvents[L4D2_SKILLS_MAX_EVENTS];
+L4D2SkillSummaryData g_SkillSummaries[L4D2_SKILLS_MAX_SUMMARIES];
 PlayerSkillsRuntimeState g_Runtime;
 
 int	g_iBossSerial		= 0;
 int	g_iEventSerial		= 0;
 int	g_iNextEventSlot	= 0;
+int g_iSummarySerial	= 0;
+int g_iNextSummarySlot	= 0;
 
 ConVar	g_cvEnable				 = null;
 ConVar	g_cvDebug				 = null;
@@ -231,6 +236,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 public void OnPluginStart()
 {
+	L4D2Weapons_Init();
 	LoadPluginTranslations();
 	BuildPath(Path_SM, g_sDebugLogPath, sizeof(g_sDebugLogPath), LOG_DIRECTORY);
 
@@ -249,7 +255,7 @@ public void OnPluginStart()
 	g_cvAnnounceSmoker			= CreateConVar("l4d2_player_skills_announce_smoker", "15", "Bitmask for Smoker announcements. 1=tongue_cut 2=self_clear 4=special_clear 8=kill 15=all.");
 	g_cvAnnounceBoomer			= CreateConVar("l4d2_player_skills_announce_boomer", "7", "Bitmask for Boomer announcements. 1=pop 2=vomit 4=kill 7=all.");
 	g_cvAnnounceSpitter			= CreateConVar("l4d2_player_skills_announce_spitter", "1", "Bitmask for Spitter announcements. 1=kill 1=all.");
-	g_cvAnnounceJockey			= CreateConVar("l4d2_player_skills_announce_jockey", "7", "Bitmask for Jockey announcements. 1=high_pounce 2=special_clear 4=kill 7=all.");
+	g_cvAnnounceJockey			= CreateConVar("l4d2_player_skills_announce_jockey", "31", "Bitmask for Jockey announcements. 1=high_pounce 2=special_clear 4=kill 8=jump_stop 16=skeet_melee 31=all.");
 	g_cvAnnounceCharger			= CreateConVar("l4d2_player_skills_announce_charger", "31", "Bitmask for Charger announcements. 1=level 2=insta_kill 4=death_setup 8=special_clear 16=kill 31=all.");
 	g_cvAnnounceOther			= CreateConVar("l4d2_player_skills_announce_other", "3", "Bitmask for other announcements. 1=bunnyhop 2=car_alarm 3=all.");
 	g_cvWitchPrintMaxEntries	= CreateConVar("l4d2_player_skills_witch_print_max_entries", "4", "Maximum number of Witch damage entries to print before combining the rest as others.");
@@ -294,6 +300,8 @@ public void OnPluginStart()
 	HookEvent("player_jump", Event_PlayerJump, EventHookMode_Post);
 	HookEvent("player_jump_apex", Event_PlayerJumpApex, EventHookMode_Post);
 	HookEvent("jockey_ride", Event_JockeyRide, EventHookMode_Post);
+	HookEvent("jockey_punched", Event_JockeyPunched, EventHookMode_Post);
+	HookEvent("jockey_killed", Event_JockeyKilled, EventHookMode_Post);
 	HookEvent("tank_spawn", Event_TankSpawn, EventHookMode_Post);
 	HookEvent("player_spawn", Event_PlayerSpawn, EventHookMode_Post);
 	HookEvent("player_hurt", Event_PlayerHurt, EventHookMode_Post);
@@ -302,6 +310,10 @@ public void OnPluginStart()
 	HookEvent("player_shoved", Event_PlayerShoved, EventHookMode_Post);
 	HookEvent("player_now_it", Event_PlayerNowIt, EventHookMode_Post);
 	HookEvent("boomer_exploded", Event_BoomerExploded, EventHookMode_Post);
+	HookEvent("charger_charge_start", Event_ChargerChargeStart, EventHookMode_Post);
+	HookEvent("charger_charge_end", Event_ChargerChargeEnd, EventHookMode_Post);
+	HookEvent("charger_killed", Event_ChargerKilled, EventHookMode_Post);
+	HookEvent("charger_carry_start", Event_ChargerCarryStart, EventHookMode_Post);
 	HookEvent("charger_impact", Event_ChargerImpact, EventHookMode_Post);
 	HookEvent("charger_carry_end", Event_ChargerCarryEnd, EventHookMode_Post);
 	HookEvent("triggered_car_alarm", Event_TriggeredCarAlarm, EventHookMode_Post);
@@ -651,6 +663,7 @@ void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 	}
 
 	Boss_OnRoundEnd();
+	API_FinalizeSummaryFromCurrentState();
 	Detect_OnRoundEnd();
 	g_Runtime.roundLive = false;
 }
@@ -665,6 +678,7 @@ public void L4D2_OnEndVersusModeRound_Post()
 	}
 
 	Boss_OnRoundEnd();
+	API_FinalizeSummaryFromCurrentState();
 	Detect_OnRoundEnd();
 	g_Runtime.roundLive = false;
 }
@@ -749,6 +763,26 @@ void Event_JockeyRide(Event event, const char[] name, bool dontBroadcast)
 	Detect_EventJockeyRide(event);
 }
 
+void Event_JockeyPunched(Event event, const char[] name, bool dontBroadcast)
+{
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
+	Detect_EventJockeyPunched(event);
+}
+
+void Event_JockeyKilled(Event event, const char[] name, bool dontBroadcast)
+{
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
+	Detect_EventJockeyKilled(event);
+}
+
 void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast)
 {
 	Detect_EventPlayerSpawn(event);
@@ -804,6 +838,46 @@ void Event_BoomerExploded(Event event, const char[] name, bool dontBroadcast)
 	}
 
 	Detect_EventBoomerExploded(event);
+}
+
+void Event_ChargerChargeStart(Event event, const char[] name, bool dontBroadcast)
+{
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
+	Detect_EventChargerChargeStart(event);
+}
+
+void Event_ChargerChargeEnd(Event event, const char[] name, bool dontBroadcast)
+{
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
+	Detect_EventChargerChargeEnd(event);
+}
+
+void Event_ChargerKilled(Event event, const char[] name, bool dontBroadcast)
+{
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
+	Detect_EventChargerKilled(event);
+}
+
+void Event_ChargerCarryStart(Event event, const char[] name, bool dontBroadcast)
+{
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
+	Detect_EventChargerCarryStart(event);
 }
 
 void Event_ChargerImpact(Event event, const char[] name, bool dontBroadcast)
@@ -881,92 +955,158 @@ Action Command_Skills(int client, int args)
 	}
 
 	int target = client;
+	bool explicitAll = false;
 	if (args >= 1)
 	{
 		char pattern[MAX_TARGET_LENGTH];
 		GetCmdArg(1, pattern, sizeof(pattern));
 
-		int targets[1];
-		char targetName[MAX_TARGET_LENGTH];
-		bool targetNameMl = false;
-		int found = ProcessTargetString(pattern, client, targets, sizeof(targets), COMMAND_FILTER_CONNECTED, targetName, sizeof(targetName), targetNameMl);
-		if (found != 1)
+		if (StrEqual(pattern, "all", false))
 		{
-			ReplyToTargetError(client, found);
-			return Plugin_Handled;
+			explicitAll = true;
 		}
+		else
+		{
+			int targets[1];
+			char targetNameArg[MAX_TARGET_LENGTH];
+			bool targetNameMl = false;
+			int found = ProcessTargetString(pattern, client, targets, sizeof(targets), COMMAND_FILTER_CONNECTED, targetNameArg, sizeof(targetNameArg), targetNameMl);
+			if (found != 1)
+			{
+				ReplyToTargetError(client, found);
+				return Plugin_Handled;
+			}
 
-		target = targets[0];
+			target = targets[0];
+		}
 	}
 
-	char targetName[MAX_NAME_LENGTH];
-	GetClientName(target, targetName, sizeof(targetName));
-
-	int counts[L4D2Skill_Size];
-	int total = 0;
-
-	for (int index = 0; index < L4D2_SKILLS_MAX_EVENTS; index++)
+	if (!explicitAll)
 	{
-		if (g_SkillEvents[index].id <= 0
-			|| !g_SkillEvents[index].actor.IsSamePersistentPlayer(target)
-			|| !Skills_IsSkillEventEnabledInCurrentMode(index))
-		{
-			continue;
-		}
+		char targetName[MAX_NAME_LENGTH];
+		GetClientName(target, targetName, sizeof(targetName));
 
-		switch (g_SkillEvents[index].type)
+		int counts[L4D2Skill_Size];
+		int total = 0;
+
+		for (int index = 0; index < L4D2_SKILLS_MAX_EVENTS; index++)
 		{
-			case L4D2Skill_WitchDead:
+			if (g_SkillEvents[index].id <= 0 || !g_SkillEvents[index].actor.IsSamePersistentPlayer(target) || !Skills_IsSkillEventEnabledInCurrentMode(index))
 			{
-				if (!g_SkillEvents[index].crown)
+				continue;
+			}
+
+			switch (g_SkillEvents[index].type)
+			{
+				case L4D2Skill_WitchDead:
+				{
+					if (!g_SkillEvents[index].crown)
+					{
+						continue;
+					}
+				}
+
+				case L4D2Skill_TankDead, L4D2Skill_WitchIncap, L4D2Skill_TankRockHit:
 				{
 					continue;
 				}
 			}
 
-			case L4D2Skill_TankDead, L4D2Skill_WitchIncap, L4D2Skill_TankRockHit:
-			{
-				continue;
-			}
+			counts[g_SkillEvents[index].type]++;
+			total++;
 		}
 
-		counts[g_SkillEvents[index].type]++;
-		total++;
+		if (total <= 0)
+		{
+			Announce_ReplyCommand(client, "%t %t", "Tag", "SkillsSummaryEmpty", targetName);
+		}
+		else
+		{
+			Announce_ReplyCommand(client, "%t %t", "Tag", "SkillsSummaryHeader", targetName);
+
+			Announce_PrintSkillsSummaryLine(client, counts,
+				L4D2Skill_HunterSkeet, "SkillsLabelSkeet",
+				L4D2Skill_HunterSkeetMelee, "SkillsLabelSkeetMelee",
+				L4D2Skill_HunterDeadstop, "SkillsLabelDeadstop",
+				L4D2Skill_BoomerPop, "SkillsLabelPop",
+				L4D2Skill_ChargerLevel, "SkillsLabelLevel",
+				L4D2Skill_WitchDead, "SkillsLabelCrown");
+
+			Announce_PrintSkillsSummaryLine(client, counts,
+				L4D2Skill_SmokerTongueCut, "SkillsLabelTongueCut",
+				L4D2Skill_SmokerSelfClear, "SkillsLabelSelfClear",
+				L4D2Skill_ChargerInstaKill, "SkillsLabelInstaKill",
+				L4D2Skill_ChargerDeathSetup, "SkillsLabelDeathSetup",
+				L4D2Skill_SpecialPinClear, "SkillsLabelPinClear",
+				L4D2Skill_BunnyHopStreak, "SkillsLabelBHop");
+
+			Announce_PrintSkillsSummaryLine(client, counts,
+				L4D2Skill_HunterHighPounce, "SkillsLabelHunterHighPounce",
+				L4D2Skill_JockeyHighPounce, "SkillsLabelJockeyHighPounce",
+				L4D2Skill_BoomerVomitLanded, "SkillsLabelVomit",
+				L4D2Skill_CarAlarmTriggered, "SkillsLabelCarAlarm",
+				L4D2Skill_TankRockSkeet, "SkillsLabelRockSkeet",
+				L4D2Skill_None, "");
+		}
 	}
 
-	if (total <= 0)
+	L4DTeam clientTeam = GetClientL4DTeam(client);
+	L4DTeam targetTeam = explicitAll ? clientTeam : GetClientL4DTeam(target);
+	bool showSurvivor = false;
+	bool showInfected = false;
+	int survivorFocus = 0;
+	int infectedFocus = 0;
+
+	if (explicitAll)
 	{
-		Announce_ReplyCommand(client, "%t %t", "Tag", "SkillsSummaryEmpty", targetName);
+		showSurvivor = true;
+		showInfected = true;
+		if (clientTeam == L4DTeam_Survivor)
+		{
+			survivorFocus = client;
+		}
+		else if (clientTeam == L4DTeam_Infected)
+		{
+			infectedFocus = client;
+		}
+	}
+	else if (targetTeam == L4DTeam_Survivor || targetTeam == L4DTeam_Infected)
+	{
+		if (clientTeam == targetTeam)
+		{
+			showSurvivor = (targetTeam == L4DTeam_Survivor);
+			showInfected = (targetTeam == L4DTeam_Infected);
+		}
+		else
+		{
+			showSurvivor = true;
+			showInfected = true;
+		}
+
+		if (showSurvivor)
+		{
+			survivorFocus = (targetTeam == L4DTeam_Survivor) ? target : ((clientTeam == L4DTeam_Survivor) ? client : 0);
+		}
+		if (showInfected)
+		{
+			infectedFocus = (targetTeam == L4DTeam_Infected) ? target : ((clientTeam == L4DTeam_Infected) ? client : 0);
+		}
+	}
+
+	if (!showSurvivor && !showInfected)
+	{
+		Announce_ReplyCommand(client, "%t %t", "Tag", "SkillsComparableTableUnavailable");
 		return Plugin_Handled;
 	}
 
-	Announce_ReplyCommand(client, "%t %t", "Tag", "SkillsSummaryHeader", targetName);
-
-	Announce_PrintSkillsSummaryLine(client, counts,
-		L4D2Skill_HunterSkeet, "SkillsLabelSkeet",
-		L4D2Skill_HunterSkeetMelee, "SkillsLabelSkeetMelee",
-		L4D2Skill_HunterDeadstop, "SkillsLabelDeadstop",
-		L4D2Skill_BoomerPop, "SkillsLabelPop",
-		L4D2Skill_ChargerLevel, "SkillsLabelLevel",
-		L4D2Skill_WitchDead, "SkillsLabelCrown");
-
-	Announce_PrintSkillsSummaryLine(client, counts,
-		L4D2Skill_SmokerTongueCut, "SkillsLabelTongueCut",
-		L4D2Skill_SmokerSelfClear, "SkillsLabelSelfClear",
-		L4D2Skill_ChargerInstaKill, "SkillsLabelInstaKill",
-		L4D2Skill_ChargerDeathSetup, "SkillsLabelDeathSetup",
-		L4D2Skill_SpecialPinClear, "SkillsLabelPinClear",
-		L4D2Skill_BunnyHopStreak, "SkillsLabelBHop");
-
-	Announce_PrintSkillsSummaryLine(client, counts,
-		L4D2Skill_HunterHighPounce, "SkillsLabelHunterHighPounce",
-		L4D2Skill_JockeyHighPounce, "SkillsLabelJockeyHighPounce",
-		L4D2Skill_BoomerVomitLanded, "SkillsLabelVomit",
-		L4D2Skill_CarAlarmTriggered, "SkillsLabelCarAlarm",
-		L4D2Skill_TankRockSkeet, "SkillsLabelRockSkeet",
-		L4D2Skill_None, "");
-
-	Announce_RenderSkillsTable(client, target);
+	if (showSurvivor)
+	{
+		Announce_RenderSkillsTeamTable(client, L4DTeam_Survivor, survivorFocus);
+	}
+	if (showInfected)
+	{
+		Announce_RenderSkillsTeamTable(client, L4DTeam_Infected, infectedFocus);
+	}
 
 	return Plugin_Handled;
 }

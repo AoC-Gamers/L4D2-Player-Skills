@@ -2,7 +2,7 @@
 
 Este documento describe el contrato actual para consumir eventos de `l4d2_player_skills` desde otros plugins.
 
-## Forward
+## Forwards
 
 El forward principal del sistema es:
 
@@ -17,6 +17,129 @@ Uso:
 - el consumidor decide si ignora, registra, anuncia o transforma el evento.
 
 El payload se consulta con natives genéricos y con el volcado a `KeyValues`.
+
+También existen:
+
+```sourcepawn
+forward void PlayerSkills_OnSkillAnnounced(int eventId, L4D2SkillType type);
+forward Action PlayerSkills_OnBossDamageFinalized(int sessionId, L4D2BossType type);
+forward void PlayerSkills_OnBossDamageAnnounced(int sessionId, L4D2BossType type);
+forward void PlayerSkills_OnSummaryFinalized(int summaryId);
+```
+
+Uso:
+
+- `OnSkillAnnounced`
+  - notifica que el plugin ya imprimió el evento
+- `OnBossDamageFinalized`
+  - permite inspeccionar o suprimir el announce de `Tank/Witch`
+- `OnBossDamageAnnounced`
+  - notifica que el resumen de boss ya fue impreso
+- `OnSummaryFinalized`
+  - notifica que una mitad/ronda ya quedó congelada como snapshot compacto
+
+## Round Summary
+
+Al finalizar una ronda o mitad válida, el plugin ahora congela un snapshot compacto del estado de skills y dispara:
+
+```sourcepawn
+forward void PlayerSkills_OnSummaryFinalized(int summaryId);
+```
+
+Ese snapshot:
+
+- se genera después de `Boss_OnRoundEnd()`
+- se genera antes del reset del siguiente `round_start`
+- conserva el contexto del modo
+- agrega skills por actor
+- agrupa infectados bot en una única entrada `IA` por equipo
+
+Reglas:
+
+- `Coop` y `Survival`
+  - el summary se finaliza al cierre de ronda manejado por `round_end`
+- `Versus`
+  - el summary se finaliza al cierre de mitad por `L4D2_OnEndVersusModeRound_Post`
+- `Scavenge`
+  - el summary se finaliza al cierre de mitad/ronda canónica manejada por `scavenge_round_finished`
+
+El summary no reemplaza:
+
+- el stream de `eventId`
+- los `boss sessions`
+
+Es una vista compacta de cierre para consumo externo.
+
+El payload se consulta con:
+
+```sourcepawn
+native bool PlayerSkills_IsSummaryValid(int summaryId);
+native bool PlayerSkills_FillSummaryKeyValues(int summaryId, Handle kv);
+```
+
+## Summary Payload
+
+Ejemplo base:
+
+```text
+summary
+{
+    "id"                "4"
+    "map"               "c8m1_apartment"
+    "total_events"      "18"
+    "created_at"        "1234.50"
+
+    "context"
+    {
+        "base_mode"             "2"
+        "base_mode_name"        "Versus"
+        "survivor_limit"        "4"
+        "infected_limit"        "4"
+        "si_pool_mask"          "63"
+        "enabled_si_classes"    "6"
+        "team_size"             "4"
+        "versus_context"        "4"
+        "versus_context_name"   "Versus4v4"
+    }
+
+    "entries_count"     "3"
+    "entries"
+    {
+        "0"
+        {
+            "team"          "2"
+            "team_name"     "survivor"
+            "userid"        "41"
+            "accountid"     "123456"
+            "name"          "Lechuga"
+            "bot"           "0"
+
+            "counts"
+            {
+                "HunterSkeet"       "1"
+                "BoomerPop"         "1"
+                "SmokerKill"        "2"
+            }
+        }
+
+        "1"
+        {
+            "team"          "3"
+            "team_name"     "infected"
+            "userid"        "0"
+            "accountid"     "0"
+            "name"          "IA"
+            "bot"           "1"
+
+            "counts"
+            {
+                "HunterHighPounce"  "1"
+                "BoomerVomitLanded" "1"
+            }
+        }
+    }
+}
+```
 
 ## KeyValues Native
 
@@ -36,6 +159,26 @@ No incluye:
 - víctima
 - tablas completas de daño de boss
 - strings ya formateados para chat
+
+## Summary Native
+
+```sourcepawn
+native bool PlayerSkills_IsSummaryValid(int summaryId);
+native bool PlayerSkills_FillSummaryKeyValues(int summaryId, Handle kv);
+```
+
+`PlayerSkills_FillSummaryKeyValues(...)` escribe:
+
+- metadata del snapshot
+- contexto del modo
+- lista agregada de actores por equipo
+- counts por `L4D2SkillType`
+
+No incluye:
+
+- strings renderizados para chat o consola
+- payload crudo de cada `eventId`
+- tablas completas de daño de `Tank/Witch`
 
 ## Payload Structure
 
@@ -85,6 +228,10 @@ event
   - `bot`
 - `assists` siempre es una lista, incluso con `0` o `1` entradas.
 - `skill_properties` contiene solo los campos relevantes de esa skill.
+- `summary.entries[].counts` usa claves con el nombre canónico de `L4D2SkillType`.
+- en summaries, infectados bot se compactan en una entrada `IA` por equipo.
+- `WitchIncap` no entra al summary compacto.
+- `WitchDead` solo entra al summary si `crown=1`.
 
 ## Current Skill Set
 
@@ -110,6 +257,12 @@ Skills implementadas hoy:
 - `BoomerVomitLanded`
 - `BunnyHopStreak`
 - `CarAlarmTriggered`
+- `SmokerKill`
+- `BoomerKill`
+- `HunterKill`
+- `SpitterKill`
+- `JockeyKill`
+- `ChargerKill`
 
 ## Event Examples
 
@@ -697,10 +850,21 @@ event
 `assists` no representa necesariamente la tabla completa de daño de una entidad.  
 Representa solo los jugadores que el evento considera asistentes relevantes para esa skill.
 
+En `simple kills`:
+
+- `assists` puede crecer hasta el límite interno del evento
+- el announce visible además se limita por `survivor_limit - 1`
+
 ### Bosses
 
 Las tablas de daño de `Tank` y `Witch` siguen siendo responsabilidad del sistema de tracking y announcer de bosses.  
 No es necesario incluir esas tablas dentro del KV del evento para que la API siga siendo práctica y replicable.
+
+Los summaries de cierre tampoco duplican esas tablas completas.  
+Si un consumidor necesita detalle de boss:
+
+- usa `PlayerSkills_OnBossDamageFinalized`
+- consulta los natives de boss por `sessionId`
 
 ### Optional Fields
 

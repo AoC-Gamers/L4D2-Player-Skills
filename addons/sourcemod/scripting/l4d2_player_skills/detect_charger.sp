@@ -11,6 +11,148 @@ void Detect_ResetCharger(int charger)
 	}
 
 	g_DetectChargerDamageSnapshot[charger].Reset();
+	g_bDetectChargerCharging[charger] = false;
+	g_fDetectChargerChargeSeenAt[charger] = 0.0;
+	g_bDetectChargerKilledMelee[charger] = false;
+	g_bDetectChargerKilledCharging[charger] = false;
+}
+
+void Detect_SetChargerCharging(int charger, bool state)
+{
+	if (charger < 1 || charger > MaxClients)
+	{
+		return;
+	}
+
+	g_bDetectChargerCharging[charger] = state;
+	if (state)
+	{
+		g_fDetectChargerChargeSeenAt[charger] = GetGameTime();
+	}
+
+	if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
+	{
+		Skills_Debug(PlayerSkillsDebug_Detect,
+			"Charger charge state. charger=%d state=%d seen_at=%.3f",
+			charger,
+			state ? 1 : 0,
+			g_fDetectChargerChargeSeenAt[charger]);
+	}
+}
+
+bool Detect_IsChargerEffectivelyCharging(int charger)
+{
+	if (charger < 1 || charger > MaxClients)
+	{
+		return false;
+	}
+
+	if (g_bDetectChargerCharging[charger])
+	{
+		g_fDetectChargerChargeSeenAt[charger] = GetGameTime();
+		return true;
+	}
+
+	return g_fDetectChargerChargeSeenAt[charger] > 0.0
+		&& (GetGameTime() - g_fDetectChargerChargeSeenAt[charger]) <= L4D2_SKILLS_CHARGER_LEVEL_GRACE_TIME;
+}
+
+void Detect_EventChargerChargeStart(Event event)
+{
+	if (!Skills_IsEnabled())
+	{
+		return;
+	}
+
+	int charger = GetClientOfUserId(event.GetInt("userid"));
+	if (!IsValidZombieClass(charger, L4D2ZombieClass_Charger))
+	{
+		return;
+	}
+
+	if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
+	{
+		Skills_Debug(PlayerSkillsDebug_Detect,
+			"Charger charge start event. charger=%d",
+			charger);
+	}
+
+	Detect_SetChargerCharging(charger, true);
+}
+
+void Detect_EventChargerChargeEnd(Event event)
+{
+	if (!Skills_IsEnabled())
+	{
+		return;
+	}
+
+	int charger = GetClientOfUserId(event.GetInt("userid"));
+	if (!IsValidZombieClass(charger, L4D2ZombieClass_Charger))
+	{
+		return;
+	}
+
+	if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
+	{
+		Skills_Debug(PlayerSkillsDebug_Detect,
+			"Charger charge end event. charger=%d",
+			charger);
+	}
+
+	Detect_SetChargerCharging(charger, false);
+}
+
+void Detect_EventChargerKilled(Event event)
+{
+	if (!Skills_IsEnabled())
+	{
+		return;
+	}
+
+	int charger = GetClientOfUserId(event.GetInt("userid"));
+	int attacker = GetClientOfUserId(event.GetInt("attacker"));
+	bool melee = event.GetBool("melee");
+	bool charging = event.GetBool("charging");
+	g_bDetectChargerKilledMelee[charger] = melee;
+	g_bDetectChargerKilledCharging[charger] = charging;
+	if (charging)
+	{
+		g_fDetectChargerChargeSeenAt[charger] = GetGameTime();
+	}
+
+	if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
+	{
+		Skills_Debug(PlayerSkillsDebug_Detect,
+			"Charger killed event. charger=%d attacker=%d melee=%d charging=%d tracked_raw=%d tracked_effective=%d",
+			charger,
+			attacker,
+			melee ? 1 : 0,
+			charging ? 1 : 0,
+			(charger > 0 && charger <= MaxClients && Detect_IsChargerCharging(charger)) ? 1 : 0,
+			(charger > 0 && charger <= MaxClients && Detect_IsChargerEffectivelyCharging(charger)) ? 1 : 0);
+	}
+}
+
+void Detect_EventChargerCarryStart(Event event)
+{
+	if (!Skills_IsEnabled())
+	{
+		return;
+	}
+
+	int charger = GetClientOfUserId(event.GetInt("userid"));
+	int victim = GetClientOfUserId(event.GetInt("victim"));
+
+	if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
+	{
+		Skills_Debug(PlayerSkillsDebug_Detect,
+			"Charger carry start event. charger=%d victim=%d tracked_raw=%d tracked_effective=%d",
+			charger,
+			victim,
+			(charger > 0 && charger <= MaxClients && Detect_IsChargerCharging(charger)) ? 1 : 0,
+			(charger > 0 && charger <= MaxClients && Detect_IsChargerEffectivelyCharging(charger)) ? 1 : 0);
+	}
 }
 
 void Detect_ResetChargeTrack(int survivor)
@@ -278,9 +420,34 @@ void Detect_HandleChargerHurt(int victim, int attacker, int damageType, int appl
 		return;
 	}
 
-	if (postHealth == 0
-		&& (damageType & DMG_CLUB || damageType & DMG_SLASH)
-		&& Detect_IsChargerCharging(victim))
+	bool meleeDamage = (damageType & DMG_CLUB) != 0 || (damageType & DMG_SLASH) != 0 || g_bDetectChargerKilledMelee[victim];
+	bool chargingRaw = Detect_IsChargerCharging(victim);
+	bool chargingEffective = Detect_IsChargerEffectivelyCharging(victim) || g_bDetectChargerKilledCharging[victim];
+	if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
+	{
+		Skills_Debug(PlayerSkillsDebug_Detect,
+			"Charger level check. charger=%d attacker=%d applied=%d post=%d damagetype=%d melee=%d charging_raw=%d charging_effective=%d health_before=%d raw=%.1f",
+			victim,
+			attacker,
+			appliedDamage,
+			postHealth,
+			damageType,
+			meleeDamage ? 1 : 0,
+			chargingRaw ? 1 : 0,
+			chargingEffective ? 1 : 0,
+			g_DetectChargerDamageSnapshot[victim].lastHealthBeforeDamage,
+			g_DetectChargerDamageSnapshot[victim].lastRawDamage);
+	}
+
+	bool deadNow = !IsPlayerAlive(victim) || postHealth <= 1;
+	if (postHealth <= 1)
+	{
+		postHealth = 0;
+	}
+
+	if (deadNow
+		&& meleeDamage
+		&& (chargingRaw || chargingEffective))
 	{
 		int chargerHealthBeforeDamage = g_DetectChargerDamageSnapshot[victim].lastHealthBeforeDamage > 0
 			? g_DetectChargerDamageSnapshot[victim].lastHealthBeforeDamage
@@ -319,7 +486,18 @@ void Detect_HandleChargerHurt(int victim, int attacker, int damageType, int appl
 			}
 		}
 
-		Detect_MarkSimpleKillSuppressed(victim);
+		Detect_MarkSiLifeKillSuppressed(victim);
+		if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
+		{
+			Skills_Debug(PlayerSkillsDebug_Detect,
+				"Charger level classified. charger=%d attacker=%d pre=%d chip=%d qualifies_at_baseline=%d perfect=%d",
+				victim,
+				attacker,
+				chargerHealthBeforeDamage,
+				chipDamage,
+				qualifiesAtBaseline ? 1 : 0,
+				g_SkillEvents[eventIndex].perfect ? 1 : 0);
+		}
 	}
 
 	if (postHealth > 0)
@@ -329,5 +507,8 @@ void Detect_HandleChargerHurt(int victim, int attacker, int damageType, int appl
 	else
 	{
 		g_DetectChargerDamageSnapshot[victim].lastHealth = 0;
+		Detect_SetChargerCharging(victim, false);
+		g_bDetectChargerKilledMelee[victim] = false;
+		g_bDetectChargerKilledCharging[victim] = false;
 	}
 }

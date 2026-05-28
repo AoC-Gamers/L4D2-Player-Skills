@@ -5,102 +5,124 @@
 
 int g_iAnnounceSortSession = -1;
 
+#define L4D2_SKILLS_SURVIVOR_TABLE_FAMILIES 13
+#define L4D2_SKILLS_INFECTED_TABLE_FAMILIES 6
+
 bool Announce_HasMask(ConVar cvar, int bit)
 {
 	return cvar != null && (cvar.IntValue & bit) != 0;
+}
+
+void Announce_FormatSimpleKillStat(int damage, int count, char[] buffer, int maxlen)
+{
+	FormatEx(buffer, maxlen, "%d/%d", damage, count);
 }
 
 bool Announce_ShouldAnnounceSkill(int eventIndex)
 {
 	if (eventIndex < 0 || eventIndex >= L4D2_SKILLS_MAX_EVENTS || g_SkillEvents[eventIndex].id <= 0)
 	{
+		Skills_Debug(PlayerSkillsDebug_Announce, "Announce rejected. reason=invalid_event eventIndex=%d", eventIndex);
 		return false;
 	}
 
+	bool shouldAnnounce = false;
 	switch (g_SkillEvents[eventIndex].type)
 	{
 		case L4D2Skill_HunterSkeet:
 		{
-			return Announce_HasMask(g_cvAnnounceHunter, view_as<int>(PlayerSkillsAnnounceHunter_Skeet));
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceHunter, view_as<int>(PlayerSkillsAnnounceHunter_Skeet));
 		}
 		case L4D2Skill_HunterSkeetMelee:
 		{
-			return Announce_HasMask(g_cvAnnounceHunter, view_as<int>(PlayerSkillsAnnounceHunter_SkeetMelee));
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceHunter, view_as<int>(PlayerSkillsAnnounceHunter_SkeetMelee));
 		}
 		case L4D2Skill_HunterDeadstop:
 		{
-			return Announce_HasMask(g_cvAnnounceHunter, view_as<int>(PlayerSkillsAnnounceHunter_Deadstop));
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceHunter, view_as<int>(PlayerSkillsAnnounceHunter_Deadstop));
 		}
 		case L4D2Skill_HunterHighPounce:
 		{
-			return Announce_HasMask(g_cvAnnounceHunter, view_as<int>(PlayerSkillsAnnounceHunter_HighPounce));
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceHunter, view_as<int>(PlayerSkillsAnnounceHunter_HighPounce));
 		}
 		case L4D2Skill_BoomerPop:
 		{
-			return Announce_HasMask(g_cvAnnounceBoomer, view_as<int>(PlayerSkillsAnnounceBoomer_Pop));
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceBoomer, view_as<int>(PlayerSkillsAnnounceBoomer_Pop));
 		}
 		case L4D2Skill_BoomerKill:
 		{
-			return Announce_HasMask(g_cvAnnounceBoomer, view_as<int>(PlayerSkillsAnnounceBoomer_Kill));
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceBoomer, view_as<int>(PlayerSkillsAnnounceBoomer_Kill));
 		}
 		case L4D2Skill_BoomerVomitLanded:
 		{
 			if (!Announce_HasMask(g_cvAnnounceBoomer, view_as<int>(PlayerSkillsAnnounceBoomer_Vomit)))
 			{
-				return false;
+				shouldAnnounce = false;
 			}
-
-			int survivorLimit = Skills_GetConfiguredSurvivorLimit();
-			if (survivorLimit <= 0)
+			else
 			{
-				survivorLimit = 4;
-			}
+				int survivorLimit = Skills_GetConfiguredSurvivorLimit();
+				if (survivorLimit <= 0)
+				{
+					survivorLimit = 4;
+				}
 
-			return g_SkillEvents[eventIndex].amount >= survivorLimit;
+				shouldAnnounce = g_SkillEvents[eventIndex].amount >= survivorLimit;
+			}
 		}
 		case L4D2Skill_SmokerTongueCut:
 		{
-			return Announce_HasMask(g_cvAnnounceSmoker, view_as<int>(PlayerSkillsAnnounceSmoker_TongueCut));
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceSmoker, view_as<int>(PlayerSkillsAnnounceSmoker_TongueCut));
 		}
 		case L4D2Skill_SmokerSelfClear:
 		{
-			return Announce_HasMask(g_cvAnnounceSmoker, view_as<int>(PlayerSkillsAnnounceSmoker_SelfClear));
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceSmoker, view_as<int>(PlayerSkillsAnnounceSmoker_SelfClear));
 		}
 		case L4D2Skill_SmokerKill:
 		{
-			return Announce_HasMask(g_cvAnnounceSmoker, view_as<int>(PlayerSkillsAnnounceSmoker_Kill));
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceSmoker, view_as<int>(PlayerSkillsAnnounceSmoker_Kill));
 		}
 		case L4D2Skill_HunterKill:
 		{
-			return Announce_HasMask(g_cvAnnounceHunter, view_as<int>(PlayerSkillsAnnounceHunter_Kill));
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceHunter, view_as<int>(PlayerSkillsAnnounceHunter_Kill));
 		}
 		case L4D2Skill_JockeyHighPounce:
 		{
-			return Announce_HasMask(g_cvAnnounceJockey, view_as<int>(PlayerSkillsAnnounceJockey_HighPounce));
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceJockey, view_as<int>(PlayerSkillsAnnounceJockey_HighPounce));
+		}
+		case L4D2Skill_JockeyJumpStop:
+		{
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceJockey, view_as<int>(PlayerSkillsAnnounceJockey_JumpStop))
+				|| (g_cvAnnounceJockey != null && g_cvAnnounceJockey.IntValue == 7);
+		}
+		case L4D2Skill_JockeySkeetMelee:
+		{
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceJockey, view_as<int>(PlayerSkillsAnnounceJockey_SkeetMelee))
+				|| (g_cvAnnounceJockey != null && g_cvAnnounceJockey.IntValue == 7);
 		}
 		case L4D2Skill_JockeyKill:
 		{
-			return Announce_HasMask(g_cvAnnounceJockey, view_as<int>(PlayerSkillsAnnounceJockey_Kill));
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceJockey, view_as<int>(PlayerSkillsAnnounceJockey_Kill));
 		}
 		case L4D2Skill_SpitterKill:
 		{
-			return Announce_HasMask(g_cvAnnounceSpitter, view_as<int>(PlayerSkillsAnnounceSpitter_Kill));
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceSpitter, view_as<int>(PlayerSkillsAnnounceSpitter_Kill));
 		}
 		case L4D2Skill_ChargerLevel:
 		{
-			return Announce_HasMask(g_cvAnnounceCharger, view_as<int>(PlayerSkillsAnnounceCharger_Level));
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceCharger, view_as<int>(PlayerSkillsAnnounceCharger_Level));
 		}
 		case L4D2Skill_ChargerInstaKill:
 		{
-			return Announce_HasMask(g_cvAnnounceCharger, view_as<int>(PlayerSkillsAnnounceCharger_InstaKill));
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceCharger, view_as<int>(PlayerSkillsAnnounceCharger_InstaKill));
 		}
 		case L4D2Skill_ChargerDeathSetup:
 		{
-			return Announce_HasMask(g_cvAnnounceCharger, view_as<int>(PlayerSkillsAnnounceCharger_DeathSetup));
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceCharger, view_as<int>(PlayerSkillsAnnounceCharger_DeathSetup));
 		}
 		case L4D2Skill_ChargerKill:
 		{
-			return Announce_HasMask(g_cvAnnounceCharger, view_as<int>(PlayerSkillsAnnounceCharger_Kill));
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceCharger, view_as<int>(PlayerSkillsAnnounceCharger_Kill));
 		}
 		case L4D2Skill_SpecialPinClear:
 		{
@@ -108,48 +130,67 @@ bool Announce_ShouldAnnounceSkill(int eventIndex)
 			{
 				case L4D2ZombieClass_Hunter:
 				{
-					return Announce_HasMask(g_cvAnnounceHunter, view_as<int>(PlayerSkillsAnnounceHunter_SpecialClear));
+					shouldAnnounce = Announce_HasMask(g_cvAnnounceHunter, view_as<int>(PlayerSkillsAnnounceHunter_SpecialClear));
 				}
 				case L4D2ZombieClass_Smoker:
 				{
-					return Announce_HasMask(g_cvAnnounceSmoker, view_as<int>(PlayerSkillsAnnounceSmoker_SpecialClear));
+					shouldAnnounce = Announce_HasMask(g_cvAnnounceSmoker, view_as<int>(PlayerSkillsAnnounceSmoker_SpecialClear));
 				}
 				case L4D2ZombieClass_Jockey:
 				{
-					return Announce_HasMask(g_cvAnnounceJockey, view_as<int>(PlayerSkillsAnnounceJockey_SpecialClear));
+					shouldAnnounce = Announce_HasMask(g_cvAnnounceJockey, view_as<int>(PlayerSkillsAnnounceJockey_SpecialClear));
 				}
 				case L4D2ZombieClass_Charger:
 				{
-					return Announce_HasMask(g_cvAnnounceCharger, view_as<int>(PlayerSkillsAnnounceCharger_SpecialClear));
+					shouldAnnounce = Announce_HasMask(g_cvAnnounceCharger, view_as<int>(PlayerSkillsAnnounceCharger_SpecialClear));
 				}
 			}
-
-			return false;
 		}
 		case L4D2Skill_WitchDead:
 		{
-			return g_SkillEvents[eventIndex].crown
+			shouldAnnounce = g_SkillEvents[eventIndex].crown
 				&& Announce_HasMask(g_cvAnnounceWitch, view_as<int>(PlayerSkillsAnnounceBoss_Crown));
 		}
 		case L4D2Skill_TankRockSkeet:
 		{
-			return Announce_HasMask(g_cvAnnounceTank, view_as<int>(PlayerSkillsAnnounceBoss_RockSkeet));
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceTank, view_as<int>(PlayerSkillsAnnounceBoss_RockSkeet));
 		}
 		case L4D2Skill_TankRockHit:
 		{
-			return Announce_HasMask(g_cvAnnounceTank, view_as<int>(PlayerSkillsAnnounceBoss_RockHit));
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceTank, view_as<int>(PlayerSkillsAnnounceBoss_RockHit));
 		}
 		case L4D2Skill_BunnyHopStreak:
 		{
-			return Announce_HasMask(g_cvAnnounceOther, view_as<int>(PlayerSkillsAnnounceOther_BunnyHop));
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceOther, view_as<int>(PlayerSkillsAnnounceOther_BunnyHop));
 		}
 		case L4D2Skill_CarAlarmTriggered:
 		{
-			return Announce_HasMask(g_cvAnnounceOther, view_as<int>(PlayerSkillsAnnounceOther_CarAlarm));
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceOther, view_as<int>(PlayerSkillsAnnounceOther_CarAlarm));
 		}
 	}
 
-	return false;
+	if (!shouldAnnounce)
+	{
+		char typeName[48];
+		Skills_GetSkillTypeName(g_SkillEvents[eventIndex].type, typeName, sizeof(typeName));
+		Skills_Debug(PlayerSkillsDebug_Announce,
+			"Announce rejected. event=%d type=%s zombieClass=%d hunterMask=%d smokerMask=%d boomerMask=%d spitterMask=%d jockeyMask=%d chargerMask=%d otherMask=%d tankMask=%d witchMask=%d amount=%d",
+			g_SkillEvents[eventIndex].id,
+			typeName,
+			g_SkillEvents[eventIndex].zombieClass,
+			g_cvAnnounceHunter != null ? g_cvAnnounceHunter.IntValue : -1,
+			g_cvAnnounceSmoker != null ? g_cvAnnounceSmoker.IntValue : -1,
+			g_cvAnnounceBoomer != null ? g_cvAnnounceBoomer.IntValue : -1,
+			g_cvAnnounceSpitter != null ? g_cvAnnounceSpitter.IntValue : -1,
+			g_cvAnnounceJockey != null ? g_cvAnnounceJockey.IntValue : -1,
+			g_cvAnnounceCharger != null ? g_cvAnnounceCharger.IntValue : -1,
+			g_cvAnnounceOther != null ? g_cvAnnounceOther.IntValue : -1,
+			g_cvAnnounceTank != null ? g_cvAnnounceTank.IntValue : -1,
+			g_cvAnnounceWitch != null ? g_cvAnnounceWitch.IntValue : -1,
+			g_SkillEvents[eventIndex].amount);
+	}
+
+	return shouldAnnounce;
 }
 
 bool Announce_ShouldAnnounceBoss(int sessionIndex)
@@ -179,230 +220,6 @@ void Announce_ReplyCommand(int client, const char[] message, any ...)
 	char buffer[256];
 	VFormat(buffer, sizeof(buffer), message, 3);
 	CReplyToCommand(client, "%s", buffer);
-}
-
-void Announce_RenderSkillsTable(int client, int target)
-{
-	L4DTeam team = GetClientL4DTeam(target);
-	if (team != L4DTeam_Survivor && team != L4DTeam_Infected)
-	{
-		Announce_ReplyCommand(client, "%t %t", "Tag", "SkillsComparableTableUnavailable");
-		return;
-	}
-
-	ConsolePanel panel;
-	ConsolePanel_Reset(panel);
-	ConsolePanel_SetWidth(panel, 86);
-	ConsolePanel_EnableSafeAscii(panel, true);
-
-	char line[160];
-	Format(line, sizeof(line), "L4D2 Player Skills");
-	ConsolePanel_AddHeaderLine(panel, line);
-
-	Format(line, sizeof(line), "Player: %N | Team: %s", target, team == L4DTeam_Survivor ? "Survivor" : "Infected");
-	ConsolePanel_AddHeaderLine(panel, line);
-
-	char baseModeName[24];
-	char versusContextName[32];
-	Skills_GetModeBaseName(g_Runtime.baseMode, baseModeName, sizeof(baseModeName));
-	Skills_GetVersusContextName(g_Runtime.versusContext, versusContextName, sizeof(versusContextName));
-	if (g_Runtime.baseMode == PlayerSkillsGameMode_Versus && g_Runtime.versusContext != PlayerSkillsVersusContext_None)
-	{
-		Format(line, sizeof(line), "Mode: %s | Context: %s | TeamSize: %d", baseModeName, versusContextName, g_Runtime.versusTeamSize);
-	}
-	else
-	{
-		Format(line, sizeof(line), "Mode: %s", baseModeName);
-	}
-	ConsolePanel_AddHeaderLine(panel, line);
-
-	if (team == L4DTeam_Survivor)
-	{
-		bool showHunter = Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_HunterSkeet);
-		bool showBoomer = Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_BoomerPop);
-		bool showCharger = Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_ChargerLevel);
-		bool showSmoker = Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_SmokerTongueCut);
-
-		ConsoleTable_AddColumn(panel.table, "Player", 18, ConsoleTableAlignment_Left, ConsoleTableCellType_String);
-		if (showHunter)
-		{
-			ConsoleTable_AddColumn(panel.table, "Sk", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
-			ConsoleTable_AddColumn(panel.table, "SM", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
-			ConsoleTable_AddColumn(panel.table, "DS", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
-		}
-		if (showBoomer)
-		{
-			ConsoleTable_AddColumn(panel.table, "BP", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
-		}
-		if (showCharger)
-		{
-			ConsoleTable_AddColumn(panel.table, "Lv", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
-		}
-		ConsoleTable_AddColumn(panel.table, "Cr", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
-		if (showSmoker)
-		{
-			ConsoleTable_AddColumn(panel.table, "TC", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
-			ConsoleTable_AddColumn(panel.table, "SC", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
-		}
-		ConsoleTable_AddColumn(panel.table, "RS", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
-
-		int players[MAXPLAYERS + 1];
-		int count = Announce_CollectSortedSkillClients(team, players, sizeof(players));
-		for (int i = 0; i < count; i++)
-		{
-			if (!ConsoleTable_BeginRow(panel.table))
-			{
-				break;
-			}
-
-			char playerName[32];
-			Format(playerName, sizeof(playerName), "%s%N", players[i] == target ? ">" : "", players[i]);
-
-			ConsoleTable_AddStringCell(panel.table, playerName);
-			if (showHunter)
-			{
-				ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_HunterSkeet));
-				ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_HunterSkeetMelee));
-				ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_HunterDeadstop));
-			}
-			if (showBoomer)
-			{
-				ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_BoomerPop));
-			}
-			if (showCharger)
-			{
-				ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_ChargerLevel));
-			}
-			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_WitchDead));
-			if (showSmoker)
-			{
-				ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_SmokerTongueCut));
-				ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_SmokerSelfClear));
-			}
-			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_TankRockSkeet));
-			ConsoleTable_EndRow(panel.table);
-		}
-
-		char legendA[160];
-		char legendB[160];
-		legendA[0] = '\0';
-		legendB[0] = '\0';
-		if (showHunter)
-		{
-			StrCat(legendA, sizeof(legendA), "Sk=Skeets SM=SkeetMelees DS=Deadstops ");
-		}
-		if (showBoomer)
-		{
-			StrCat(legendA, sizeof(legendA), "BP=BoomerPops ");
-		}
-		if (showCharger)
-		{
-			StrCat(legendA, sizeof(legendA), "Lv=Levels ");
-		}
-		StrCat(legendB, sizeof(legendB), "Cr=Crowns ");
-		if (showSmoker)
-		{
-			StrCat(legendB, sizeof(legendB), "TC=TongueCuts SC=SmokerClears ");
-		}
-		StrCat(legendB, sizeof(legendB), "RS=RockSkeets");
-		if (legendA[0] != '\0')
-		{
-			ConsolePanel_AddHeaderLine(panel, legendA);
-		}
-		ConsolePanel_AddHeaderLine(panel, legendB);
-	}
-	else
-	{
-		bool showHunter = Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_HunterHighPounce);
-		bool showJockey = Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_JockeyHighPounce);
-		bool showBoomer = Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_BoomerVomitLanded);
-		bool showCharger = Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_ChargerInstaKill);
-
-		ConsoleTable_AddColumn(panel.table, "Player", 18, ConsoleTableAlignment_Left, ConsoleTableCellType_String);
-		if (showHunter)
-		{
-			ConsoleTable_AddColumn(panel.table, "HP", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
-		}
-		if (showJockey)
-		{
-			ConsoleTable_AddColumn(panel.table, "JP", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
-		}
-		if (showBoomer)
-		{
-			ConsoleTable_AddColumn(panel.table, "BV", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
-		}
-		if (showCharger)
-		{
-			ConsoleTable_AddColumn(panel.table, "IK", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
-			ConsoleTable_AddColumn(panel.table, "DS", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
-		}
-		ConsoleTable_AddColumn(panel.table, "CA", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
-		ConsoleTable_AddColumn(panel.table, "RH", 4, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
-
-		int players[MAXPLAYERS + 1];
-		int count = Announce_CollectSortedSkillClients(team, players, sizeof(players));
-		for (int i = 0; i < count; i++)
-		{
-			if (!ConsoleTable_BeginRow(panel.table))
-			{
-				break;
-			}
-
-			char playerName[32];
-			Format(playerName, sizeof(playerName), "%s%N", players[i] == target ? ">" : "", players[i]);
-
-			ConsoleTable_AddStringCell(panel.table, playerName);
-			if (showHunter)
-			{
-				ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_HunterHighPounce));
-			}
-			if (showJockey)
-			{
-				ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_JockeyHighPounce));
-			}
-			if (showBoomer)
-			{
-				ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_BoomerVomitLanded));
-			}
-			if (showCharger)
-			{
-				ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_ChargerInstaKill));
-				ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_ChargerDeathSetup));
-			}
-			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_CarAlarmTriggered));
-			ConsoleTable_AddIntCell(panel.table, Announce_CountSkillTypeForClient(players[i], L4D2Skill_TankRockHit));
-			ConsoleTable_EndRow(panel.table);
-		}
-
-		char legendA[160];
-		char legendB[160];
-		legendA[0] = '\0';
-		legendB[0] = '\0';
-		if (showHunter)
-		{
-			StrCat(legendA, sizeof(legendA), "HP=HunterPounces ");
-		}
-		if (showJockey)
-		{
-			StrCat(legendA, sizeof(legendA), "JP=JockeyPounces ");
-		}
-		if (showBoomer)
-		{
-			StrCat(legendA, sizeof(legendA), "BV=BoomerVomit ");
-		}
-		if (showCharger)
-		{
-			StrCat(legendB, sizeof(legendB), "IK=InstaKills DS=DeathSetups ");
-		}
-		StrCat(legendB, sizeof(legendB), "CA=CarAlarms RH=RockHits");
-		if (legendA[0] != '\0')
-		{
-			ConsolePanel_AddHeaderLine(panel, legendA);
-		}
-		ConsolePanel_AddHeaderLine(panel, legendB);
-	}
-
-	ConsolePanel_RenderToClient(panel, client);
 }
 
 // Skill summary helpers.
@@ -490,36 +307,238 @@ int Announce_CountSkillTypeForClient(int client, L4D2SkillType type)
 	return count;
 }
 
-int Announce_GetSkillScoreForClient(int client, L4DTeam team)
+int Announce_MapSurvivorTableFamily(L4D2SkillType type)
 {
-	if (team == L4DTeam_Survivor)
+	switch (type)
 	{
-		return Announce_CountSkillTypeForClient(client, L4D2Skill_HunterSkeet)
-			+ Announce_CountSkillTypeForClient(client, L4D2Skill_HunterSkeetMelee)
-			+ Announce_CountSkillTypeForClient(client, L4D2Skill_HunterDeadstop)
-			+ Announce_CountSkillTypeForClient(client, L4D2Skill_BoomerPop)
-			+ Announce_CountSkillTypeForClient(client, L4D2Skill_ChargerLevel)
-			+ Announce_CountSkillTypeForClient(client, L4D2Skill_WitchDead)
-			+ Announce_CountSkillTypeForClient(client, L4D2Skill_SmokerTongueCut)
-			+ Announce_CountSkillTypeForClient(client, L4D2Skill_SmokerSelfClear)
-			+ Announce_CountSkillTypeForClient(client, L4D2Skill_TankRockSkeet);
+		case L4D2Skill_HunterSkeet: return 0;
+		case L4D2Skill_HunterSkeetMelee: return 1;
+		case L4D2Skill_HunterDeadstop: return 2;
+		case L4D2Skill_SpecialPinClear: return 3;
+		case L4D2Skill_SmokerTongueCut: return 4;
+		case L4D2Skill_SmokerSelfClear: return 5;
+		case L4D2Skill_BoomerPop: return 6;
+		case L4D2Skill_ChargerLevel: return 7;
+		case L4D2Skill_CarAlarmTriggered: return 8;
+		case L4D2Skill_BunnyHopStreak: return 9;
+		case L4D2Skill_WitchDead: return 10;
+		case L4D2Skill_TankRockSkeet: return 11;
+		case L4D2Skill_SmokerKill, L4D2Skill_BoomerKill, L4D2Skill_HunterKill, L4D2Skill_SpitterKill, L4D2Skill_JockeyKill, L4D2Skill_ChargerKill: return 12;
+		case L4D2Skill_JockeyJumpStop: return 13;
+		case L4D2Skill_JockeySkeetMelee: return 14;
 	}
 
-	return Announce_CountSkillTypeForClient(client, L4D2Skill_HunterHighPounce)
-		+ Announce_CountSkillTypeForClient(client, L4D2Skill_JockeyHighPounce)
-		+ Announce_CountSkillTypeForClient(client, L4D2Skill_BoomerVomitLanded)
-		+ Announce_CountSkillTypeForClient(client, L4D2Skill_ChargerInstaKill)
-		+ Announce_CountSkillTypeForClient(client, L4D2Skill_ChargerDeathSetup)
-		+ Announce_CountSkillTypeForClient(client, L4D2Skill_CarAlarmTriggered)
-		+ Announce_CountSkillTypeForClient(client, L4D2Skill_TankRockHit);
+	return -1;
 }
 
-int Announce_CollectSortedSkillClients(L4DTeam team, int[] clients, int maxClients)
+int Announce_MapInfectedTableFamily(L4D2SkillType type)
+{
+	switch (type)
+	{
+		case L4D2Skill_HunterHighPounce: return 0;
+		case L4D2Skill_JockeyHighPounce: return 1;
+		case L4D2Skill_BoomerVomitLanded: return 2;
+		case L4D2Skill_ChargerInstaKill: return 3;
+		case L4D2Skill_ChargerDeathSetup: return 4;
+		case L4D2Skill_TankRockHit: return 5;
+	}
+
+	return -1;
+}
+
+void Announce_GetSurvivorTableFamilyName(int family, char[] buffer, int maxlen)
+{
+	switch (family)
+	{
+		case 0: strcopy(buffer, maxlen, "Skeets");
+		case 1: strcopy(buffer, maxlen, "SkeetMelees");
+		case 2: strcopy(buffer, maxlen, "Deadstops");
+		case 3: strcopy(buffer, maxlen, "SpecialClears");
+		case 4: strcopy(buffer, maxlen, "TongueCuts");
+		case 5: strcopy(buffer, maxlen, "SmokerClears");
+		case 6: strcopy(buffer, maxlen, "BoomerPops");
+		case 7: strcopy(buffer, maxlen, "ChargerLevels");
+		case 8: strcopy(buffer, maxlen, "CarAlarms");
+		case 9: strcopy(buffer, maxlen, "BunnyHopStreaks");
+		case 10: strcopy(buffer, maxlen, "WitchCrowns");
+		case 11: strcopy(buffer, maxlen, "TankRockSkeets");
+		case 12: strcopy(buffer, maxlen, "SpecialInfectedKills");
+		case 13: strcopy(buffer, maxlen, "JockeyJumpStops");
+		case 14: strcopy(buffer, maxlen, "JockeySkeetMelees");
+		default: buffer[0] = '\0';
+	}
+}
+
+void Announce_GetInfectedTableFamilyName(int family, char[] buffer, int maxlen)
+{
+	switch (family)
+	{
+		case 0: strcopy(buffer, maxlen, "HunterPounces");
+		case 1: strcopy(buffer, maxlen, "JockeyPounces");
+		case 2: strcopy(buffer, maxlen, "BoomerVomit");
+		case 3: strcopy(buffer, maxlen, "ChargerInstaKills");
+		case 4: strcopy(buffer, maxlen, "ChargerDeathSetups");
+		case 5: strcopy(buffer, maxlen, "TankRockHits");
+		default: buffer[0] = '\0';
+	}
+}
+
+bool Announce_IsSurvivorTableFamilyVisible(int family)
+{
+	switch (family)
+	{
+		case 0: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_HunterSkeet);
+		case 1: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_HunterSkeetMelee);
+		case 2: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_HunterDeadstop);
+		case 3: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_SpecialPinClear);
+		case 4: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_SmokerTongueCut);
+		case 5: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_SmokerSelfClear);
+		case 6: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_BoomerPop);
+		case 7: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_ChargerLevel);
+		case 8: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_CarAlarmTriggered);
+		case 9: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_BunnyHopStreak);
+		case 10: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_WitchDead);
+		case 11: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_TankRockSkeet);
+		case 12:
+		{
+			return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_SmokerKill)
+				|| Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_BoomerKill)
+				|| Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_HunterKill)
+				|| Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_SpitterKill)
+				|| Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_JockeyKill)
+				|| Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_ChargerKill);
+		}
+		case 13: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_JockeyJumpStop);
+		case 14: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_JockeySkeetMelee);
+	}
+
+	return false;
+}
+
+bool Announce_IsInfectedTableFamilyVisible(int family)
+{
+	switch (family)
+	{
+		case 0: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_HunterHighPounce);
+		case 1: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_JockeyHighPounce);
+		case 2: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_BoomerVomitLanded);
+		case 3: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_ChargerInstaKill);
+		case 4: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_ChargerDeathSetup);
+		case 5: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_TankRockHit);
+	}
+
+	return false;
+}
+
+int Announce_CountSurvivorTableFamilyForClient(int client, int family)
+{
+	switch (family)
+	{
+		case 0: return Announce_CountSkillTypeForClient(client, L4D2Skill_HunterSkeet);
+		case 1: return Announce_CountSkillTypeForClient(client, L4D2Skill_HunterSkeetMelee);
+		case 2: return Announce_CountSkillTypeForClient(client, L4D2Skill_HunterDeadstop);
+		case 3: return Announce_CountSkillTypeForClient(client, L4D2Skill_SpecialPinClear);
+		case 4: return Announce_CountSkillTypeForClient(client, L4D2Skill_SmokerTongueCut);
+		case 5: return Announce_CountSkillTypeForClient(client, L4D2Skill_SmokerSelfClear);
+		case 6: return Announce_CountSkillTypeForClient(client, L4D2Skill_BoomerPop);
+		case 7: return Announce_CountSkillTypeForClient(client, L4D2Skill_ChargerLevel);
+		case 8: return Announce_CountSkillTypeForClient(client, L4D2Skill_CarAlarmTriggered);
+		case 9: return Announce_CountSkillTypeForClient(client, L4D2Skill_BunnyHopStreak);
+		case 10: return Announce_CountSkillTypeForClient(client, L4D2Skill_WitchDead);
+		case 11: return Announce_CountSkillTypeForClient(client, L4D2Skill_TankRockSkeet);
+		case 12:
+		{
+			return Announce_CountSkillTypeForClient(client, L4D2Skill_SmokerKill)
+				+ Announce_CountSkillTypeForClient(client, L4D2Skill_BoomerKill)
+				+ Announce_CountSkillTypeForClient(client, L4D2Skill_HunterKill)
+				+ Announce_CountSkillTypeForClient(client, L4D2Skill_SpitterKill)
+				+ Announce_CountSkillTypeForClient(client, L4D2Skill_JockeyKill)
+				+ Announce_CountSkillTypeForClient(client, L4D2Skill_ChargerKill);
+		}
+		case 13: return Announce_CountSkillTypeForClient(client, L4D2Skill_JockeyJumpStop);
+		case 14: return Announce_CountSkillTypeForClient(client, L4D2Skill_JockeySkeetMelee);
+	}
+
+	return 0;
+}
+
+int Announce_CountInfectedTableFamilyForClient(int client, int family)
+{
+	switch (family)
+	{
+		case 0: return Announce_CountSkillTypeForClient(client, L4D2Skill_HunterHighPounce);
+		case 1: return Announce_CountSkillTypeForClient(client, L4D2Skill_JockeyHighPounce);
+		case 2: return Announce_CountSkillTypeForClient(client, L4D2Skill_BoomerVomitLanded);
+		case 3: return Announce_CountSkillTypeForClient(client, L4D2Skill_ChargerInstaKill);
+		case 4: return Announce_CountSkillTypeForClient(client, L4D2Skill_ChargerDeathSetup);
+		case 5: return Announce_CountSkillTypeForClient(client, L4D2Skill_TankRockHit);
+	}
+
+	return 0;
+}
+
+int Announce_CountTableFamilyForBots(L4DTeam team, int family)
+{
+	int count = 0;
+	for (int index = 0; index < L4D2_SKILLS_MAX_EVENTS; index++)
+	{
+		if (g_SkillEvents[index].id <= 0
+			|| !g_SkillEvents[index].actor.bot
+			|| !Skills_IsSkillEventEnabledInCurrentMode(index))
+		{
+			continue;
+		}
+
+		if (g_SkillEvents[index].type == L4D2Skill_WitchDead && !g_SkillEvents[index].crown)
+		{
+			continue;
+		}
+
+		int mapped = (team == L4DTeam_Survivor)
+			? Announce_MapSurvivorTableFamily(g_SkillEvents[index].type)
+			: Announce_MapInfectedTableFamily(g_SkillEvents[index].type);
+		if (mapped == family)
+		{
+			count++;
+		}
+	}
+
+	return count;
+}
+
+int Announce_GetTableScoreForClient(int client, L4DTeam team)
+{
+	int total = 0;
+	if (team == L4DTeam_Survivor)
+	{
+		for (int family = 0; family < L4D2_SKILLS_SURVIVOR_TABLE_FAMILIES; family++)
+		{
+			if (Announce_IsSurvivorTableFamilyVisible(family))
+			{
+				total += Announce_CountSurvivorTableFamilyForClient(client, family);
+			}
+		}
+
+		return total;
+	}
+
+	for (int family = 0; family < L4D2_SKILLS_INFECTED_TABLE_FAMILIES; family++)
+	{
+		if (Announce_IsInfectedTableFamilyVisible(family))
+		{
+			total += Announce_CountInfectedTableFamilyForClient(client, family);
+		}
+	}
+
+	return total;
+}
+
+int Announce_CollectSortedHumanSkillClients(L4DTeam team, int[] clients, int maxClients)
 {
 	int count = 0;
 	for (int client = 1; client <= MaxClients && count < maxClients; client++)
 	{
-		if (!IsValidClient(client) || GetClientL4DTeam(client) != team)
+		if (!IsValidClient(client) || IsFakeClient(client) || GetClientL4DTeam(client) != team)
 		{
 			continue;
 		}
@@ -530,10 +549,10 @@ int Announce_CollectSortedSkillClients(L4DTeam team, int[] clients, int maxClien
 	for (int i = 1; i < count; i++)
 	{
 		int key = clients[i];
-		int keyScore = Announce_GetSkillScoreForClient(key, team);
+		int keyScore = Announce_GetTableScoreForClient(key, team);
 		int j = i - 1;
 
-		while (j >= 0 && Announce_GetSkillScoreForClient(clients[j], team) < keyScore)
+		while (j >= 0 && Announce_GetTableScoreForClient(clients[j], team) < keyScore)
 		{
 			clients[j + 1] = clients[j];
 			j--;
@@ -543,6 +562,104 @@ int Announce_CollectSortedSkillClients(L4DTeam team, int[] clients, int maxClien
 	}
 
 	return count;
+}
+
+void Announce_RenderSkillsTeamTable(int client, L4DTeam team, int focusClient)
+{
+	if (team != L4DTeam_Survivor && team != L4DTeam_Infected)
+	{
+		return;
+	}
+
+	ConsolePanel panel;
+	ConsolePanel_Reset(panel);
+	ConsolePanel_SetWidth(panel, 110);
+	ConsolePanel_EnableSafeAscii(panel, true);
+
+	char line[192];
+	Format(line, sizeof(line), "Skills -- %s", team == L4DTeam_Survivor ? "Survivors" : "Infected");
+	ConsolePanel_AddHeaderLine(panel, line);
+
+	char baseModeName[24];
+	char versusContextName[32];
+	Skills_GetModeBaseName(g_Runtime.baseMode, baseModeName, sizeof(baseModeName));
+	Skills_GetVersusContextName(g_Runtime.versusContext, versusContextName, sizeof(versusContextName));
+	if (g_Runtime.baseMode == PlayerSkillsGameMode_Versus && g_Runtime.versusContext != PlayerSkillsVersusContext_None)
+	{
+		Format(line, sizeof(line), "Mode: %s | Context: %s | TeamSize: %d", baseModeName, versusContextName, g_Runtime.versusTeamSize);
+	}
+	else
+	{
+		Format(line, sizeof(line), "Mode: %s", baseModeName);
+	}
+	ConsolePanel_AddHeaderLine(panel, line);
+
+	ConsoleTable_AddColumn(panel.table, "Metrica", 20, ConsoleTableAlignment_Left, ConsoleTableCellType_String);
+
+	int players[MAXPLAYERS + 1];
+	int playerCount = Announce_CollectSortedHumanSkillClients(team, players, sizeof(players));
+	for (int i = 0; i < playerCount; i++)
+	{
+		char playerName[32];
+		Format(playerName, sizeof(playerName), "%s%N", players[i] == focusClient ? ">" : "", players[i]);
+		ConsoleTable_AddColumn(panel.table, playerName, 12, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
+	}
+
+	bool hasAiColumn = false;
+	int familyCount = (team == L4DTeam_Survivor) ? L4D2_SKILLS_SURVIVOR_TABLE_FAMILIES : L4D2_SKILLS_INFECTED_TABLE_FAMILIES;
+	for (int family = 0; family < familyCount; family++)
+	{
+		int aiValue = Announce_CountTableFamilyForBots(team, family);
+		if (aiValue > 0)
+		{
+			hasAiColumn = true;
+			break;
+		}
+	}
+
+	if (hasAiColumn)
+	{
+		ConsoleTable_AddColumn(panel.table, "IA", 12, ConsoleTableAlignment_Right, ConsoleTableCellType_Int);
+	}
+
+	for (int family = 0; family < familyCount; family++)
+	{
+		bool visible = (team == L4DTeam_Survivor)
+			? Announce_IsSurvivorTableFamilyVisible(family)
+			: Announce_IsInfectedTableFamilyVisible(family);
+		if (!visible || !ConsoleTable_BeginRow(panel.table))
+		{
+			continue;
+		}
+
+		char metricName[32];
+		if (team == L4DTeam_Survivor)
+		{
+			Announce_GetSurvivorTableFamilyName(family, metricName, sizeof(metricName));
+		}
+		else
+		{
+			Announce_GetInfectedTableFamilyName(family, metricName, sizeof(metricName));
+		}
+
+		ConsoleTable_AddStringCell(panel.table, metricName);
+		for (int i = 0; i < playerCount; i++)
+		{
+			int value = (team == L4DTeam_Survivor)
+				? Announce_CountSurvivorTableFamilyForClient(players[i], family)
+				: Announce_CountInfectedTableFamilyForClient(players[i], family);
+			ConsoleTable_AddIntCell(panel.table, value);
+		}
+
+		if (hasAiColumn)
+		{
+			ConsoleTable_AddIntCell(panel.table, Announce_CountTableFamilyForBots(team, family));
+		}
+
+		ConsoleTable_EndRow(panel.table);
+	}
+
+	ConsolePanel_RenderToClient(panel, client);
 }
 
 // Skill event announce flow.
@@ -569,6 +686,32 @@ void Announce_GetSkillTag(int eventIndex, char[] buffer, int maxlen)
 	}
 
 	FormatEx(buffer, maxlen, "%T", "Tag", LANG_SERVER);
+}
+
+void Announce_PrintSimpleKillLine(const char[] tag, char[] line, bool finalize = true, bool withTag = true)
+{
+	if (finalize)
+	{
+		StrCat(line, 1024, ".");
+	}
+	if (withTag)
+	{
+		CPrintToChatAll("%s %s", tag, line);
+		return;
+	}
+
+	CPrintToChatAll("%s", line);
+}
+
+void Announce_BeginWrappedSimpleKillContinuation(char[] buffer, int maxlen, const char[] segment)
+{
+	if (segment[0] == ',' && segment[1] == ' ')
+	{
+		strcopy(buffer, maxlen, segment[2]);
+		return;
+	}
+
+	strcopy(buffer, maxlen, segment);
 }
 
 void Announce_Skill(int eventId)
@@ -677,6 +820,20 @@ void Announce_Skill(int eventId)
 				actorName,
 				victimName,
 				g_SkillEvents[eventIndex].height);
+		}
+
+		case L4D2Skill_JockeyJumpStop:
+		{
+			CPrintToChatAll("%s %t", tag, "JockeyJumpStop",
+				actorName,
+				victimName);
+		}
+
+		case L4D2Skill_JockeySkeetMelee:
+		{
+			CPrintToChatAll("%s %t", tag, "JockeySkeetMelee",
+				actorName,
+				victimName);
 		}
 
 		case L4D2Skill_SpecialPinClear:
@@ -940,32 +1097,60 @@ void Announce_Skill(int eventId)
 
 		case L4D2Skill_TankRockHit:
 		{
-			CPrintToChatAll("%s %t", tag, "TankRockHit",
+			char line[192];
+			FormatEx(line, sizeof(line), "%T", "TankRockHit",
+				LANG_SERVER,
 				victimName);
+			CPrintToChatAll("%s %s", tag, line);
 		}
 
 		case L4D2Skill_SmokerKill, L4D2Skill_BoomerKill, L4D2Skill_HunterKill, L4D2Skill_SpitterKill, L4D2Skill_JockeyKill, L4D2Skill_ChargerKill:
 		{
-			char line[256];
+			const int SIMPLE_KILL_CHAT_WRAP = 176;
+			char line[1024];
+			bool printedLead = false;
+			char actorStat[64];
+			Announce_FormatSimpleKillStat(
+				g_SkillEvents[eventIndex].actorDamage,
+				g_SkillEvents[eventIndex].shots,
+				actorStat,
+				sizeof(actorStat));
+
 			FormatEx(line, sizeof(line), "%T", "SpecialInfectedKillLead",
 				LANG_SERVER,
 				victimName,
 				actorName,
-				g_SkillEvents[eventIndex].actorDamage);
+				actorStat);
 
 			for (int assistIndex = 0; assistIndex < g_SkillEvents[eventIndex].assistsCount && assistIndex < L4D2_SKILLS_MAX_EVENT_ASSISTS; assistIndex++)
 			{
-				char assistSegment[96];
+				char assistSegment[256];
+				char assistStat[64];
+				Announce_FormatSimpleKillStat(
+					g_SkillEvents[eventIndex].assistDamage[assistIndex],
+					g_SkillEvents[eventIndex].assistShots[assistIndex],
+					assistStat,
+					sizeof(assistStat));
+
 				FormatEx(assistSegment, sizeof(assistSegment), "%T",
 					assistIndex == 0 ? "SpecialInfectedKillAssistHead" : "SpecialInfectedKillAssistTail",
 					LANG_SERVER,
 					g_SkillEvents[eventIndex].assists[assistIndex].name,
-					g_SkillEvents[eventIndex].assistDamage[assistIndex]);
-				StrCat(line, sizeof(line), assistSegment);
+					assistStat);
+
+				if ((strlen(line) + strlen(assistSegment)) >= SIMPLE_KILL_CHAT_WRAP)
+				{
+					Announce_PrintSimpleKillLine(tag, line, false, !printedLead);
+					printedLead = true;
+					Announce_BeginWrappedSimpleKillContinuation(line, sizeof(line), assistSegment);
+				}
+				else
+				{
+					StrCat(line, sizeof(line), assistSegment);
+				}
 			}
 
-			StrCat(line, sizeof(line), ".");
-			CPrintToChatAll("%s %s", tag, line);
+			Announce_PrintSimpleKillLine(tag, line, true, !printedLead);
 		}
 	}
 
