@@ -142,12 +142,19 @@ Incluye:
 
 - `SkeetMelee`
 - `SkeetMeleePerfect`
+- `JockeySkeetMelee`
 
 #### Deadstops
 
 Incluye:
 
 - `HunterDeadstop`
+
+#### JockeyJumpStops
+
+Incluye:
+
+- `JockeyJumpStop`
 
 #### SpecialClears
 
@@ -230,6 +237,7 @@ Incluye:
 | Skeets               |       2 |    1 |       0 |     0                                                   |
 | SkeetMelees          |       1 |    0 |       0 |     0                                                   |
 | Deadstops            |       0 |    0 |       1 |     0                                                   |
+| JockeyJumpStops      |       0 |    1 |       0 |     0                                                   |
 | SpecialClears        |       1 |    2 |       0 |     1                                                   |
 | TongueCuts           |       1 |    0 |       0 |     0                                                   |
 | SmokerClears         |       0 |    1 |       0 |     0                                                   |
@@ -329,16 +337,17 @@ Orden recomendado:
 1. `Skeets`
 2. `SkeetMelees`
 3. `Deadstops`
-4. `SpecialClears`
-5. `TongueCuts`
-6. `SmokerClears`
-7. `BoomerPops`
-8. `ChargerLevels`
-9. `CarAlarms`
-10. `BunnyHopStreaks`
-11. `WitchCrowns`
-12. `TankRockSkeets`
-13. `SpecialInfectedKills`
+4. `JockeyJumpStops`
+5. `SpecialClears`
+6. `TongueCuts`
+7. `SmokerClears`
+8. `BoomerPops`
+9. `ChargerLevels`
+10. `CarAlarms`
+11. `BunnyHopStreaks`
+12. `WitchCrowns`
+13. `TankRockSkeets`
+14. `SpecialInfectedKills`
 
 #### Infected
 

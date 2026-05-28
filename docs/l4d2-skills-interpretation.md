@@ -48,6 +48,16 @@ La semántica del sistema se separa así:
 - `skill type`: qué jugada logró el jugador;
 - `event fields`: en qué condiciones la logró.
 
+Además, el tracking interno ya se separa en dos capas:
+
+- `LifeKill`: daño y disparos totales de la vida completa del infectado;
+- `skill window`: daño y disparos de la ventana técnica que define una jugada rica, como `HunterSkeet`, `JockeySkeetMelee` o `ChargerLevel`.
+
+Regla práctica:
+
+- las skills ricas leen su ventana técnica;
+- las kills genéricas de SI leen el acumulado de vida total.
+
 Ejemplos de contexto que deben vivir en el evento y no necesariamente en el enum:
 
 - `chipDamage`
@@ -133,6 +143,24 @@ Entonces:
 
 ---
 
+## 6.2. Caso Jockey
+
+Las jugadas nuevas del `Jockey` viven en una ventana artesanal de leap, no en una lectura directa de un evento único del juego.
+
+Entonces:
+
+- `JockeyJumpStop` representa un shove exitoso mientras el `Jockey` seguía en leap y todavía no montaba;
+- `JockeySkeetMelee` representa una melee kill mientras el `Jockey` seguía en esa misma ventana;
+- `JockeyKill` sigue siendo la muerte genérica de la vida total del `Jockey`, y no debe reemplazar a una de esas dos jugadas más ricas.
+
+Esto implica:
+
+- la ventana de leap debe usarse como contexto para clasificar la jugada;
+- la kill genérica del `Jockey` debe seguir existiendo como fallback;
+- pero el announce visible debe preferir `JockeyJumpStop` o `JockeySkeetMelee` cuando correspondan.
+
+---
+
 ## 7. Legacy Categories
 
 Las categorías heredadas se reducen cuando solo describen contexto y no una jugada distinta.
@@ -206,6 +234,8 @@ En otras palabras:
 |---|---|---|
 | `HunterSkeet` | `HunterSkeet` | `HunterKill` |
 | `HunterSkeetMelee` | `HunterSkeetMelee` | `HunterKill` |
+| `JockeyJumpStop` | `JockeyJumpStop` | `JockeyKill` |
+| `JockeySkeetMelee` | `JockeySkeetMelee` | `JockeyKill` |
 | `SmokerSelfClear` con kill | `SmokerSelfClear` | `SmokerKill` |
 | `BoomerPop` | `BoomerPop` | `BoomerKill` |
 | `ChargerLevel` | `ChargerLevel` | `ChargerKill` |

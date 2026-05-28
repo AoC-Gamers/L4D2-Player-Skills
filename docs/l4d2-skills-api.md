@@ -251,6 +251,8 @@ Skills implementadas hoy:
 - `TankRockHit`
 - `HunterHighPounce`
 - `JockeyHighPounce`
+- `JockeyJumpStop`
+- `JockeySkeetMelee`
 - `ChargerInstaKill`
 - `ChargerDeathSetup`
 - `SpecialPinClear`
@@ -443,6 +445,61 @@ event
     {
         "height"                "352.0"
         "reported_high"         "1"
+    }
+}
+```
+
+### JockeyJumpStop
+
+```text
+event
+{
+    "id"                    "24"
+    "type_id"               "27"
+
+    "actor_userid"          "41"
+    "actor_accountid"       "123456"
+    "actor_name"            "Lechuga"
+    "actor_bot"             "0"
+
+    "assists_count"         "0"
+
+    "assists"
+    {
+    }
+
+    "skill_properties"
+    {
+        "with_shove"        "1"
+    }
+}
+```
+
+### JockeySkeetMelee
+
+```text
+event
+{
+    "id"                    "25"
+    "type_id"               "28"
+
+    "actor_userid"          "41"
+    "actor_accountid"       "123456"
+    "actor_name"            "Lechuga"
+    "actor_bot"             "0"
+
+    "assists_count"         "0"
+
+    "assists"
+    {
+    }
+
+    "skill_properties"
+    {
+        "damage"                    "325"
+        "shots"                     "1"
+        "would_qualify_at_baseline" "1"
+        "perfect"                   "1"
     }
 }
 ```

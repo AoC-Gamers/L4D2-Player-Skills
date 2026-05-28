@@ -20,20 +20,33 @@ Este documento resume los flujos actuales de skills relacionadas con `Charger`.
 
 `player_hurt` queda solo como contexto complementario. El daño canónico usado por `ChargerLevel` se captura desde `SDKHook_OnTakeDamagePost`.
 
+La muerte genérica de `Charger` ya no debe ganarle a `ChargerLevel`.
+El flujo actual difiere el `ChargerKill` un tick corto para dejar que la
+clasificación rica de `Level` se resuelva primero.
+
 ### State
 
-- `g_iDetectChargerLastHealth`
-- `g_iDetectChargerLastAttacker`
-- `g_iDetectChargerLastDamageType`
-- `g_iDetectChargerLastHealthBeforeDamage`
-- `g_fDetectChargerLastRawDamage`
+- `g_DetectChargerDamageSnapshot`
+- `g_bDetectChargerCharging`
+- `g_fDetectChargerChargeSeenAt`
+- `g_bDetectChargerKilledMelee`
+- `g_bDetectChargerKilledCharging`
+- `g_bDetectPendingChargerDeathEval`
+- `g_iDetectPendingChargerDeathAttackerUserId`
+
+Fuentes auxiliares de verdad para charge:
+
+- `ability_use` con `ability_charge`
+- `charger_charge_start`
+- `charger_charge_end`
+- `charger_killed`
 
 ### Emit
 
 Se emite `ChargerLevel` cuando:
 
 - el `Charger` muere por melee,
-- seguía en `charge`,
+- seguía en `charge` o el juego reporta que murió `charging`,
 - y el golpe final cumple el umbral de `level` contra el baseline del `Charger`.
 
 ### Properties
@@ -41,18 +54,19 @@ Se emite `ChargerLevel` cuando:
 - `damage`
 - `chip_damage`
 - `would_qualify_at_baseline`
+- `perfect`
 
 ### Flow
 
 ```mermaid
 flowchart TD
-    A[OnTakeDamage / OnTakeDamagePost on Charger] --> B[Track last melee raw damage and applied damage]
-    B --> C[player_death on Charger]
-    C --> D{Was charging and killed by melee}
-    D -->|no| E[Stop]
-    D -->|yes| F{Meets level threshold at baseline}
-    F -->|yes| G[Emit ChargerLevel]
-    F -->|no| E
+    A[ability_charge / charge_start] --> B[Open effective charge window]
+    B --> C[OnTakeDamage / OnTakeDamagePost on Charger]
+    C --> D[charger_killed reports melee/charging]
+    D --> E{Melee and charging context valid}
+    E -->|no| F[Allow delayed ChargerKill]
+    E -->|yes| G[Emit ChargerLevel]
+    G --> H[Suppress delayed ChargerKill]
 ```
 
 ## ChargerInstaKill

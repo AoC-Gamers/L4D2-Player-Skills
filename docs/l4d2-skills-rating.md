@@ -85,6 +85,7 @@ Consecuencia practica:
 | `SmokerSelfClear` | `1` |
 | `SpecialPinClear` | `1` |
 | `HunterDeadstop` | `1` |
+| `JockeyJumpStop` | `1` |
 | `ChargerInstaKill` | `3` |
 | `ChargerDeathSetup` | `2` |
 | `WitchDead` con `crown` | `2` |
@@ -101,6 +102,7 @@ Consecuencia practica:
 | `CarAlarmTriggered` | `0-1` | depende de influencia de SI |
 | `HunterSkeet` | `2-3` | `2` estandar, `3` si es `headshot` o disparo perfecto |
 | `HunterSkeetMelee` | `2-3` | `2` estandar, `3` en contexto mas fuerte |
+| `JockeySkeetMelee` | `3` | skill de melee en ventana de leap, siempre de prestigio alto |
 | `ChargerLevel` | `2-3` | `2` si el Charger estaba chipeado, `3` si es `PerfectLevel` |
 | `HunterHighPounce` | `1-3` | depende del daño real del pounce |
 | `JockeyHighPounce` | `1-3` | depende de la altura real del ride |
@@ -176,6 +178,35 @@ Direccion de implementacion actual:
   - `chip_damage == 0`
   - sin team skeet
 - `sniper` y `grenade_launcher` no cambian el rating por si solos
+
+### JockeySkeetMelee
+
+`JockeySkeetMelee` deberia ser:
+
+- `3` fijo
+
+Regla acordada actual:
+
+- siempre `3`
+
+Direccion de implementacion actual:
+
+- vive en una ventana artesanal de leap
+- es la variante de mayor prestigio del set actual de `Jockey`
+
+### JockeyJumpStop
+
+`JockeyJumpStop` deberia ser:
+
+- `1` fijo
+
+Regla acordada actual:
+
+- siempre `1`
+
+Direccion de implementacion actual:
+
+- funciona como equivalente conceptual de `Deadstop`, pero con naming propio de `Jockey`
 
 ### ChargerLevel
 
