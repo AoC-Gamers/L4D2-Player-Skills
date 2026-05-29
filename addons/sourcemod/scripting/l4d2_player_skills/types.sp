@@ -64,6 +64,13 @@ enum L4D2BossType
 	L4D2Boss_Witch
 }
 
+enum L4D2SkillAssistScope
+{
+	L4D2SkillAssistScope_None = 0,
+	L4D2SkillAssistScope_LifeKill,
+	L4D2SkillAssistScope_SkillWindow
+}
+
 enum L4D2BossState
 {
 	L4D2BossState_None = 0,
@@ -581,6 +588,7 @@ enum struct L4D2SkillEventData
 	int			  actor2;
 	int			  victim2;
 	int			  assistsCount;
+	L4D2SkillAssistScope assistScope;
 	int			  actorWeaponId;
 	int			  actorDamage;
 	int			  assisterDamage;
@@ -637,6 +645,7 @@ enum struct L4D2SkillEventData
 		this.actor2					= 0;
 		this.victim2				= 0;
 		this.assistsCount			= 0;
+		this.assistScope			= L4D2SkillAssistScope_None;
 		this.actorWeaponId			= WEPID_NONE;
 		this.actorDamage			= 0;
 		this.assisterDamage			= 0;

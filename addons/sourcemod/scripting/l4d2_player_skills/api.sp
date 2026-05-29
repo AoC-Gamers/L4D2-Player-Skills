@@ -32,6 +32,15 @@ void API_CreateNatives()
 	CreateNative("PlayerSkills_IsEventPlayerBot", Native_PlayerSkills_IsEventPlayerBot);
 	CreateNative("PlayerSkills_GetEventPlayerName", Native_PlayerSkills_GetEventPlayerName);
 	CreateNative("PlayerSkills_GetEventPlayerAuth", Native_PlayerSkills_GetEventPlayerAuth);
+	CreateNative("PlayerSkills_GetEventAssistsCount", Native_PlayerSkills_GetEventAssistsCount);
+	CreateNative("PlayerSkills_GetEventAssistScope", Native_PlayerSkills_GetEventAssistScope);
+	CreateNative("PlayerSkills_GetEventAssistUserId", Native_PlayerSkills_GetEventAssistUserId);
+	CreateNative("PlayerSkills_GetEventAssistAccountId", Native_PlayerSkills_GetEventAssistAccountId);
+	CreateNative("PlayerSkills_IsEventAssistBot", Native_PlayerSkills_IsEventAssistBot);
+	CreateNative("PlayerSkills_GetEventAssistName", Native_PlayerSkills_GetEventAssistName);
+	CreateNative("PlayerSkills_GetEventAssistDamage", Native_PlayerSkills_GetEventAssistDamage);
+	CreateNative("PlayerSkills_GetEventAssistShots", Native_PlayerSkills_GetEventAssistShots);
+	CreateNative("PlayerSkills_GetEventAssistWeaponId", Native_PlayerSkills_GetEventAssistWeaponId);
 	CreateNative("PlayerSkills_GetBossType", Native_PlayerSkills_GetBossType);
 	CreateNative("PlayerSkills_GetBossClient", Native_PlayerSkills_GetBossClient);
 	CreateNative("PlayerSkills_GetBossUserId", Native_PlayerSkills_GetBossUserId);
@@ -215,6 +224,16 @@ bool API_IsBossEntryValid(int sessionIndex, int entry)
 		&& entry >= 0
 		&& entry < L4D2_SKILLS_MAX_DAMAGE_ENTRIES
 		&& g_BossDamage[sessionIndex][entry].active;
+}
+
+bool API_IsEventAssistIndexValid(int eventIndex, int assistIndex)
+{
+	return eventIndex >= 0
+		&& eventIndex < L4D2_SKILLS_MAX_EVENTS
+		&& assistIndex >= 0
+		&& assistIndex < g_SkillEvents[eventIndex].assistsCount
+		&& assistIndex < L4D2_SKILLS_MAX_EVENT_ASSISTS
+		&& g_SkillEvents[eventIndex].assists[assistIndex].userid > 0;
 }
 
 int API_GetSummaryIndexById(int summaryId)
@@ -473,6 +492,7 @@ void API_WriteEventAssists(Handle kv, int eventIndex)
 			KvSetNum(kv, "bot", g_SkillEvents[eventIndex].assists[i].bot ? 1 : 0);
 			KvSetNum(kv, "damage", g_SkillEvents[eventIndex].assistDamage[i]);
 			KvSetNum(kv, "shots", g_SkillEvents[eventIndex].assistShots[i]);
+			KvSetNum(kv, "weaponid", g_SkillEvents[eventIndex].assistWeaponId[i]);
 			KvGoBack(kv);
 		}
 	}
@@ -515,6 +535,11 @@ void API_WriteEventSkillProperties(Handle kv, int eventIndex)
 	if (g_SkillEvents[eventIndex].assisterShots > 0)
 	{
 		KvSetNum(kv, "assister_shots", g_SkillEvents[eventIndex].assisterShots);
+	}
+
+	if (g_SkillEvents[eventIndex].assistScope != L4D2SkillAssistScope_None)
+	{
+		KvSetNum(kv, "assist_scope", g_SkillEvents[eventIndex].assistScope);
 	}
 
 	if (g_SkillEvents[eventIndex].chipDamage > 0)
@@ -1092,6 +1117,76 @@ public int Native_PlayerSkills_GetEventPlayerAuth(Handle plugin, int numParams)
 
 	SetNativeString(3, buffer, GetNativeCell(4), true);
 	return 0;
+}
+
+public int Native_PlayerSkills_GetEventAssistsCount(Handle plugin, int numParams)
+{
+	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
+	return eventIndex != -1 ? g_SkillEvents[eventIndex].assistsCount : 0;
+}
+
+public int Native_PlayerSkills_GetEventAssistScope(Handle plugin, int numParams)
+{
+	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
+	return eventIndex != -1 ? g_SkillEvents[eventIndex].assistScope : L4D2SkillAssistScope_None;
+}
+
+public int Native_PlayerSkills_GetEventAssistUserId(Handle plugin, int numParams)
+{
+	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
+	int assistIndex = GetNativeCell(2);
+	return API_IsEventAssistIndexValid(eventIndex, assistIndex) ? g_SkillEvents[eventIndex].assists[assistIndex].userid : 0;
+}
+
+public int Native_PlayerSkills_GetEventAssistAccountId(Handle plugin, int numParams)
+{
+	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
+	int assistIndex = GetNativeCell(2);
+	return API_IsEventAssistIndexValid(eventIndex, assistIndex) ? g_SkillEvents[eventIndex].assists[assistIndex].accountId : 0;
+}
+
+public int Native_PlayerSkills_IsEventAssistBot(Handle plugin, int numParams)
+{
+	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
+	int assistIndex = GetNativeCell(2);
+	return API_IsEventAssistIndexValid(eventIndex, assistIndex) ? g_SkillEvents[eventIndex].assists[assistIndex].bot : false;
+}
+
+public int Native_PlayerSkills_GetEventAssistName(Handle plugin, int numParams)
+{
+	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
+	int assistIndex = GetNativeCell(2);
+	char buffer[MAX_NAME_LENGTH];
+	buffer[0] = '\0';
+
+	if (API_IsEventAssistIndexValid(eventIndex, assistIndex))
+	{
+		strcopy(buffer, sizeof(buffer), g_SkillEvents[eventIndex].assists[assistIndex].name);
+	}
+
+	SetNativeString(3, buffer, GetNativeCell(4), true);
+	return 0;
+}
+
+public int Native_PlayerSkills_GetEventAssistDamage(Handle plugin, int numParams)
+{
+	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
+	int assistIndex = GetNativeCell(2);
+	return API_IsEventAssistIndexValid(eventIndex, assistIndex) ? g_SkillEvents[eventIndex].assistDamage[assistIndex] : 0;
+}
+
+public int Native_PlayerSkills_GetEventAssistShots(Handle plugin, int numParams)
+{
+	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
+	int assistIndex = GetNativeCell(2);
+	return API_IsEventAssistIndexValid(eventIndex, assistIndex) ? g_SkillEvents[eventIndex].assistShots[assistIndex] : 0;
+}
+
+public int Native_PlayerSkills_GetEventAssistWeaponId(Handle plugin, int numParams)
+{
+	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
+	int assistIndex = GetNativeCell(2);
+	return API_IsEventAssistIndexValid(eventIndex, assistIndex) ? g_SkillEvents[eventIndex].assistWeaponId[assistIndex] : WEPID_NONE;
 }
 
 public int Native_PlayerSkills_GetBossType(Handle plugin, int numParams)

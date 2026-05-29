@@ -109,6 +109,16 @@ enum L4D2SkillPlayerSlot
 }
 
 /**
+ * Semantic origin of assist data inside a skill event payload.
+ */
+enum L4D2SkillAssistScope
+{
+	L4D2SkillAssistScope_None = 0,
+	L4D2SkillAssistScope_LifeKill,
+	L4D2SkillAssistScope_SkillWindow
+}
+
+/**
  * Integer fields available through PlayerSkills_GetEventInt().
  */
 enum L4D2SkillIntField
@@ -360,6 +370,97 @@ native void PlayerSkills_GetEventPlayerName(int eventId, L4D2SkillPlayerSlot slo
  * @noreturn
  */
 native void PlayerSkills_GetEventPlayerAuth(int eventId, L4D2SkillPlayerSlot slot, char[] buffer, int maxlen);
+
+/**
+ * @brief Returns how many assists are captured in a skill event.
+ *
+ * @param eventId        Runtime skill event identifier.
+ *
+ * @return               Assist count, or 0 when unavailable.
+ */
+native int PlayerSkills_GetEventAssistsCount(int eventId);
+
+/**
+ * @brief Returns the semantic source of assist data in a skill event.
+ *
+ * @param eventId        Runtime skill event identifier.
+ *
+ * @return               A value from L4D2SkillAssistScope.
+ */
+native int PlayerSkills_GetEventAssistScope(int eventId);
+
+/**
+ * @brief Returns the captured userid for one assist entry.
+ *
+ * @param eventId        Runtime skill event identifier.
+ * @param assistIndex    Zero-based assist index.
+ *
+ * @return               Captured userid, or 0 when unavailable.
+ */
+native int PlayerSkills_GetEventAssistUserId(int eventId, int assistIndex);
+
+/**
+ * @brief Returns the captured Steam account id for one assist entry.
+ * @remarks Bots generally return 0.
+ *
+ * @param eventId        Runtime skill event identifier.
+ * @param assistIndex    Zero-based assist index.
+ *
+ * @return               Captured account id, or 0 when unavailable.
+ */
+native int PlayerSkills_GetEventAssistAccountId(int eventId, int assistIndex);
+
+/**
+ * @brief Returns whether one assist entry belongs to a bot.
+ *
+ * @param eventId        Runtime skill event identifier.
+ * @param assistIndex    Zero-based assist index.
+ *
+ * @return               True if the captured assist player is a bot.
+ */
+native bool PlayerSkills_IsEventAssistBot(int eventId, int assistIndex);
+
+/**
+ * @brief Copies the captured player name for one assist entry.
+ *
+ * @param eventId        Runtime skill event identifier.
+ * @param assistIndex    Zero-based assist index.
+ * @param buffer         Output buffer.
+ * @param maxlen         Maximum size of the output buffer.
+ *
+ * @noreturn
+ */
+native void PlayerSkills_GetEventAssistName(int eventId, int assistIndex, char[] buffer, int maxlen);
+
+/**
+ * @brief Returns the captured damage for one assist entry.
+ *
+ * @param eventId        Runtime skill event identifier.
+ * @param assistIndex    Zero-based assist index.
+ *
+ * @return               Assist damage, or 0 when unavailable.
+ */
+native int PlayerSkills_GetEventAssistDamage(int eventId, int assistIndex);
+
+/**
+ * @brief Returns the captured shots for one assist entry.
+ *
+ * @param eventId        Runtime skill event identifier.
+ * @param assistIndex    Zero-based assist index.
+ *
+ * @return               Assist shots, or 0 when unavailable.
+ */
+native int PlayerSkills_GetEventAssistShots(int eventId, int assistIndex);
+
+/**
+ * @brief Returns the captured weapon id for one assist entry.
+ *
+ * @param eventId        Runtime skill event identifier.
+ * @param assistIndex    Zero-based assist index.
+ *
+ * @return               Weapon id, or WEPID_NONE/0 when unavailable.
+ */
+native int PlayerSkills_GetEventAssistWeaponId(int eventId, int assistIndex);
 
 /**
  * @brief Returns the type of a boss session.

@@ -300,6 +300,7 @@ public void OnPluginStart()
 	HookEvent("player_jump", Event_PlayerJump, EventHookMode_Post);
 	HookEvent("player_jump_apex", Event_PlayerJumpApex, EventHookMode_Post);
 	HookEvent("jockey_ride", Event_JockeyRide, EventHookMode_Post);
+	HookEvent("jockey_ride_end", Event_JockeyRideEnd, EventHookMode_Post);
 	HookEvent("jockey_punched", Event_JockeyPunched, EventHookMode_Post);
 	HookEvent("jockey_killed", Event_JockeyKilled, EventHookMode_Post);
 	HookEvent("tank_spawn", Event_TankSpawn, EventHookMode_Post);
@@ -316,10 +317,15 @@ public void OnPluginStart()
 	HookEvent("charger_carry_start", Event_ChargerCarryStart, EventHookMode_Post);
 	HookEvent("charger_impact", Event_ChargerImpact, EventHookMode_Post);
 	HookEvent("charger_carry_end", Event_ChargerCarryEnd, EventHookMode_Post);
+	HookEvent("charger_pummel_start", Event_ChargerPummelStart, EventHookMode_Post);
+	HookEvent("charger_pummel_end", Event_ChargerPummelEnd, EventHookMode_Post);
 	HookEvent("triggered_car_alarm", Event_TriggeredCarAlarm, EventHookMode_Post);
 	HookEvent("witch_killed", Event_WitchKilled, EventHookMode_Post);
 	HookEvent("choke_start", Event_ChokeStart, EventHookMode_Post);
+	HookEvent("choke_stopped", Event_ChokeStopped, EventHookMode_Post);
 	HookEvent("tongue_pull_stopped", Event_TonguePullStopped, EventHookMode_Post);
+	HookEvent("pounce_stopped", Event_PounceStopped, EventHookMode_Post);
+	HookEvent("pounce_end", Event_PounceEnd, EventHookMode_Post);
 
 	RegConsoleCmd("sm_skills", Command_Skills, "Print the detected skills summary in chat and the comparative skills table in console.");
 
@@ -773,6 +779,16 @@ void Event_JockeyPunched(Event event, const char[] name, bool dontBroadcast)
 	Detect_EventJockeyPunched(event);
 }
 
+void Event_JockeyRideEnd(Event event, const char[] name, bool dontBroadcast)
+{
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
+	Detect_EventJockeyRideEnd(event);
+}
+
 void Event_JockeyKilled(Event event, const char[] name, bool dontBroadcast)
 {
 	if (!Skills_IsRoundLive())
@@ -900,6 +916,26 @@ void Event_ChargerCarryEnd(Event event, const char[] name, bool dontBroadcast)
 	Detect_EventChargerCarryEnd(event);
 }
 
+void Event_ChargerPummelStart(Event event, const char[] name, bool dontBroadcast)
+{
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
+	Detect_EventChargerPummelStart(event);
+}
+
+void Event_ChargerPummelEnd(Event event, const char[] name, bool dontBroadcast)
+{
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
+	Detect_EventChargerPummelEnd(event);
+}
+
 void Event_TriggeredCarAlarm(Event event, const char[] name, bool dontBroadcast)
 {
 	if (!Skills_IsRoundLive())
@@ -930,6 +966,16 @@ void Event_ChokeStart(Event event, const char[] name, bool dontBroadcast)
 	Detect_EventChokeStart(event);
 }
 
+void Event_ChokeStopped(Event event, const char[] name, bool dontBroadcast)
+{
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
+	Detect_EventChokeStopped(event);
+}
+
 void Event_TonguePullStopped(Event event, const char[] name, bool dontBroadcast)
 {
 	if (!Skills_IsRoundLive())
@@ -938,6 +984,26 @@ void Event_TonguePullStopped(Event event, const char[] name, bool dontBroadcast)
 	}
 
 	Detect_EventTonguePullStopped(event);
+}
+
+void Event_PounceStopped(Event event, const char[] name, bool dontBroadcast)
+{
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
+	Detect_EventPounceStopped(event);
+}
+
+void Event_PounceEnd(Event event, const char[] name, bool dontBroadcast)
+{
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
+	Detect_EventPounceEnd(event);
 }
 
 Action Command_Skills(int client, int args)

@@ -87,7 +87,24 @@ Entonces:
 
 Esto evita degradar automáticamente una jugada fuerte solo porque otro daño previo ya redujo la vida del Hunter.
 
-### 5.1. Variantes mecánicamente distintas
+### 5.1. Restricción de PerfectSkeet
+
+`PerfectSkeet` requiere autoría exclusiva dentro de la ventana técnica del pounce.
+
+Entonces:
+
+- debe ser `HunterSkeet`;
+- debe resolverse de un solo disparo;
+- el `Hunter` debe llegar con vida completa;
+- no debe existir contribución de otro survivor dentro de la ventana de pounce relevante.
+
+Por lo tanto:
+
+- `PerfectSkeet` no puede tener assists;
+- si hubo contribución contextual de otro survivor, la jugada puede seguir siendo
+  `HunterSkeet`, pero ya no `PerfectSkeet`.
+
+### 5.2. Variantes mecánicamente distintas
 
 Cuando la jugada cambia de forma mecánica real, sí se justifica una skill separada.
 
@@ -141,6 +158,23 @@ Entonces:
 - el daño previo debe conservarse como contexto;
 - no se debe crear una skill principal aparte solo porque el Charger ya había recibido chip.
 
+### 6.1.1. Restricción de PerfectLevel
+
+`PerfectLevel` requiere autoría exclusiva sobre el kill técnico del `Charger`.
+
+Entonces:
+
+- debe ser `ChargerLevel`;
+- debe resolverse con una sola melee;
+- el `Charger` debe llegar con vida completa;
+- no debe existir contribución válida de otro survivor en la lectura contextual de la jugada.
+
+Por lo tanto:
+
+- `PerfectLevel` no puede tener assists;
+- si hubo contribución contextual ajena, la jugada puede seguir siendo `Level`,
+  pero ya no `PerfectLevel`.
+
 ---
 
 ## 6.2. Caso Jockey
@@ -158,6 +192,11 @@ Esto implica:
 - la ventana de leap debe usarse como contexto para clasificar la jugada;
 - la kill genérica del `Jockey` debe seguir existiendo como fallback;
 - pero el announce visible debe preferir `JockeyJumpStop` o `JockeySkeetMelee` cuando correspondan.
+
+Restricción adicional:
+
+- `JockeySkeetMelee` no necesita assists, porque la melee ya supera la vida máxima del `Jockey` y la jugada queda definida por un solo hit letal.
+- `JockeyJumpStop` tampoco necesita assists, porque la autoría del shove exitoso es unívoca.
 
 ---
 
@@ -271,3 +310,20 @@ Si la respuesta es no:
 
 - ambas salidas pueden coexistir;
 - pero deben describir capas distintas del gameplay y no repetir la misma lectura del evento.
+
+### 10.5. Skills que sí admiten assists contextuales
+
+No toda skill necesita assists.
+
+Hoy, las que sí pueden admitirlos de forma útil son:
+
+- `HunterSkeet`
+- `BoomerPop`
+- `SmokerSelfClear`
+- `ChargerLevel`
+- `ChargerInstaKill`
+
+Regla:
+
+- esos assists deben venir de la ventana técnica de la skill;
+- no del acumulado total de `LifeKill`.

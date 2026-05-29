@@ -219,6 +219,160 @@ event
 
 ## Contract Rules
 
+La API actual sigue siendo válida, pero el diseño nuevo de `skill assists`
+requiere tratar la asistencia como dato de primer nivel también para consumidores
+que no usan `KeyValues`.
+
+## Assist Model
+
+El payload de un evento puede contener asistencia de dos dominios distintos:
+
+- `LifeKill`
+  - contribución a la muerte total de la vida del target
+- `SkillWindow`
+  - contribución dentro de la ventana técnica de la skill
+
+Ejemplos:
+
+- `HunterKill`
+  - usa assists de `LifeKill`
+- `HunterSkeet`
+  - debe usar assists de `SkillWindow`
+- `BoomerPop`
+  - puede usar assists de `SkillWindow`
+- `SmokerSelfClear`
+  - puede usar assists de `SkillWindow`
+- `ChargerLevel`
+  - puede usar assists de `SkillWindow`
+- `ChargerInstaKill`
+  - puede usar assists de `SkillWindow`
+
+Reglas:
+
+- el formato del payload no cambia;
+- cambia la semántica del origen de esos assists;
+- esa semántica debe poder consultarse desde API.
+
+## Current Limitation
+
+Hoy `PlayerSkills_FillEventKeyValues(...)` ya expone:
+
+- `assists_count`
+- `assists[].userid`
+- `assists[].accountid`
+- `assists[].name`
+- `assists[].bot`
+- `assists[].damage`
+- `assists[].shots`
+
+Pero la capa de natives genéricos no expone bien:
+
+- la lista completa de assists por índice;
+- el `assists_count`;
+- ni el alcance semántico del assist.
+
+Eso obliga a usar `KeyValues` incluso cuando el consumidor solo quiere inspección
+estructurada simple.
+
+## Proposed Additive API
+
+La propuesta es ampliar la API sin romper contratos existentes.
+
+### New Enum
+
+```sourcepawn
+enum L4D2SkillAssistScope
+{
+    L4D2SkillAssistScope_None = 0,
+    L4D2SkillAssistScope_LifeKill,
+    L4D2SkillAssistScope_SkillWindow
+}
+```
+
+Semántica:
+
+- `None`
+  - el evento no usa assists o no aplica
+- `LifeKill`
+  - los assists representan la muerte total de la vida
+- `SkillWindow`
+  - los assists representan solo la ventana técnica de la skill
+
+### New Natives
+
+```sourcepawn
+native int PlayerSkills_GetEventAssistsCount(int eventId);
+native int PlayerSkills_GetEventAssistScope(int eventId);
+
+native int PlayerSkills_GetEventAssistUserId(int eventId, int assistIndex);
+native int PlayerSkills_GetEventAssistAccountId(int eventId, int assistIndex);
+native bool PlayerSkills_IsEventAssistBot(int eventId, int assistIndex);
+native void PlayerSkills_GetEventAssistName(int eventId, int assistIndex, char[] buffer, int maxlen);
+native int PlayerSkills_GetEventAssistDamage(int eventId, int assistIndex);
+native int PlayerSkills_GetEventAssistShots(int eventId, int assistIndex);
+native int PlayerSkills_GetEventAssistWeaponId(int eventId, int assistIndex);
+```
+
+Objetivo:
+
+- hacer que la lista de assists sea first-class sin obligar a parsear `KeyValues`;
+- mantener `assister` como shortcut del primer assist cuando exista;
+- permitir a plugins externos distinguir si el assist es de `LifeKill` o de `SkillWindow`.
+
+## KeyValues Compatibility
+
+`PlayerSkills_FillEventKeyValues(...)` no requiere un cambio rompiente.
+
+La propuesta compatible es:
+
+- mantener `assists_count` y `assists[]` como están hoy;
+- agregar dentro de `skill_properties`:
+
+```text
+"assist_scope"          "1|2"
+```
+
+donde:
+
+- `1` = `LifeKill`
+- `2` = `SkillWindow`
+
+Esto preserva consumidores actuales y permite a consumidores nuevos interpretar
+correctamente el origen semántico del assist.
+
+## Perfect Variants
+
+Las variantes `perfect` no deben exponer assists.
+
+Casos ya definidos:
+
+- `PerfectSkeet`
+  - no admite assists
+- `PerfectLevel`
+  - no admite assists
+
+Entonces:
+
+- `assists_count = 0`
+- `assist_scope = 0`
+
+en esas variantes.
+
+## Backward Compatibility
+
+La estrategia recomendada es:
+
+1. mantener todos los natives actuales;
+2. mantener el formato actual de `FillEventKeyValues(...)`;
+3. agregar nuevos natives y `assist_scope`;
+4. no reinterpretar en silencio los campos viejos.
+
+Así:
+
+- plugins existentes siguen funcionando;
+- plugins nuevos pueden consumir `skill assists` correctamente;
+- la semántica del sistema queda explícita.
+
 - `type_id` es el valor numérico actual del enum.
 - el nombre de la skill se resuelve externamente con la tabla pública `g_sL4D2SkillType`.
 - `actor_*` incluye:

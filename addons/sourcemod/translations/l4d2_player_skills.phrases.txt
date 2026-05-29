@@ -135,6 +135,20 @@
 		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}con ayuda de {olive}{3}{blue}."
 	}
 
+	"SkeetSingleShotAssisted"
+	{
+		"#format"	"{1:s},{2:s},{3:d},{4:s}"
+		"en"		"{olive}{1} {blue}skeeted {olive}{2} {blue}with {green}{3} {blue}shot, assisted by {olive}{4}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}de {green}{3} {blue}disparo, asistido por {olive}{4}{blue}."
+	}
+
+	"SkeetMultiShotAssisted"
+	{
+		"#format"	"{1:s},{2:s},{3:d},{4:s}"
+		"en"		"{olive}{1} {blue}skeeted {olive}{2} {blue}with {green}{3} {blue}shots, assisted by {olive}{4}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}de {green}{3} {blue}disparos, asistido por {olive}{4}{blue}."
+	}
+
 	"SkeetSingleShot"
 	{
 		"#format"	"{1:s},{2:s},{3:d}"
@@ -268,11 +282,25 @@
 		"es"		"{olive}{1} {blue}se libero de {olive}{2}{blue}."
 	}
 
+	"SmokerSelfClearKillAssist"
+	{
+		"#format"	"{1:s},{2:s},{3:s}"
+		"en"		"{olive}{1} {blue}self-cleared {olive}{2}{blue}, assisted by {olive}{3}{blue}."
+		"es"		"{olive}{1} {blue}se libero de {olive}{2}{blue}, asistido por {olive}{3}{blue}."
+	}
+
 	"SmokerSelfClearShove"
 	{
 		"#format"	"{1:s},{2:s}"
 		"en"		"{olive}{1} {blue}shove-cleared {olive}{2}{blue}."
 		"es"		"{olive}{1} {blue}se libero de {olive}{2} {blue}con empujón."
+	}
+
+	"SmokerSelfClearShoveAssist"
+	{
+		"#format"	"{1:s},{2:s},{3:s}"
+		"en"		"{olive}{1} {blue}shove-cleared {olive}{2}{blue}, assisted by {olive}{3}{blue}."
+		"es"		"{olive}{1} {blue}se libero de {olive}{2} {blue}con empujón, asistido por {olive}{3}{blue}."
 	}
 
 	"BoomerPopBot"
@@ -282,11 +310,25 @@
 		"es"		"{olive}{1} {blue}revento a {olive}Boomer (IA) {blue}en {green}{2}{blue}s."
 	}
 
+	"BoomerPopBotAssist"
+	{
+		"#format"	"{1:s},{2:s},{3:s}"
+		"en"		"{olive}{1} {blue}popped {olive}Boomer (IA) {blue}in {green}{2}{blue}s, assisted by {olive}{3}{blue}."
+		"es"		"{olive}{1} {blue}revento a {olive}Boomer (IA) {blue}en {green}{2}{blue}s, asistido por {olive}{3}{blue}."
+	}
+
 	"BoomerPopPlayer"
 	{
 		"#format"	"{1:s},{2:s},{3:s}"
 		"en"		"{olive}{1} {blue}popped {olive}Boomer ({2}) {blue}in {green}{3}{blue}s."
 		"es"		"{olive}{1} {blue}revento a {olive}Boomer ({2}) {blue}en {green}{3}{blue}s."
+	}
+
+	"BoomerPopPlayerAssist"
+	{
+		"#format"	"{1:s},{2:s},{3:s},{4:s}"
+		"en"		"{olive}{1} {blue}popped {olive}Boomer ({2}) {blue}in {green}{3}{blue}s, assisted by {olive}{4}{blue}."
+		"es"		"{olive}{1} {blue}revento a {olive}Boomer ({2}) {blue}en {green}{3}{blue}s, asistido por {olive}{4}{blue}."
 	}
 
 	"BoomerVomitLandedSingle"
@@ -308,6 +350,13 @@
 		"#format"	"{1:s},{2:s}"
 		"en"		"{olive}{1} {blue}leveled {olive}{2}{blue}."
 		"es"		"{olive}{1} {blue}hizo {green}Level {blue}a {olive}{2}{blue}."
+	}
+
+	"ChargerLevelAssist"
+	{
+		"#format"	"{1:s},{2:s},{3:s}"
+		"en"		"{olive}{1} {blue}leveled {olive}{2}{blue}, assisted by {olive}{3}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Level {blue}a {olive}{2}{blue}, asistido por {olive}{3}{blue}."
 	}
 
 	"ChargerLevelPerfect"
@@ -385,6 +434,13 @@
 		"#format"	"{1:s},{2:s},{3:.0f}"
 		"en"		"{red}{1} finished an impact incap {green}InstaKill {red}on {olive}{2} {red}from {green}{3} {red}height."
 		"es"		"{red}{1} cerro un {green}InstaKill {red}de impacto tras incap a {olive}{2} {red}desde {green}{3} {red}de altura."
+	}
+
+	"SkillAssistSuffix"
+	{
+		"#format"	"{1:s}"
+		"en"		"{blue}, assisted by {olive}{1}{blue}."
+		"es"		"{blue}, asistido por {olive}{1}{blue}."
 	}
 
 	"ChargerDeathSetupLedge"

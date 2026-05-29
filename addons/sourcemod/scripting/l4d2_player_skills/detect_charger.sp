@@ -212,7 +212,18 @@ void Detect_RecordChargeVictim(int charger, int victim, bool wasCarried)
 		return;
 	}
 
+	int assister = g_iDetectPinnerByVictim[victim];
+	if (!IsValidInfected(assister) || assister == charger)
+	{
+		assister = L4D2_GetSpecialInfectedDominatingMe(victim);
+		if (!IsValidInfected(assister) || assister == charger)
+		{
+			assister = 0;
+		}
+	}
+
 	g_DetectChargeVictim[victim].charger = charger;
+	g_DetectChargeVictim[victim].assister = assister;
 	g_DetectChargeVictim[victim].wasCarried = wasCarried;
 	g_DetectChargeVictim[victim].setupEmitted = false;
 	g_DetectChargeVictim[victim].startTime = GetGameTime();
@@ -397,6 +408,13 @@ void Detect_CheckChargerInstaKill(Event event, int victim)
 	g_SkillEvents[eventIndex].ledgeHang = (g_DetectChargeVictim[victim].flags & DCFLAG_LEDGE) != 0;
 	g_SkillEvents[eventIndex].fatalFall = (g_DetectChargeVictim[victim].flags & DCFLAG_FALL) != 0;
 	g_SkillEvents[eventIndex].deadlySlam = (g_DetectChargeVictim[victim].flags & DCFLAG_DEADLY) != 0;
+	if (IsValidInfected(g_DetectChargeVictim[victim].assister) && g_DetectChargeVictim[victim].assister != charger)
+	{
+		g_SkillEvents[eventIndex].assistScope = L4D2SkillAssistScope_SkillWindow;
+		g_SkillEvents[eventIndex].assists[0].Capture(g_DetectChargeVictim[victim].assister);
+		g_SkillEvents[eventIndex].assistsCount = 1;
+		g_SkillEvents[eventIndex].assister = g_SkillEvents[eventIndex].assists[0];
+	}
 
 	Action result = API_FireSkillDetected(eventId, L4D2Skill_ChargerInstaKill);
 	if (result < Plugin_Handled)
@@ -476,8 +494,10 @@ void Detect_HandleChargerHurt(int victim, int attacker, int damageType, int appl
 			g_SkillEvents[eventIndex].victim.Capture(victim);
 			g_SkillEvents[eventIndex].damage = chargerHealthBeforeDamage;
 			g_SkillEvents[eventIndex].chipDamage = chipDamage;
+			g_SkillEvents[eventIndex].shots = 1;
 			g_SkillEvents[eventIndex].wouldQualifyAtBaseline = qualifiesAtBaseline;
-			g_SkillEvents[eventIndex].perfect = (g_SkillEvents[eventIndex].chipDamage == 0);
+			int assistsFound = Detect_WriteSiTrackAssistsToEventAsSkillWindow(eventIndex, victim, attacker);
+			g_SkillEvents[eventIndex].perfect = (g_SkillEvents[eventIndex].chipDamage == 0) && assistsFound == 0;
 
 			Action result = API_FireSkillDetected(eventId, L4D2Skill_ChargerLevel);
 			if (result < Plugin_Handled)

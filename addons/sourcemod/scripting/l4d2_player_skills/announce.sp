@@ -18,6 +18,62 @@ void Announce_FormatSimpleKillStat(int damage, int count, char[] buffer, int max
 	FormatEx(buffer, maxlen, "%d/%d", damage, count);
 }
 
+void Announce_FormatAssistList(int eventIndex, char[] buffer, int maxlen)
+{
+	buffer[0] = '\0';
+
+	if (eventIndex < 0 || eventIndex >= L4D2_SKILLS_MAX_EVENTS)
+	{
+		return;
+	}
+
+	for (int assistIndex = 0; assistIndex < g_SkillEvents[eventIndex].assistsCount && assistIndex < L4D2_SKILLS_MAX_EVENT_ASSISTS; assistIndex++)
+	{
+		char assistLabel[96];
+		FormatEx(assistLabel, sizeof(assistLabel), "%s (%d/%d)",
+			g_SkillEvents[eventIndex].assists[assistIndex].name,
+			g_SkillEvents[eventIndex].assistDamage[assistIndex],
+			g_SkillEvents[eventIndex].assistShots[assistIndex]);
+
+		char segment[128];
+		if (assistIndex == 0)
+		{
+			FormatEx(segment, sizeof(segment), "%s", assistLabel);
+		}
+		else
+		{
+			FormatEx(segment, sizeof(segment), ", %s", assistLabel);
+		}
+
+		StrCat(buffer, maxlen, segment);
+	}
+}
+
+void Announce_FormatAssistNames(int eventIndex, char[] buffer, int maxlen)
+{
+	buffer[0] = '\0';
+
+	if (eventIndex < 0 || eventIndex >= L4D2_SKILLS_MAX_EVENTS)
+	{
+		return;
+	}
+
+	for (int assistIndex = 0; assistIndex < g_SkillEvents[eventIndex].assistsCount && assistIndex < L4D2_SKILLS_MAX_EVENT_ASSISTS; assistIndex++)
+	{
+		char segment[128];
+		if (assistIndex == 0)
+		{
+			FormatEx(segment, sizeof(segment), "%s", g_SkillEvents[eventIndex].assists[assistIndex].name);
+		}
+		else
+		{
+			FormatEx(segment, sizeof(segment), ", %s", g_SkillEvents[eventIndex].assists[assistIndex].name);
+		}
+
+		StrCat(buffer, maxlen, segment);
+	}
+}
+
 bool Announce_ShouldAnnounceSkill(int eventIndex)
 {
 	if (eventIndex < 0 || eventIndex >= L4D2_SKILLS_MAX_EVENTS || g_SkillEvents[eventIndex].id <= 0)
@@ -742,6 +798,9 @@ void Announce_Skill(int eventId)
 	{
 		case L4D2Skill_HunterSkeet:
 		{
+			char assistList[256];
+			Announce_FormatAssistList(eventIndex, assistList, sizeof(assistList));
+
 			if (g_SkillEvents[eventIndex].grenadeLauncher)
 			{
 				CPrintToChatAll("%s %t", tag,
@@ -767,12 +826,14 @@ void Announce_Skill(int eventId)
 					g_SkillEvents[eventIndex].damage,
 					g_SkillEvents[eventIndex].shots);
 			}
-			else if (g_SkillEvents[eventIndex].assister.userid > 0)
+			else if (g_SkillEvents[eventIndex].assistsCount > 0)
 			{
-				CPrintToChatAll("%s %t", tag, "SkeetAssisted",
+				CPrintToChatAll("%s %t", tag,
+					g_SkillEvents[eventIndex].shots == 1 ? "SkeetSingleShotAssisted" : "SkeetMultiShotAssisted",
 					actorName,
 					victimName,
-					assisterName);
+					g_SkillEvents[eventIndex].shots,
+					assistList);
 			}
 			else if (g_SkillEvents[eventIndex].shots == 1)
 			{
@@ -854,29 +915,41 @@ void Announce_Skill(int eventId)
 
 		case L4D2Skill_SmokerSelfClear:
 		{
+			char assistList[256];
+			Announce_FormatAssistList(eventIndex, assistList, sizeof(assistList));
+
 			CPrintToChatAll("%s %t", tag,
-				g_SkillEvents[eventIndex].withShove ? "SmokerSelfClearShove" : "SmokerSelfClearKill",
+				g_SkillEvents[eventIndex].withShove
+					? (g_SkillEvents[eventIndex].assistsCount > 0 ? "SmokerSelfClearShoveAssist" : "SmokerSelfClearShove")
+					: (g_SkillEvents[eventIndex].assistsCount > 0 ? "SmokerSelfClearKillAssist" : "SmokerSelfClearKill"),
 				actorName,
-				victimName);
+				victimName,
+				assistList);
 		}
 
 		case L4D2Skill_BoomerPop:
 		{
 			char timeText[16];
+			char assistList[256];
 			FormatEx(timeText, sizeof(timeText), "%.1f", g_SkillEvents[eventIndex].timeA);
+			Announce_FormatAssistList(eventIndex, assistList, sizeof(assistList));
 
 			if (g_SkillEvents[eventIndex].victim.bot)
 			{
-				CPrintToChatAll("%s %t", tag, "BoomerPopBot",
+				CPrintToChatAll("%s %t", tag,
+					g_SkillEvents[eventIndex].assistsCount > 0 ? "BoomerPopBotAssist" : "BoomerPopBot",
 					actorName,
-					timeText);
+					timeText,
+					assistList);
 			}
 			else
 			{
-				CPrintToChatAll("%s %t", tag, "BoomerPopPlayer",
+				CPrintToChatAll("%s %t", tag,
+					g_SkillEvents[eventIndex].assistsCount > 0 ? "BoomerPopPlayerAssist" : "BoomerPopPlayer",
 					actorName,
 					victimName,
-					timeText);
+					timeText,
+					assistList);
 			}
 		}
 
@@ -1009,14 +1082,23 @@ void Announce_Skill(int eventId)
 
 		case L4D2Skill_ChargerLevel:
 		{
-			CPrintToChatAll("%s %t", tag, g_SkillEvents[eventIndex].perfect ? "ChargerLevelPerfect" : "ChargerLevel",
+			char assistList[256];
+			Announce_FormatAssistList(eventIndex, assistList, sizeof(assistList));
+
+			CPrintToChatAll("%s %t", tag,
+				g_SkillEvents[eventIndex].perfect
+					? "ChargerLevelPerfect"
+					: (g_SkillEvents[eventIndex].assistsCount > 0 ? "ChargerLevelAssist" : "ChargerLevel"),
 				actorName,
-				victimName);
+				victimName,
+				assistList);
 		}
 
 		case L4D2Skill_ChargerInstaKill:
 		{
 			char phrase[48];
+			char assistNames[256];
+			Announce_FormatAssistNames(eventIndex, assistNames, sizeof(assistNames));
 			if (g_SkillEvents[eventIndex].wasCarried)
 			{
 				if (g_SkillEvents[eventIndex].ledgeHang)
@@ -1064,11 +1146,24 @@ void Announce_Skill(int eventId)
 				}
 			}
 
-			CPrintToChatAll("%s %t", tag,
-				phrase,
-				actorName,
-				victimName,
-				g_SkillEvents[eventIndex].height);
+			if (g_SkillEvents[eventIndex].assistsCount > 0)
+			{
+				CPrintToChatAll("%s %t %t", tag,
+					phrase,
+					actorName,
+					victimName,
+					g_SkillEvents[eventIndex].height,
+					"SkillAssistSuffix",
+					assistNames);
+			}
+			else
+			{
+				CPrintToChatAll("%s %t", tag,
+					phrase,
+					actorName,
+					victimName,
+					g_SkillEvents[eventIndex].height);
+			}
 		}
 
 		case L4D2Skill_ChargerDeathSetup:
