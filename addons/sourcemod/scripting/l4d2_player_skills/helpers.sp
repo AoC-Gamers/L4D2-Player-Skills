@@ -23,8 +23,7 @@ stock bool Skills_IsRoundLive()
 
 stock bool Skills_IsCompetitiveMode()
 {
-	return g_Runtime.baseMode == PlayerSkillsGameMode_Versus
-		|| g_Runtime.baseMode == PlayerSkillsGameMode_Scavenge;
+	return g_Runtime.baseMode == PlayerSkillsGameMode_Versus || g_Runtime.baseMode == PlayerSkillsGameMode_Scavenge;
 }
 
 stock void Skills_RefreshRoundLiveState()
@@ -35,10 +34,7 @@ stock void Skills_RefreshRoundLiveState()
 		return;
 	}
 
-	if (g_Runtime.roundLiveSignal == PlayerSkillsRoundLiveSignal_SafeArea
-		&& g_Runtime.hasLeft4DHooks
-		&& GetFeatureStatus(FeatureType_Native, "L4D_HasAnySurvivorLeftSafeArea") != FeatureStatus_Unknown
-		&& L4D_HasAnySurvivorLeftSafeArea())
+	if (g_Runtime.roundLiveSignal == PlayerSkillsRoundLiveSignal_SafeArea && g_Runtime.hasLeft4DHooks && GetFeatureStatus(FeatureType_Native, "L4D_HasAnySurvivorLeftSafeArea") != FeatureStatus_Unknown && L4D_HasAnySurvivorLeftSafeArea())
 	{
 		g_Runtime.roundLive = true;
 		return;
@@ -74,12 +70,10 @@ stock bool Skills_IsRangedShotWeaponId(int wepid)
 {
 	switch (wepid)
 	{
-		case WEPID_PISTOL, WEPID_PISTOL_MAGNUM,
-			WEPID_SMG, WEPID_SMG_SILENCED, WEPID_SMG_MP5,
-			WEPID_PUMPSHOTGUN, WEPID_AUTOSHOTGUN, WEPID_SHOTGUN_CHROME, WEPID_SHOTGUN_SPAS,
-			WEPID_RIFLE, WEPID_RIFLE_AK47, WEPID_RIFLE_DESERT, WEPID_RIFLE_SG552, WEPID_RIFLE_M60,
-			WEPID_HUNTING_RIFLE, WEPID_SNIPER_MILITARY, WEPID_SNIPER_AWP, WEPID_SNIPER_SCOUT,
-			WEPID_GRENADE_LAUNCHER, WEPID_MACHINEGUN:
+		case WEPID_PISTOL, WEPID_PISTOL_MAGNUM, WEPID_SMG, WEPID_SMG_SILENCED, WEPID_SMG_MP5, WEPID_PUMPSHOTGUN,
+			WEPID_AUTOSHOTGUN, WEPID_SHOTGUN_CHROME, WEPID_SHOTGUN_SPAS,WEPID_RIFLE, WEPID_RIFLE_AK47,
+			WEPID_RIFLE_DESERT, WEPID_RIFLE_SG552, WEPID_RIFLE_M60,WEPID_HUNTING_RIFLE, WEPID_SNIPER_MILITARY,
+			WEPID_SNIPER_AWP, WEPID_SNIPER_SCOUT, WEPID_GRENADE_LAUNCHER, WEPID_MACHINEGUN:
 		{
 			return true;
 		}
@@ -400,12 +394,12 @@ stock bool Skills_IsScavengeMode()
 
 stock int Skills_GetConfiguredSurvivorLimit()
 {
-	return g_cvSurvivorLimit != null ? g_cvSurvivorLimit.IntValue : 0;
+	return g_cvSurvivorLimit != null ? g_cvSurvivorLimit.IntValue : L4D2_SKILLS_DEFAULT_SURVIVOR_LIMIT;
 }
 
 stock int Skills_GetConfiguredPlayerZombieLimit()
 {
-	return g_cvMaxPlayerZombies != null ? g_cvMaxPlayerZombies.IntValue : 0;
+	return g_cvMaxPlayerZombies != null ? g_cvMaxPlayerZombies.IntValue : L4D2_SKILLS_DEFAULT_PLAYER_ZOMBIE_LIMIT;
 }
 
 /**
@@ -947,7 +941,7 @@ stock void Skills_FormatEventPlayerRoleName(int eventIndex, int slot, char[] buf
 
 		switch (g_SkillEvents[eventIndex].type)
 		{
-			case L4D2Skill_HunterSkeet, L4D2Skill_HunterSkeetMelee, L4D2Skill_HunterDeadstop, L4D2Skill_HunterHighPounce:
+			case L4D2Skill_HunterSkeet, L4D2Skill_HunterSkeetMelee, L4D2Skill_HunterDeadstop:
 			{
 				zombieClass = L4D2ZombieClass_Hunter;
 			}
@@ -959,11 +953,11 @@ stock void Skills_FormatEventPlayerRoleName(int eventIndex, int slot, char[] buf
 			{
 				zombieClass = L4D2ZombieClass_Smoker;
 			}
-			case L4D2Skill_JockeyHighPounce, L4D2Skill_JockeyJumpStop, L4D2Skill_JockeySkeetMelee:
+			case L4D2Skill_JockeyJumpStop, L4D2Skill_JockeySkeetMelee:
 			{
 				zombieClass = L4D2ZombieClass_Jockey;
 			}
-			case L4D2Skill_ChargerLevel, L4D2Skill_ChargerInstaKill, L4D2Skill_ChargerDeathSetup, L4D2Skill_ChargerBowl:
+			case L4D2Skill_ChargerLevel:
 			{
 				zombieClass = L4D2ZombieClass_Charger;
 			}

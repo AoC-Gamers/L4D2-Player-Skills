@@ -158,13 +158,6 @@
 		"es"		"JockeySM"
 	}
 
-	"SkeetAssisted"
-	{
-		"#format"	"{1:s},{2:s},{3:s}"
-		"en"		"{olive}{1} {blue}skeeted {olive}{2} {blue}with help from {olive}{3}{blue}."
-		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}con ayuda de {olive}{3}{blue}."
-	}
-
 	"SkeetSingleShotAssisted"
 	{
 		"#format"	"{1:s},{2:s},{3:d},{4:s}"
@@ -364,15 +357,15 @@
 	"BoomerVomitLandedSingle"
 	{
 		"#format"	"{1:s},{2:d}"
-		"en"		"{olive}{1} {red}landed {green}Vomit {red}on {olive}{2} {red}survivor."
-		"es"		"{olive}{1} {red}conecto {green}Vomit {red}a {olive}{2} {red}survivor."
+		"en"		"{olive}{1} {red}vomited on {olive}{2} {red}survivor."
+		"es"		"{olive}{1} {red}vomito a {olive}{2} {red}superviviente."
 	}
 
 	"BoomerVomitLandedMulti"
 	{
 		"#format"	"{1:s},{2:d}"
-		"en"		"{olive}{1} {red}landed {green}Vomit {red}on {olive}{2} {red}survivors."
-		"es"		"{olive}{1} {red}conecto {green}Vomit {red}a {olive}{2} {red}survivors."
+		"en"		"{olive}{1} {red}vomited on {olive}{2} {red}survivors."
+		"es"		"{olive}{1} {red}vomito a {olive}{2} {red}supervivientes."
 	}
 
 	"ChargerLevel"

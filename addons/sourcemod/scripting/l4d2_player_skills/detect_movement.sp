@@ -346,6 +346,8 @@ void Detect_EmitBoomerVomitLanded(int boomer, int amount)
 
 	g_SkillEvents[eventIndex].actor.Capture(boomer);
 	g_SkillEvents[eventIndex].amount = amount;
+	int survivorLimit = Skills_GetConfiguredSurvivorLimit();
+	g_SkillEvents[eventIndex].perfect = (survivorLimit > 0 && amount >= survivorLimit);
 
 	Action result = API_FireSkillDetected(eventId, L4D2Skill_BoomerVomitLanded);
 	if (result < Plugin_Handled)

@@ -5,8 +5,8 @@
 
 int g_iAnnounceSortSession = -1;
 
-#define L4D2_SKILLS_SURVIVOR_TABLE_FAMILIES 15
-#define L4D2_SKILLS_INFECTED_TABLE_FAMILIES 7
+#define L4D2_SKILLS_SURVIVOR_TABLE_FAMILIES 17
+#define L4D2_SKILLS_INFECTED_TABLE_FAMILIES 14
 
 bool Announce_HasMask(ConVar cvar, int bit)
 {
@@ -218,13 +218,8 @@ bool Announce_ShouldAnnounceSkill(int eventIndex)
 			}
 			else
 			{
-				int survivorLimit = Skills_GetConfiguredSurvivorLimit();
-				if (survivorLimit <= 0)
-				{
-					survivorLimit = 4;
-				}
-
-				shouldAnnounce = g_SkillEvents[eventIndex].amount >= survivorLimit;
+				int minTargets = g_cvBoomerVomitMinTargets != null ? g_cvBoomerVomitMinTargets.IntValue : 4;
+				shouldAnnounce = minTargets > 0 && g_SkillEvents[eventIndex].amount >= minTargets;
 			}
 		}
 		case L4D2Skill_SmokerTongueCut:
@@ -484,25 +479,178 @@ int Announce_CountSkillTypeForClient(int client, L4D2SkillType type)
 	return count;
 }
 
+int Announce_SumSkillAmountForClient(int client, L4D2SkillType type)
+{
+	if (!IsValidClient(client))
+	{
+		return 0;
+	}
+
+	if (!Skills_IsSkillTypeEnabledInCurrentMode(type))
+	{
+		return 0;
+	}
+
+	int total = 0;
+	for (int index = 0; index < L4D2_SKILLS_MAX_EVENTS; index++)
+	{
+		if (g_SkillEvents[index].id <= 0
+			|| g_SkillEvents[index].type != type
+			|| !g_SkillEvents[index].actor.IsSamePersistentPlayer(client)
+			|| !Skills_IsSkillEventEnabledInCurrentMode(index))
+		{
+			continue;
+		}
+
+		total += g_SkillEvents[index].amount;
+	}
+
+	return total;
+}
+
+int Announce_CountPerfectSkillTypeForClient(int client, L4D2SkillType type)
+{
+	if (!IsValidClient(client))
+	{
+		return 0;
+	}
+
+	if (!Skills_IsSkillTypeEnabledInCurrentMode(type))
+	{
+		return 0;
+	}
+
+	int count = 0;
+	for (int index = 0; index < L4D2_SKILLS_MAX_EVENTS; index++)
+	{
+		if (g_SkillEvents[index].id <= 0
+			|| g_SkillEvents[index].type != type
+			|| !g_SkillEvents[index].actor.IsSamePersistentPlayer(client)
+			|| !g_SkillEvents[index].perfect
+			|| !Skills_IsSkillEventEnabledInCurrentMode(index))
+		{
+			continue;
+		}
+
+		count++;
+	}
+
+	return count;
+}
+
+int Announce_CountBaselineSkillTypeForClient(int client, L4D2SkillType type)
+{
+	if (!IsValidClient(client))
+	{
+		return 0;
+	}
+
+	if (!Skills_IsSkillTypeEnabledInCurrentMode(type))
+	{
+		return 0;
+	}
+
+	int count = 0;
+	for (int index = 0; index < L4D2_SKILLS_MAX_EVENTS; index++)
+	{
+		if (g_SkillEvents[index].id <= 0
+			|| g_SkillEvents[index].type != type
+			|| !g_SkillEvents[index].actor.IsSamePersistentPlayer(client)
+			|| !g_SkillEvents[index].wouldQualifyAtBaseline
+			|| !Skills_IsSkillEventEnabledInCurrentMode(index))
+		{
+			continue;
+		}
+
+		count++;
+	}
+
+	return count;
+}
+
+int Announce_MaxSkillAmountForClient(int client, L4D2SkillType type)
+{
+	if (!IsValidClient(client))
+	{
+		return 0;
+	}
+
+	if (!Skills_IsSkillTypeEnabledInCurrentMode(type))
+	{
+		return 0;
+	}
+
+	int best = 0;
+	for (int index = 0; index < L4D2_SKILLS_MAX_EVENTS; index++)
+	{
+		if (g_SkillEvents[index].id <= 0
+			|| g_SkillEvents[index].type != type
+			|| !g_SkillEvents[index].actor.IsSamePersistentPlayer(client)
+			|| !Skills_IsSkillEventEnabledInCurrentMode(index))
+		{
+			continue;
+		}
+
+		if (g_SkillEvents[index].amount > best)
+		{
+			best = g_SkillEvents[index].amount;
+		}
+	}
+
+	return best;
+}
+
+int Announce_MaxSkillHeightForClient(int client, L4D2SkillType type)
+{
+	if (!IsValidClient(client))
+	{
+		return 0;
+	}
+
+	if (!Skills_IsSkillTypeEnabledInCurrentMode(type))
+	{
+		return 0;
+	}
+
+	float best = 0.0;
+	for (int index = 0; index < L4D2_SKILLS_MAX_EVENTS; index++)
+	{
+		if (g_SkillEvents[index].id <= 0
+			|| g_SkillEvents[index].type != type
+			|| !g_SkillEvents[index].actor.IsSamePersistentPlayer(client)
+			|| !Skills_IsSkillEventEnabledInCurrentMode(index))
+		{
+			continue;
+		}
+
+		if (g_SkillEvents[index].height > best)
+		{
+			best = g_SkillEvents[index].height;
+		}
+	}
+
+	return RoundToFloor(best);
+}
+
 int Announce_MapSurvivorTableFamily(L4D2SkillType type)
 {
 	switch (type)
 	{
 		case L4D2Skill_HunterSkeet: return 0;
-		case L4D2Skill_HunterSkeetMelee: return 1;
-		case L4D2Skill_HunterDeadstop: return 2;
-		case L4D2Skill_SpecialPinClear: return 3;
-		case L4D2Skill_SmokerTongueCut: return 4;
-		case L4D2Skill_SmokerSelfClear: return 5;
-		case L4D2Skill_BoomerPop: return 6;
-		case L4D2Skill_ChargerLevel: return 7;
-		case L4D2Skill_CarAlarmTriggered: return 8;
-		case L4D2Skill_BunnyHopStreak: return 9;
-		case L4D2Skill_WitchDead: return 10;
-		case L4D2Skill_TankRockSkeet: return 11;
-		case L4D2Skill_SmokerKill, L4D2Skill_BoomerKill, L4D2Skill_HunterKill, L4D2Skill_SpitterKill, L4D2Skill_JockeyKill, L4D2Skill_ChargerKill: return 12;
-		case L4D2Skill_JockeyJumpStop: return 13;
-		case L4D2Skill_JockeySkeetMelee: return 14;
+		case L4D2Skill_HunterSkeetMelee: return 2;
+		case L4D2Skill_HunterDeadstop: return 3;
+		case L4D2Skill_SpecialPinClear: return 4;
+		case L4D2Skill_SmokerTongueCut: return 5;
+		case L4D2Skill_SmokerSelfClear: return 6;
+		case L4D2Skill_BoomerPop: return 7;
+		case L4D2Skill_ChargerLevel: return 8;
+		case L4D2Skill_CarAlarmTriggered: return 10;
+		case L4D2Skill_BunnyHopStreak: return 11;
+		case L4D2Skill_WitchDead: return 12;
+		case L4D2Skill_TankRockSkeet: return 13;
+		case L4D2Skill_SmokerKill, L4D2Skill_BoomerKill, L4D2Skill_HunterKill, L4D2Skill_SpitterKill, L4D2Skill_JockeyKill, L4D2Skill_ChargerKill: return 14;
+		case L4D2Skill_JockeyJumpStop: return 15;
+		case L4D2Skill_JockeySkeetMelee: return 16;
 	}
 
 	return -1;
@@ -513,12 +661,12 @@ int Announce_MapInfectedTableFamily(L4D2SkillType type)
 	switch (type)
 	{
 		case L4D2Skill_HunterHighPounce: return 0;
-		case L4D2Skill_JockeyHighPounce: return 1;
-		case L4D2Skill_BoomerVomitLanded: return 2;
-		case L4D2Skill_ChargerInstaKill: return 3;
-		case L4D2Skill_ChargerDeathSetup: return 4;
-		case L4D2Skill_TankRockHit: return 5;
-		case L4D2Skill_ChargerBowl: return 6;
+		case L4D2Skill_JockeyHighPounce: return 2;
+		case L4D2Skill_BoomerVomitLanded: return 4;
+		case L4D2Skill_ChargerInstaKill: return 8;
+		case L4D2Skill_ChargerDeathSetup: return 9;
+		case L4D2Skill_TankRockHit: return 10;
+		case L4D2Skill_ChargerBowl: return 11;
 	}
 
 	return -1;
@@ -529,20 +677,22 @@ void Announce_GetSurvivorTableFamilyName(int family, char[] buffer, int maxlen)
 	switch (family)
 	{
 		case 0: strcopy(buffer, maxlen, "Skeets");
-		case 1: strcopy(buffer, maxlen, "SkeetMelees");
-		case 2: strcopy(buffer, maxlen, "Deadstops");
-		case 3: strcopy(buffer, maxlen, "SpecialClears");
-		case 4: strcopy(buffer, maxlen, "TongueCuts");
-		case 5: strcopy(buffer, maxlen, "SmokerClears");
-		case 6: strcopy(buffer, maxlen, "BoomerPops");
-		case 7: strcopy(buffer, maxlen, "ChargerLevels");
-		case 8: strcopy(buffer, maxlen, "CarAlarms");
-		case 9: strcopy(buffer, maxlen, "BunnyHopStreaks");
-		case 10: strcopy(buffer, maxlen, "WitchCrowns");
-		case 11: strcopy(buffer, maxlen, "TankRockSkeets");
-		case 12: strcopy(buffer, maxlen, "SpecialInfectedKills");
-		case 13: strcopy(buffer, maxlen, "JockeyJumpStops");
-		case 14: strcopy(buffer, maxlen, "JockeySkeetMelees");
+		case 1: strcopy(buffer, maxlen, "SkeetPerfect");
+		case 2: strcopy(buffer, maxlen, "SkeetMelees");
+		case 3: strcopy(buffer, maxlen, "Deadstops");
+		case 4: strcopy(buffer, maxlen, "SpecialClears");
+		case 5: strcopy(buffer, maxlen, "TongueCuts");
+		case 6: strcopy(buffer, maxlen, "SmokerClears");
+		case 7: strcopy(buffer, maxlen, "BoomerPops");
+		case 8: strcopy(buffer, maxlen, "ChargerLevels");
+		case 9: strcopy(buffer, maxlen, "LevelPerfect");
+		case 10: strcopy(buffer, maxlen, "CarAlarms");
+		case 11: strcopy(buffer, maxlen, "BunnyHopStreaks");
+		case 12: strcopy(buffer, maxlen, "WitchCrowns");
+		case 13: strcopy(buffer, maxlen, "TankRockSkeets");
+		case 14: strcopy(buffer, maxlen, "SpecialInfectedKills");
+		case 15: strcopy(buffer, maxlen, "JockeyJumpStops");
+		case 16: strcopy(buffer, maxlen, "JockeySkeetMelees");
 		default: buffer[0] = '\0';
 	}
 }
@@ -552,12 +702,19 @@ void Announce_GetInfectedTableFamilyName(int family, char[] buffer, int maxlen)
 	switch (family)
 	{
 		case 0: strcopy(buffer, maxlen, "HunterPounces");
-		case 1: strcopy(buffer, maxlen, "JockeyPounces");
-		case 2: strcopy(buffer, maxlen, "BoomerVomit");
-		case 3: strcopy(buffer, maxlen, "ChargerInstaKills");
-		case 4: strcopy(buffer, maxlen, "ChargerDeathSetups");
-		case 5: strcopy(buffer, maxlen, "TankRockHits");
-		case 6: strcopy(buffer, maxlen, "ChargerBowls");
+		case 1: strcopy(buffer, maxlen, "HunterPounceBest");
+		case 2: strcopy(buffer, maxlen, "JockeyPounces");
+		case 3: strcopy(buffer, maxlen, "JockeyPounceBest");
+		case 4: strcopy(buffer, maxlen, "BoomerVomit");
+		case 5: strcopy(buffer, maxlen, "BoomerVomitTargets");
+		case 6: strcopy(buffer, maxlen, "BoomerVomitPerfect");
+		case 7: strcopy(buffer, maxlen, "BoomerVomitBest");
+		case 8: strcopy(buffer, maxlen, "ChargerInstaKills");
+		case 9: strcopy(buffer, maxlen, "ChargerDeathSetups");
+		case 10: strcopy(buffer, maxlen, "TankRockHits");
+		case 11: strcopy(buffer, maxlen, "ChargerBowls");
+		case 12: strcopy(buffer, maxlen, "ChargerBowlTargets");
+		case 13: strcopy(buffer, maxlen, "ChargerBowlBest");
 		default: buffer[0] = '\0';
 	}
 }
@@ -567,18 +724,20 @@ bool Announce_IsSurvivorTableFamilyVisible(int family)
 	switch (family)
 	{
 		case 0: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_HunterSkeet);
-		case 1: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_HunterSkeetMelee);
-		case 2: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_HunterDeadstop);
-		case 3: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_SpecialPinClear);
-		case 4: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_SmokerTongueCut);
-		case 5: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_SmokerSelfClear);
-		case 6: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_BoomerPop);
-		case 7: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_ChargerLevel);
-		case 8: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_CarAlarmTriggered);
-		case 9: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_BunnyHopStreak);
-		case 10: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_WitchDead);
-		case 11: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_TankRockSkeet);
-		case 12:
+		case 1: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_HunterSkeet);
+		case 2: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_HunterSkeetMelee);
+		case 3: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_HunterDeadstop);
+		case 4: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_SpecialPinClear);
+		case 5: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_SmokerTongueCut);
+		case 6: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_SmokerSelfClear);
+		case 7: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_BoomerPop);
+		case 8: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_ChargerLevel);
+		case 9: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_ChargerLevel);
+		case 10: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_CarAlarmTriggered);
+		case 11: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_BunnyHopStreak);
+		case 12: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_WitchDead);
+		case 13: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_TankRockSkeet);
+		case 14:
 		{
 			return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_SmokerKill)
 				|| Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_BoomerKill)
@@ -587,8 +746,8 @@ bool Announce_IsSurvivorTableFamilyVisible(int family)
 				|| Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_JockeyKill)
 				|| Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_ChargerKill);
 		}
-		case 13: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_JockeyJumpStop);
-		case 14: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_JockeySkeetMelee);
+		case 15: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_JockeyJumpStop);
+		case 16: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_JockeySkeetMelee);
 	}
 
 	return false;
@@ -599,12 +758,14 @@ bool Announce_IsInfectedTableFamilyVisible(int family)
 	switch (family)
 	{
 		case 0: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_HunterHighPounce);
-		case 1: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_JockeyHighPounce);
-		case 2: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_BoomerVomitLanded);
-		case 3: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_ChargerInstaKill);
-		case 4: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_ChargerDeathSetup);
-		case 5: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_TankRockHit);
-		case 6: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_ChargerBowl);
+		case 1: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_HunterHighPounce);
+		case 2: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_JockeyHighPounce);
+		case 3: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_JockeyHighPounce);
+		case 4, 5, 6, 7: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_BoomerVomitLanded);
+		case 8: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_ChargerInstaKill);
+		case 9: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_ChargerDeathSetup);
+		case 10: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_TankRockHit);
+		case 11, 12, 13: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_ChargerBowl);
 	}
 
 	return false;
@@ -615,18 +776,20 @@ int Announce_CountSurvivorTableFamilyForClient(int client, int family)
 	switch (family)
 	{
 		case 0: return Announce_CountSkillTypeForClient(client, L4D2Skill_HunterSkeet);
-		case 1: return Announce_CountSkillTypeForClient(client, L4D2Skill_HunterSkeetMelee);
-		case 2: return Announce_CountSkillTypeForClient(client, L4D2Skill_HunterDeadstop);
-		case 3: return Announce_CountSkillTypeForClient(client, L4D2Skill_SpecialPinClear);
-		case 4: return Announce_CountSkillTypeForClient(client, L4D2Skill_SmokerTongueCut);
-		case 5: return Announce_CountSkillTypeForClient(client, L4D2Skill_SmokerSelfClear);
-		case 6: return Announce_CountSkillTypeForClient(client, L4D2Skill_BoomerPop);
-		case 7: return Announce_CountSkillTypeForClient(client, L4D2Skill_ChargerLevel);
-		case 8: return Announce_CountSkillTypeForClient(client, L4D2Skill_CarAlarmTriggered);
-		case 9: return Announce_CountSkillTypeForClient(client, L4D2Skill_BunnyHopStreak);
-		case 10: return Announce_CountSkillTypeForClient(client, L4D2Skill_WitchDead);
-		case 11: return Announce_CountSkillTypeForClient(client, L4D2Skill_TankRockSkeet);
-		case 12:
+		case 1: return Announce_CountBaselineSkillTypeForClient(client, L4D2Skill_HunterSkeet);
+		case 2: return Announce_CountSkillTypeForClient(client, L4D2Skill_HunterSkeetMelee);
+		case 3: return Announce_CountSkillTypeForClient(client, L4D2Skill_HunterDeadstop);
+		case 4: return Announce_CountSkillTypeForClient(client, L4D2Skill_SpecialPinClear);
+		case 5: return Announce_CountSkillTypeForClient(client, L4D2Skill_SmokerTongueCut);
+		case 6: return Announce_CountSkillTypeForClient(client, L4D2Skill_SmokerSelfClear);
+		case 7: return Announce_CountSkillTypeForClient(client, L4D2Skill_BoomerPop);
+		case 8: return Announce_CountSkillTypeForClient(client, L4D2Skill_ChargerLevel);
+		case 9: return Announce_CountPerfectSkillTypeForClient(client, L4D2Skill_ChargerLevel);
+		case 10: return Announce_CountSkillTypeForClient(client, L4D2Skill_CarAlarmTriggered);
+		case 11: return Announce_CountSkillTypeForClient(client, L4D2Skill_BunnyHopStreak);
+		case 12: return Announce_CountSkillTypeForClient(client, L4D2Skill_WitchDead);
+		case 13: return Announce_CountSkillTypeForClient(client, L4D2Skill_TankRockSkeet);
+		case 14:
 		{
 			return Announce_CountSkillTypeForClient(client, L4D2Skill_SmokerKill)
 				+ Announce_CountSkillTypeForClient(client, L4D2Skill_BoomerKill)
@@ -635,8 +798,8 @@ int Announce_CountSurvivorTableFamilyForClient(int client, int family)
 				+ Announce_CountSkillTypeForClient(client, L4D2Skill_JockeyKill)
 				+ Announce_CountSkillTypeForClient(client, L4D2Skill_ChargerKill);
 		}
-		case 13: return Announce_CountSkillTypeForClient(client, L4D2Skill_JockeyJumpStop);
-		case 14: return Announce_CountSkillTypeForClient(client, L4D2Skill_JockeySkeetMelee);
+		case 15: return Announce_CountSkillTypeForClient(client, L4D2Skill_JockeyJumpStop);
+		case 16: return Announce_CountSkillTypeForClient(client, L4D2Skill_JockeySkeetMelee);
 	}
 
 	return 0;
@@ -647,12 +810,19 @@ int Announce_CountInfectedTableFamilyForClient(int client, int family)
 	switch (family)
 	{
 		case 0: return Announce_CountSkillTypeForClient(client, L4D2Skill_HunterHighPounce);
-		case 1: return Announce_CountSkillTypeForClient(client, L4D2Skill_JockeyHighPounce);
-		case 2: return Announce_CountSkillTypeForClient(client, L4D2Skill_BoomerVomitLanded);
-		case 3: return Announce_CountSkillTypeForClient(client, L4D2Skill_ChargerInstaKill);
-		case 4: return Announce_CountSkillTypeForClient(client, L4D2Skill_ChargerDeathSetup);
-		case 5: return Announce_CountSkillTypeForClient(client, L4D2Skill_TankRockHit);
-		case 6: return Announce_CountSkillTypeForClient(client, L4D2Skill_ChargerBowl);
+		case 1: return Announce_MaxSkillHeightForClient(client, L4D2Skill_HunterHighPounce);
+		case 2: return Announce_CountSkillTypeForClient(client, L4D2Skill_JockeyHighPounce);
+		case 3: return Announce_MaxSkillHeightForClient(client, L4D2Skill_JockeyHighPounce);
+		case 4: return Announce_CountSkillTypeForClient(client, L4D2Skill_BoomerVomitLanded);
+		case 5: return Announce_SumSkillAmountForClient(client, L4D2Skill_BoomerVomitLanded);
+		case 6: return Announce_CountPerfectSkillTypeForClient(client, L4D2Skill_BoomerVomitLanded);
+		case 7: return Announce_MaxSkillAmountForClient(client, L4D2Skill_BoomerVomitLanded);
+		case 8: return Announce_CountSkillTypeForClient(client, L4D2Skill_ChargerInstaKill);
+		case 9: return Announce_CountSkillTypeForClient(client, L4D2Skill_ChargerDeathSetup);
+		case 10: return Announce_CountSkillTypeForClient(client, L4D2Skill_TankRockHit);
+		case 11: return Announce_CountSkillTypeForClient(client, L4D2Skill_ChargerBowl);
+		case 12: return Announce_SumSkillAmountForClient(client, L4D2Skill_ChargerBowl);
+		case 13: return Announce_MaxSkillAmountForClient(client, L4D2Skill_ChargerBowl);
 	}
 
 	return 0;
@@ -673,6 +843,110 @@ int Announce_CountTableFamilyForBots(L4DTeam team, int family)
 		if (g_SkillEvents[index].type == L4D2Skill_WitchDead && !g_SkillEvents[index].crown)
 		{
 			continue;
+		}
+
+		if (team == L4DTeam_Infected && g_SkillEvents[index].type == L4D2Skill_BoomerVomitLanded)
+		{
+			if (family == 4)
+			{
+				count++;
+			}
+			else if (family == 5)
+			{
+				count += g_SkillEvents[index].amount;
+			}
+			else if (family == 6)
+			{
+				count += g_SkillEvents[index].perfect ? 1 : 0;
+			}
+			else if (family == 7 && g_SkillEvents[index].amount > count)
+			{
+				count = g_SkillEvents[index].amount;
+			}
+
+			continue;
+		}
+
+		if (team == L4DTeam_Infected && g_SkillEvents[index].type == L4D2Skill_HunterHighPounce)
+		{
+			if (family == 0)
+			{
+				count++;
+			}
+			else if (family == 1)
+			{
+				int height = RoundToFloor(g_SkillEvents[index].height);
+				if (height > count)
+				{
+					count = height;
+				}
+			}
+
+			continue;
+		}
+
+		if (team == L4DTeam_Infected && g_SkillEvents[index].type == L4D2Skill_JockeyHighPounce)
+		{
+			if (family == 2)
+			{
+				count++;
+			}
+			else if (family == 3)
+			{
+				int height = RoundToFloor(g_SkillEvents[index].height);
+				if (height > count)
+				{
+					count = height;
+				}
+			}
+
+			continue;
+		}
+
+		if (team == L4DTeam_Infected && g_SkillEvents[index].type == L4D2Skill_ChargerBowl)
+		{
+			if (family == 11)
+			{
+				count++;
+			}
+			else if (family == 12)
+			{
+				count += g_SkillEvents[index].amount;
+			}
+			else if (family == 13 && g_SkillEvents[index].amount > count)
+			{
+				count = g_SkillEvents[index].amount;
+			}
+
+			continue;
+		}
+
+		if (team == L4DTeam_Survivor && g_SkillEvents[index].type == L4D2Skill_HunterSkeet)
+		{
+			if (family == 0)
+			{
+				count++;
+				continue;
+			}
+			else if (family == 1)
+			{
+				count += g_SkillEvents[index].wouldQualifyAtBaseline ? 1 : 0;
+				continue;
+			}
+		}
+
+		if (team == L4DTeam_Survivor && g_SkillEvents[index].type == L4D2Skill_ChargerLevel)
+		{
+			if (family == 8)
+			{
+				count++;
+				continue;
+			}
+			else if (family == 9)
+			{
+				count += g_SkillEvents[index].perfect ? 1 : 0;
+				continue;
+			}
 		}
 
 		int mapped = (team == L4DTeam_Survivor)

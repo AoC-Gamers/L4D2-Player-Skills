@@ -1,10 +1,10 @@
-# L4D2 Player Skills: `sm_skills`
+# L4D2 Player Skills: `sm_skills` y `sm_skills_stats`
 
-Este documento define el comportamiento esperado de `sm_skills`, su modelo de salida y las reglas de render para `Survivor Skills` e `Infected Skills`.
+Este documento define el comportamiento esperado de `sm_skills` y `sm_skills_stats`, su modelo de salida y las reglas de render para `Survivor Skills` e `Infected Skills`.
 
 ## Objetivo
 
-`sm_skills` debe dejar de ser una tabla comparativa centrada en abreviaturas y pasar a ser una vista legible por equipo:
+`sm_skills` y `sm_skills_stats` deben dejar de ser tablas comparativas centradas en abreviaturas y pasar a ser vistas legibles por equipo:
 
 - si el usuario pertenece a `Survivor`, imprime `Survivor Skills`
 - si el usuario pertenece a `Infected`, imprime `Infected Skills`
@@ -14,6 +14,15 @@ La salida sigue siendo:
 
 - resumen corto en chat
 - tabla detallada en consola
+
+Diferencia de responsabilidad:
+
+- `sm_skills`
+  - resumen corto del actor objetivo
+  - tabla comparativa compacta por familias
+- `sm_skills_stats`
+  - tabla comparativa más analítica
+  - puede incluir métricas derivadas como `Perfect`, `Targets` y `Best`
 
 ## Estado Actual
 
@@ -51,6 +60,24 @@ Ese formato actual funciona, pero tiene dos problemas de producto:
 `sm_skills all`
 
 - imprime ambas tablas sin depender del equipo del usuario
+
+`sm_skills_stats`
+
+- sin argumento:
+  - usa el equipo actual del cliente
+  - si el cliente está en un team no comparable, imprime ambas tablas
+
+`sm_skills_stats surv`
+
+- imprime la tabla survivor
+
+`sm_skills_stats infect`
+
+- imprime la tabla infected
+
+`sm_skills_stats all`
+
+- imprime ambas tablas
 
 ### Regla de contexto
 
@@ -126,7 +153,6 @@ La tabla survivor no debe mapear una phrase por columna. Debe agrupar por famili
 
 Incluye:
 
-- `SkeetAssisted`
 - `SkeetSingleShot`
 - `SkeetMultiShot`
 - `SkeetSingleShotFullHp`
@@ -135,6 +161,13 @@ Incluye:
 - `HunterSkeetSniperFullHp`
 - `HunterSkeetGL`
 - `HunterSkeetGLFullHp`
+
+#### SkeetPerfect
+
+Incluye:
+
+- eventos `HunterSkeet` cuyo flag `wouldQualifyAtBaseline = true`
+- representa skeets que habrían calificado desde vida base completa
 
 #### SkeetMelees
 
@@ -190,6 +223,12 @@ Incluye:
 - `ChargerLevel`
 - `ChargerLevelPerfect`
 
+#### LevelPerfect
+
+Incluye:
+
+- eventos `ChargerLevel` cuyo flag `perfect = true`
+
 #### CarAlarms
 
 Incluye:
@@ -226,7 +265,7 @@ Incluye:
 - `SpecialInfectedKillAssistHead`
 - `SpecialInfectedKillAssistTail`
 
-### Ejemplo
+### Ejemplo `sm_skills`
 
 ```text
 |------------------------------------------------------------------------------------------------------------|
@@ -263,11 +302,23 @@ Incluye:
 
 - `HunterHighPounce`
 
+#### HunterPounceBest
+
+Incluye:
+
+- mejor altura (`height`) alcanzada por `HunterHighPounce`
+
 #### JockeyPounces
 
 Incluye:
 
 - `JockeyHighPounce`
+
+#### JockeyPounceBest
+
+Incluye:
+
+- mejor altura (`height`) alcanzada por `JockeyHighPounce`
 
 #### BoomerVomit
 
@@ -275,6 +326,27 @@ Incluye:
 
 - `BoomerVomitLandedSingle`
 - `BoomerVomitLandedMulti`
+
+`BoomerVomit` cuenta eventos.
+
+#### BoomerVomitTargets
+
+Incluye:
+
+- suma de `amount` de todos los eventos `BoomerVomitLanded`
+
+#### BoomerVomitPerfect
+
+Incluye:
+
+- eventos `BoomerVomitLanded` cuyo flag `perfect = true`
+- `perfect` significa `amount >= survivor_limit`
+
+#### BoomerVomitBest
+
+Incluye:
+
+- mejor `amount` alcanzado por un `BoomerVomitLanded`
 
 #### ChargerInstaKills
 
@@ -304,7 +376,25 @@ Incluye:
 
 - `TankRockHit`
 
-### Ejemplo
+#### ChargerBowls
+
+Incluye:
+
+- `ChargerBowl`
+
+#### ChargerBowlTargets
+
+Incluye:
+
+- suma de `amount` de todos los eventos `ChargerBowl`
+
+#### ChargerBowlBest
+
+Incluye:
+
+- mejor `amount` alcanzado por un `ChargerBowl`
+
+### Ejemplo `sm_skills`
 
 ```text
 |------------------------------------------------------------------------------------------------------------|
@@ -318,6 +408,31 @@ Incluye:
 | ChargerInstaKills    |       0 |            0 | 1                                                         |
 | ChargerDeathSetups   |       0 |            0 | 1                                                         |
 | TankRockHits         |       0 |            0 | 1                                                         |
+|------------------------------------------------------------------------------------------------------------|
+```
+
+### Ejemplo `sm_skills_stats`
+
+```text
+|------------------------------------------------------------------------------------------------------------|
+| Skills -- Infected -- Round 1                                                                              |
+|------------------------------------------------------------------------------------------------------------|
+| Metrica              | lechuga | Test-Subject | IA                                                        |
+|------------------------------------------------------------------------------------------------------------|
+| HunterPounces        |       1 |            0 | 1                                                         |
+| HunterPounceBest     |     814 |            0 | 633                                                       |
+| JockeyPounces        |       0 |            1 | 0                                                         |
+| JockeyPounceBest     |       0 |          538 | 0                                                         |
+| BoomerVomit          |       2 |            0 | 1                                                         |
+| BoomerVomitTargets   |       7 |            0 | 4                                                         |
+| BoomerVomitPerfect   |       1 |            0 | 1                                                         |
+| BoomerVomitBest      |       4 |            0 | 4                                                         |
+| ChargerInstaKills    |       0 |            0 | 1                                                         |
+| ChargerDeathSetups   |       0 |            0 | 1                                                         |
+| TankRockHits         |       0 |            0 | 1                                                         |
+| ChargerBowls         |       1 |            0 | 0                                                         |
+| ChargerBowlTargets   |       3 |            0 | 0                                                         |
+| ChargerBowlBest      |       3 |            0 | 0                                                         |
 |------------------------------------------------------------------------------------------------------------|
 ```
 
@@ -335,28 +450,38 @@ Orden recomendado:
 #### Survivor
 
 1. `Skeets`
-2. `SkeetMelees`
-3. `Deadstops`
-4. `JockeyJumpStops`
-5. `SpecialClears`
-6. `TongueCuts`
-7. `SmokerClears`
-8. `BoomerPops`
-9. `ChargerLevels`
-10. `CarAlarms`
-11. `BunnyHopStreaks`
-12. `WitchCrowns`
-13. `TankRockSkeets`
-14. `SpecialInfectedKills`
+2. `SkeetPerfect` en `sm_skills_stats`
+3. `SkeetMelees`
+4. `Deadstops`
+5. `JockeyJumpStops`
+6. `SpecialClears`
+7. `TongueCuts`
+8. `SmokerClears`
+9. `BoomerPops`
+10. `ChargerLevels`
+11. `LevelPerfect` en `sm_skills_stats`
+12. `CarAlarms`
+13. `BunnyHopStreaks`
+14. `WitchCrowns`
+15. `TankRockSkeets`
+16. `SpecialInfectedKills`
 
 #### Infected
 
 1. `HunterPounces`
-2. `JockeyPounces`
-3. `BoomerVomit`
-4. `ChargerInstaKills`
-5. `ChargerDeathSetups`
-6. `TankRockHits`
+2. `HunterPounceBest` en `sm_skills_stats`
+3. `JockeyPounces`
+4. `JockeyPounceBest` en `sm_skills_stats`
+5. `BoomerVomit`
+6. `BoomerVomitTargets` en `sm_skills_stats`
+7. `BoomerVomitPerfect` en `sm_skills_stats`
+8. `BoomerVomitBest` en `sm_skills_stats`
+9. `ChargerInstaKills`
+10. `ChargerDeathSetups`
+11. `TankRockHits`
+12. `ChargerBowls`
+13. `ChargerBowlTargets` en `sm_skills_stats`
+14. `ChargerBowlBest` en `sm_skills_stats`
 
 ### Filtros por modo
 
@@ -413,9 +538,17 @@ Debe pasar a:
 - agregar una columna `IA` si existe contribución bot
 - renderizar filas por familia de skill
 
+## Notas de Semantica
+
+- `BoomerVomitLanded` siempre debe registrarse como evento válido cuando la ventana de vómito conectó al menos a un survivor.
+- `l4d2_player_skills_boomer_vomit_min_targets` solo controla el `announce`, no el tracking.
+- `BoomerVomitPerfect` se define por `amount >= survivor_limit`.
+- `BoomerVomitTargets` y `ChargerBowlTargets` son sumas de `amount`.
+- `HunterPounceBest`, `JockeyPounceBest` y otros `Best` usan el máximo observado, no el promedio.
+
 ## Alcance
 
-Este documento solo redefine `sm_skills`.
+Este documento redefine la salida de consola de `sm_skills` y `sm_skills_stats`.
 
 No cambia:
 
