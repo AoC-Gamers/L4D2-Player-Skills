@@ -502,6 +502,14 @@ void API_WriteEventAssists(Handle kv, int eventIndex)
 
 void API_WriteEventSpecialRoles(Handle kv, int eventIndex)
 {
+	if (g_SkillEvents[eventIndex].victim.userid > 0
+		|| g_SkillEvents[eventIndex].victim.accountId > 0
+		|| g_SkillEvents[eventIndex].victim.bot
+		|| g_SkillEvents[eventIndex].victim.name[0] != '\0')
+	{
+		API_SetEventPlayerKeys(kv, "victim", g_SkillEvents[eventIndex].victim);
+	}
+
 	if (g_SkillEvents[eventIndex].pinVictim.userid <= 0)
 	{
 		return;

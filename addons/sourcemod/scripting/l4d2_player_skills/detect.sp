@@ -231,6 +231,28 @@ enum struct DetectChargeVictimState
 	}
 }
 
+enum struct DetectChargerBowlState
+{
+	bool active;
+	bool emitted;
+	int carriedVictim;
+	int impactedVictims[L4D2_SKILLS_MAX_EVENT_ASSISTS];
+	int impactedCount;
+
+	void Reset()
+	{
+		this.active = false;
+		this.emitted = false;
+		this.carriedVictim = 0;
+		this.impactedCount = 0;
+
+		for (int i = 0; i < L4D2_SKILLS_MAX_EVENT_ASSISTS; i++)
+		{
+			this.impactedVictims[i] = 0;
+		}
+	}
+}
+
 enum struct DetectSiAssistState
 {
 	int attacker[L4D2_SKILLS_MAX_EVENT_ASSISTS];
@@ -262,6 +284,7 @@ DetectSmokerState g_DetectSmoker[MAXPLAYERS + 1];
 DetectDamageSnapshot g_DetectHunterDamageSnapshot[MAXPLAYERS + 1];
 DetectDamageSnapshot g_DetectChargerDamageSnapshot[MAXPLAYERS + 1];
 DetectChargeVictimState g_DetectChargeVictim[MAXPLAYERS + 1];
+DetectChargerBowlState g_DetectChargerBowl[MAXPLAYERS + 1];
 DetectSiAssistState g_DetectSiAssist[MAXPLAYERS + 1];
 int g_iDetectPinnedVictim[MAXPLAYERS + 1];
 int g_iDetectPinnerByVictim[MAXPLAYERS + 1];
@@ -374,6 +397,7 @@ void Detect_ResetAll()
 		g_DetectHunterDamageSnapshot[client].Reset();
 		g_DetectChargerDamageSnapshot[client].Reset();
 		g_DetectChargeVictim[client].Reset();
+		g_DetectChargerBowl[client].Reset();
 		g_DetectSiAssist[client].Reset();
 		g_DetectSmoker[client].Reset();
 		g_iDetectSmokerOwnerByVictim[client] = 0;
@@ -1831,6 +1855,16 @@ void Detect_EventChargerImpact(Event event)
 			Detect_IsChargerEffectivelyCharging(charger) ? 1 : 0);
 	}
 
+	bool countedBowlImpact = Detect_RecordChargerBowlImpact(charger, victim);
+	if (countedBowlImpact && Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
+	{
+		Skills_Debug(PlayerSkillsDebug_Detect,
+			"Charger bowl impact recorded. charger=%d victim=%d impacted=%d",
+			charger,
+			victim,
+			g_DetectChargerBowl[charger].impactedCount);
+	}
+
 	Detect_RecordChargeVictim(charger, victim, false);
 }
 
@@ -1942,6 +1976,8 @@ void Detect_EventChargerPummelStart(Event event)
 			charger >= 1 && charger <= MaxClients ? g_fDetectSpecialClearTimeA[charger] : -1.0,
 			charger >= 1 && charger <= MaxClients ? g_fDetectSpecialClearTimeB[charger] : -1.0);
 	}
+
+	Detect_CheckChargerBowl(charger);
 }
 
 void Detect_EventChargerPummelEnd(Event event)

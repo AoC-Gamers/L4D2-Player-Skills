@@ -41,6 +41,7 @@ enum L4D2SkillType
 	L4D2Skill_JockeyHighPounce,
 	L4D2Skill_ChargerInstaKill,
 	L4D2Skill_ChargerDeathSetup,
+	L4D2Skill_ChargerBowl,
 	L4D2Skill_SpecialPinClear,
 	L4D2Skill_BoomerVomitLanded,
 	L4D2Skill_BunnyHopStreak,
@@ -153,7 +154,8 @@ enum PlayerSkillsAnnounceChargerFlag
 	PlayerSkillsAnnounceCharger_InstaKill = 1 << 1,
 	PlayerSkillsAnnounceCharger_DeathSetup = 1 << 2,
 	PlayerSkillsAnnounceCharger_SpecialClear = 1 << 3,
-	PlayerSkillsAnnounceCharger_Kill = 1 << 4
+	PlayerSkillsAnnounceCharger_Kill = 1 << 4,
+	PlayerSkillsAnnounceCharger_Bowl = 1 << 5
 }
 
 enum PlayerSkillsAnnounceOtherFlag

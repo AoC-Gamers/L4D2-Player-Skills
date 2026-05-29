@@ -5,7 +5,7 @@
 
 int g_iAnnounceSortSession = -1;
 
-#define L4D2_SKILLS_SURVIVOR_TABLE_FAMILIES 13
+#define L4D2_SKILLS_SURVIVOR_TABLE_FAMILIES 16
 #define L4D2_SKILLS_INFECTED_TABLE_FAMILIES 6
 
 bool Announce_HasMask(ConVar cvar, int bit)
@@ -71,6 +71,41 @@ void Announce_FormatAssistNames(int eventIndex, char[] buffer, int maxlen)
 		}
 
 		StrCat(buffer, maxlen, segment);
+	}
+}
+
+void Announce_FormatChargerBowlTargets(int eventIndex, char[] firstName, int firstMaxlen, char[] secondName, int secondMaxlen)
+{
+	firstName[0] = '\0';
+	secondName[0] = '\0';
+
+	if (eventIndex < 0 || eventIndex >= L4D2_SKILLS_MAX_EVENTS)
+	{
+		return;
+	}
+
+	int charger = g_SkillEvents[eventIndex].actor.ResolveClient();
+	if (!IsValidZombieClass(charger, L4D2ZombieClass_Charger))
+	{
+		return;
+	}
+
+	if (Detect_GetChargerBowlImpactCount(charger) < 2)
+	{
+		return;
+	}
+
+	int firstVictim = Detect_GetChargerBowlImpactVictim(charger, 0);
+	int secondVictim = Detect_GetChargerBowlImpactVictim(charger, 1);
+
+	if (IsValidSurvivor(firstVictim))
+	{
+		GetClientName(firstVictim, firstName, firstMaxlen);
+	}
+
+	if (IsValidSurvivor(secondVictim))
+	{
+		GetClientName(secondVictim, secondName, secondMaxlen);
 	}
 }
 
@@ -179,6 +214,11 @@ bool Announce_ShouldAnnounceSkill(int eventIndex)
 		case L4D2Skill_ChargerKill:
 		{
 			shouldAnnounce = Announce_HasMask(g_cvAnnounceCharger, view_as<int>(PlayerSkillsAnnounceCharger_Kill));
+		}
+		case L4D2Skill_ChargerBowl:
+		{
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceCharger, view_as<int>(PlayerSkillsAnnounceCharger_Bowl))
+				|| (g_cvAnnounceCharger != null && g_cvAnnounceCharger.IntValue == 31);
 		}
 		case L4D2Skill_SpecialPinClear:
 		{
@@ -382,6 +422,7 @@ int Announce_MapSurvivorTableFamily(L4D2SkillType type)
 		case L4D2Skill_SmokerKill, L4D2Skill_BoomerKill, L4D2Skill_HunterKill, L4D2Skill_SpitterKill, L4D2Skill_JockeyKill, L4D2Skill_ChargerKill: return 12;
 		case L4D2Skill_JockeyJumpStop: return 13;
 		case L4D2Skill_JockeySkeetMelee: return 14;
+		case L4D2Skill_ChargerBowl: return 15;
 	}
 
 	return -1;
@@ -421,6 +462,7 @@ void Announce_GetSurvivorTableFamilyName(int family, char[] buffer, int maxlen)
 		case 12: strcopy(buffer, maxlen, "SpecialInfectedKills");
 		case 13: strcopy(buffer, maxlen, "JockeyJumpStops");
 		case 14: strcopy(buffer, maxlen, "JockeySkeetMelees");
+		case 15: strcopy(buffer, maxlen, "ChargerBowls");
 		default: buffer[0] = '\0';
 	}
 }
@@ -466,6 +508,7 @@ bool Announce_IsSurvivorTableFamilyVisible(int family)
 		}
 		case 13: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_JockeyJumpStop);
 		case 14: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_JockeySkeetMelee);
+		case 15: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_ChargerBowl);
 	}
 
 	return false;
@@ -513,6 +556,7 @@ int Announce_CountSurvivorTableFamilyForClient(int client, int family)
 		}
 		case 13: return Announce_CountSkillTypeForClient(client, L4D2Skill_JockeyJumpStop);
 		case 14: return Announce_CountSkillTypeForClient(client, L4D2Skill_JockeySkeetMelee);
+		case 15: return Announce_CountSkillTypeForClient(client, L4D2Skill_ChargerBowl);
 	}
 
 	return 0;
@@ -1092,6 +1136,28 @@ void Announce_Skill(int eventId)
 				actorName,
 				victimName,
 				assistList);
+		}
+
+		case L4D2Skill_ChargerBowl:
+		{
+			if (g_SkillEvents[eventIndex].amount >= 3)
+			{
+				CPrintToChatAll("%s %t", tag,
+					"ChargerBowlTeam",
+					actorName);
+			}
+			else
+			{
+				char firstTarget[64];
+				char secondTarget[64];
+				Announce_FormatChargerBowlTargets(eventIndex, firstTarget, sizeof(firstTarget), secondTarget, sizeof(secondTarget));
+
+				CPrintToChatAll("%s %t", tag,
+					"ChargerBowlPair",
+					actorName,
+					firstTarget,
+					secondTarget);
+			}
 		}
 
 		case L4D2Skill_ChargerInstaKill:

@@ -908,6 +908,7 @@ stock void Skills_GetSkillTypeName(L4D2SkillType type, char[] buffer, int maxlen
 		case L4D2Skill_JockeyHighPounce: strcopy(buffer, maxlen, "JockeyHighPounce");
 		case L4D2Skill_ChargerInstaKill: strcopy(buffer, maxlen, "ChargerInstaKill");
 		case L4D2Skill_ChargerDeathSetup: strcopy(buffer, maxlen, "ChargerDeathSetup");
+		case L4D2Skill_ChargerBowl: strcopy(buffer, maxlen, "ChargerBowl");
 		case L4D2Skill_SpecialPinClear: strcopy(buffer, maxlen, "SpecialPinClear");
 		case L4D2Skill_BoomerVomitLanded: strcopy(buffer, maxlen, "BoomerVomitLanded");
 		case L4D2Skill_BunnyHopStreak: strcopy(buffer, maxlen, "BunnyHopStreak");
@@ -962,7 +963,7 @@ stock void Skills_FormatEventPlayerRoleName(int eventIndex, int slot, char[] buf
 			{
 				zombieClass = L4D2ZombieClass_Jockey;
 			}
-			case L4D2Skill_ChargerLevel, L4D2Skill_ChargerInstaKill, L4D2Skill_ChargerDeathSetup:
+			case L4D2Skill_ChargerLevel, L4D2Skill_ChargerInstaKill, L4D2Skill_ChargerDeathSetup, L4D2Skill_ChargerBowl:
 			{
 				zombieClass = L4D2ZombieClass_Charger;
 			}
@@ -1020,7 +1021,7 @@ stock void Skills_FormatEventPlayerRoleName(int eventIndex, int slot, char[] buf
 			{
 				zombieClass = L4D2ZombieClass_Boomer;
 			}
-			case L4D2Skill_ChargerInstaKill, L4D2Skill_ChargerDeathSetup:
+		case L4D2Skill_ChargerInstaKill, L4D2Skill_ChargerDeathSetup, L4D2Skill_ChargerBowl:
 			{
 				zombieClass = L4D2ZombieClass_Charger;
 			}
@@ -1097,7 +1098,7 @@ stock bool Skills_IsSkillTypeEnabledInCurrentMode(L4D2SkillType type)
 		{
 			return Skills_IsZombieClassEnabledInCurrentContext(L4D2ZombieClass_Boomer);
 		}
-		case L4D2Skill_ChargerLevel, L4D2Skill_ChargerInstaKill, L4D2Skill_ChargerDeathSetup:
+		case L4D2Skill_ChargerLevel, L4D2Skill_ChargerInstaKill, L4D2Skill_ChargerDeathSetup, L4D2Skill_ChargerBowl:
 		{
 			return Skills_IsZombieClassEnabledInCurrentContext(L4D2ZombieClass_Charger);
 		}
@@ -1305,6 +1306,10 @@ stock int Skills_GetEventRating(int eventIndex)
 		case L4D2Skill_ChargerDeathSetup:
 		{
 			return 2;
+		}
+		case L4D2Skill_ChargerBowl:
+		{
+			return g_SkillEvents[eventIndex].amount >= 3 ? 3 : 2;
 		}
 		case L4D2Skill_WitchDead:
 		{

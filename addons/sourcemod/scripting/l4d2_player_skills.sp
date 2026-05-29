@@ -256,7 +256,7 @@ public void OnPluginStart()
 	g_cvAnnounceBoomer			= CreateConVar("l4d2_player_skills_announce_boomer", "7", "Bitmask for Boomer announcements. 1=pop 2=vomit 4=kill 7=all.");
 	g_cvAnnounceSpitter			= CreateConVar("l4d2_player_skills_announce_spitter", "1", "Bitmask for Spitter announcements. 1=kill 1=all.");
 	g_cvAnnounceJockey			= CreateConVar("l4d2_player_skills_announce_jockey", "31", "Bitmask for Jockey announcements. 1=high_pounce 2=special_clear 4=kill 8=jump_stop 16=skeet_melee 31=all.");
-	g_cvAnnounceCharger			= CreateConVar("l4d2_player_skills_announce_charger", "31", "Bitmask for Charger announcements. 1=level 2=insta_kill 4=death_setup 8=special_clear 16=kill 31=all.");
+	g_cvAnnounceCharger			= CreateConVar("l4d2_player_skills_announce_charger", "63", "Bitmask for Charger announcements. 1=level 2=insta_kill 4=death_setup 8=special_clear 16=kill 32=bowl 63=all.");
 	g_cvAnnounceOther			= CreateConVar("l4d2_player_skills_announce_other", "3", "Bitmask for other announcements. 1=bunnyhop 2=car_alarm 3=all.");
 	g_cvWitchPrintMaxEntries	= CreateConVar("l4d2_player_skills_witch_print_max_entries", "4", "Maximum number of Witch damage entries to print before combining the rest as others.");
 	g_cvHunterHighPounceHeight	= CreateConVar("l4d2_player_skills_hunter_high_pounce_height", "400", "Minimum vertical height for HunterHighPounce.");

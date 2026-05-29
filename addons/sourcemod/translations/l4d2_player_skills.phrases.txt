@@ -366,6 +366,27 @@
 		"es"		"{olive}{1} {blue}hizo {green}PerfectLevel {blue}a {olive}{2}{blue}."
 	}
 
+	"ChargerBowl"
+	{
+		"#format"	"{1:s},{2:d}"
+		"en"		"{olive}{1} {blue}landed a {green}Bowl {blue}hitting {green}{2}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Ariete {blue}golpeando a {green}{2}{blue}."
+	}
+
+	"ChargerBowlPair"
+	{
+		"#format"	"{1:s},{2:s},{3:s}"
+		"en"		"{olive}{1} {blue}landed a {green}Bowl {blue}hitting {olive}{2} {blue}and {olive}{3}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Ariete {blue}impactando a {olive}{2} {blue}y {olive}{3}{blue}."
+	}
+
+	"ChargerBowlTeam"
+	{
+		"#format"	"{1:s}"
+		"en"		"{olive}{1} {blue}landed a {green}Bowl {blue}hitting {green}the whole team{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Ariete {blue}impactando a {green}todo el equipo{blue}."
+	}
+
 	"ChargerInstaKillCarry"
 	{
 		"#format"	"{1:s},{2:s},{3:.0f}"

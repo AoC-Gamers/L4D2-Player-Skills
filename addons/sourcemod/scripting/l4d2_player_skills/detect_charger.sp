@@ -15,6 +15,7 @@ void Detect_ResetCharger(int charger)
 	g_fDetectChargerChargeSeenAt[charger] = 0.0;
 	g_bDetectChargerKilledMelee[charger] = false;
 	g_bDetectChargerKilledCharging[charger] = false;
+	g_DetectChargerBowl[charger].Reset();
 }
 
 void Detect_SetChargerCharging(int charger, bool state)
@@ -77,6 +78,7 @@ void Detect_EventChargerChargeStart(Event event)
 			charger);
 	}
 
+	g_DetectChargerBowl[charger].Reset();
 	Detect_SetChargerCharging(charger, true);
 }
 
@@ -152,6 +154,100 @@ void Detect_EventChargerCarryStart(Event event)
 			victim,
 			(charger > 0 && charger <= MaxClients && Detect_IsChargerCharging(charger)) ? 1 : 0,
 			(charger > 0 && charger <= MaxClients && Detect_IsChargerEffectivelyCharging(charger)) ? 1 : 0);
+	}
+
+	if (IsValidZombieClass(charger, L4D2ZombieClass_Charger) && IsValidSurvivor(victim))
+	{
+		g_DetectChargerBowl[charger].active = true;
+		g_DetectChargerBowl[charger].emitted = false;
+		g_DetectChargerBowl[charger].carriedVictim = victim;
+		g_DetectChargerBowl[charger].impactedCount = 0;
+	}
+}
+
+bool Detect_RecordChargerBowlImpact(int charger, int victim)
+{
+	if (!IsValidZombieClass(charger, L4D2ZombieClass_Charger)
+		|| !IsValidSurvivor(victim)
+		|| !g_DetectChargerBowl[charger].active
+		|| g_DetectChargerBowl[charger].carriedVictim == victim)
+	{
+		return false;
+	}
+
+	for (int i = 0; i < g_DetectChargerBowl[charger].impactedCount && i < L4D2_SKILLS_MAX_EVENT_ASSISTS; i++)
+	{
+		if (g_DetectChargerBowl[charger].impactedVictims[i] == victim)
+		{
+			return false;
+		}
+	}
+
+	if (g_DetectChargerBowl[charger].impactedCount >= L4D2_SKILLS_MAX_EVENT_ASSISTS)
+	{
+		return false;
+	}
+
+	g_DetectChargerBowl[charger].impactedVictims[g_DetectChargerBowl[charger].impactedCount] = victim;
+	g_DetectChargerBowl[charger].impactedCount++;
+	return true;
+}
+
+int Detect_GetChargerBowlImpactCount(int charger)
+{
+	if (charger < 1 || charger > MaxClients)
+	{
+		return 0;
+	}
+
+	return g_DetectChargerBowl[charger].impactedCount;
+}
+
+int Detect_GetChargerBowlImpactVictim(int charger, int index)
+{
+	if (charger < 1 || charger > MaxClients
+		|| index < 0
+		|| index >= g_DetectChargerBowl[charger].impactedCount
+		|| index >= L4D2_SKILLS_MAX_EVENT_ASSISTS)
+	{
+		return 0;
+	}
+
+	return g_DetectChargerBowl[charger].impactedVictims[index];
+}
+
+void Detect_CheckChargerBowl(int charger)
+{
+	if (!IsValidZombieClass(charger, L4D2ZombieClass_Charger)
+		|| !g_DetectChargerBowl[charger].active
+		|| g_DetectChargerBowl[charger].emitted
+		|| g_DetectChargerBowl[charger].impactedCount < 2)
+	{
+		return;
+	}
+
+	int eventId = Skills_CreateEvent(L4D2Skill_ChargerBowl);
+	int eventIndex = Skills_GetEventIndex(eventId);
+	if (eventIndex == -1)
+	{
+		return;
+	}
+
+	g_SkillEvents[eventIndex].actor.Capture(charger);
+	g_SkillEvents[eventIndex].zombieClass = view_as<int>(L4D2ZombieClass_Charger);
+	g_SkillEvents[eventIndex].amount = g_DetectChargerBowl[charger].impactedCount;
+	if (IsValidSurvivor(g_DetectChargerBowl[charger].carriedVictim))
+	{
+		g_SkillEvents[eventIndex].victim.Capture(g_DetectChargerBowl[charger].carriedVictim);
+		g_SkillEvents[eventIndex].pinVictim.Capture(g_DetectChargerBowl[charger].carriedVictim);
+	}
+
+	g_DetectChargerBowl[charger].emitted = true;
+
+	Action result = API_FireSkillDetected(eventId, L4D2Skill_ChargerBowl);
+	if (result < Plugin_Handled)
+	{
+		Announce_Skill(eventId);
 	}
 }
 

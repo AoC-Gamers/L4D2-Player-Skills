@@ -151,12 +151,12 @@ Este native escribe los datos útiles del evento:
 
 - metadata del evento
 - actor principal
+- víctima cuando exista
 - lista de asistencias
 - contexto específico de la skill dentro de `skill_properties`
 
 No incluye:
 
-- víctima
 - tablas completas de daño de boss
 - strings ya formateados para chat
 
@@ -264,6 +264,7 @@ Hoy `PlayerSkills_FillEventKeyValues(...)` ya expone:
 - `assists[].bot`
 - `assists[].damage`
 - `assists[].shots`
+- `assists[].weaponid`
 
 Pero la capa de natives genéricos no expone bien:
 
@@ -409,6 +410,7 @@ Skills implementadas hoy:
 - `JockeySkeetMelee`
 - `ChargerInstaKill`
 - `ChargerDeathSetup`
+- `ChargerBowl`
 - `SpecialPinClear`
 - `BoomerVomitLanded`
 - `BunnyHopStreak`
@@ -435,6 +437,11 @@ event
     "actor_name"            "Lechuga"
     "actor_bot"             "0"
 
+    "victim_userid"         "17"
+    "victim_accountid"      "0"
+    "victim_name"           "Hunter (IA)"
+    "victim_bot"            "1"
+
     "assists_count"         "1"
 
     "assists"
@@ -445,17 +452,21 @@ event
             "accountid"     "654321"
             "name"          "Pasta"
             "bot"           "0"
+            "damage"        "84"
+            "shots"         "1"
+            "weaponid"      "5"
         }
     }
 
     "skill_properties"
     {
-        "damage"                "250"
-        "chip_damage"           "40"
-        "shots"                 "2"
-        "would_qualify_at_baseline"   "1"
-        "headshot"              "1"
-        "sniper"                "1"
+        "damage"                    "166"
+        "actor_damage"              "166"
+        "assist_scope"              "2"
+        "chip_damage"               "84"
+        "shots"                     "1"
+        "rating"                    "3"
+        "would_qualify_at_baseline" "1"
     }
 }
 ```
@@ -664,12 +675,17 @@ event
 event
 {
     "id"                    "24"
-    "type_id"               "17"
+    "type_id"               "18"
 
     "actor_userid"          "41"
     "actor_accountid"       "123456"
     "actor_name"            "Lechuga"
     "actor_bot"             "0"
+
+    "victim_userid"         "16"
+    "victim_accountid"      "0"
+    "victim_name"           "Smoker (IA)"
+    "victim_bot"            "1"
 
     "pinvictim_userid"      "42"
     "pinvictim_accountid"   "654321"
@@ -685,6 +701,7 @@ event
     "skill_properties"
     {
         "zombie_class"          "1"
+        "rating"                "2"
         "time_a"                "0.4"
         "time_b"                "0.9"
         "with_shove"            "1"
@@ -705,14 +722,31 @@ event
     "actor_name"        "Lechuga"
     "actor_bot"         "0"
 
-    "assists_count"     "0"
+    "victim_userid"     "0"
+    "victim_accountid"  "0"
+    "victim_name"       "Boomer (IA)"
+    "victim_bot"        "1"
+
+    "assists_count"     "1"
 
     "assists"
     {
+        "0"
+        {
+            "userid"        "42"
+            "accountid"     "654321"
+            "name"          "Pasta"
+            "bot"           "0"
+            "damage"        "19"
+            "shots"         "1"
+            "weaponid"      "5"
+        }
     }
 
     "skill_properties"
     {
+        "assist_scope"    "2"
+        "rating"          "2"
         "shove_count"    "1"
         "time_a"         "1.7"
     }
@@ -758,6 +792,62 @@ event
     "actor_name"        "Lechuga"
     "actor_bot"         "0"
 
+    "victim_userid"     "15"
+    "victim_accountid"  "0"
+    "victim_name"       "Charger (IA)"
+    "victim_bot"        "1"
+
+    "assists_count"     "1"
+
+    "assists"
+    {
+        "0"
+        {
+            "userid"        "42"
+            "accountid"     "654321"
+            "name"          "Pasta"
+            "bot"           "0"
+            "damage"        "184"
+            "shots"         "1"
+            "weaponid"      "19"
+        }
+    }
+
+    "skill_properties"
+    {
+        "assist_scope"  "2"
+        "damage"        "600"
+        "rating"        "2"
+        "shots"         "1"
+        "chip_damage"   "184"
+        "would_qualify_at_baseline" "1"
+    }
+}
+```
+
+### ChargerBowl
+
+```text
+event
+{
+    "id"                "28"
+    "type_id"           "17"
+
+    "actor_userid"      "15"
+    "actor_accountid"   "0"
+    "actor_name"        "Charger (IA)"
+    "actor_bot"         "1"
+
+    "victim_userid"     "41"
+    "victim_accountid"  "123456"
+    "victim_name"       "Lechuga"
+    "victim_bot"        "0"
+
+    "pinvictim_userid"  "41"
+    "pinvictim_accountid" "123456"
+    "pinvictim_name"    "Lechuga"
+    "pinvictim_bot"     "0"
+
     "assists_count"     "0"
 
     "assists"
@@ -766,11 +856,25 @@ event
 
     "skill_properties"
     {
-        "damage"        "410"
-        "chip_damage"   "190"
-        "would_qualify_at_baseline" "1"
+        "amount"        "3"
+        "rating"        "3"
+        "zombie_class"  "6"
     }
 }
+```
+
+Announce esperado:
+
+- si `amount = 2`
+
+```text
+[★★] Charger (IA) hizo Ariete impactando a patitas y lechuga.
+```
+
+- si `amount = 3`
+
+```text
+[★★★] Charger (IA) hizo Ariete impactando a todo el equipo.
 ```
 
 ### ChargerInstaKill
@@ -1092,5 +1196,13 @@ Ejemplos:
 - `TankRockSkeet` y `TankRockHit` no agregan propiedades especiales hoy
 - `CarAlarmTriggered` usa `reason`, `indirect` y `forced`; además puede incluir el infectado responsable en `victim`
 - `BunnyHopStreak` necesita `streak` y `max_velocity`
+
+Notas prácticas:
+
+- `victim_*` aparece cuando el evento tiene una víctima semántica útil
+- `pinvictim_*` aparece cuando el evento además necesita identificar al survivor dominado o cargado
+- `assist_scope`
+  - `1` = `LifeKill`
+  - `2` = `SkillWindow`
 
 La regla actual es agregar contexto solo cuando ayude a reconstruir el significado real del evento.
