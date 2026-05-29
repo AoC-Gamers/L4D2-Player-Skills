@@ -377,6 +377,28 @@ Para `damage_scope`:
 Esto preserva consumidores actuales y permite a consumidores nuevos interpretar
 correctamente el origen semántico del assist.
 
+## Technical Context Fields
+
+Hay campos que siguen siendo tecnicos aunque el chat no los use siempre de forma
+literal.
+
+Hoy eso aplica especialmente a:
+
+- `chip_damage`
+  - representa daño previo respecto del baseline relevante del evento;
+  - puede incluir contribución propia del actor y/o de otros jugadores según la skill;
+  - sigue siendo util para `perfect`, analytics y consumidores externos;
+  - no implica que el announce de chat deba imprimir la palabra `chip`.
+
+Reglas practicas:
+
+- `HunterSkeet`
+  - el chat usa `damage/shots`, `perfect` y `assists`;
+  - `chip_damage` sigue existiendo en payload.
+- `ChargerLevel`
+  - el chat usa `PerfectLevel`, `Level`, `Level (dmg/shots)` y `assists`;
+  - `chip_damage` sigue existiendo en payload.
+
 ## Perfect Variants
 
 Las variantes `perfect` no deben exponer assists.
@@ -442,11 +464,15 @@ Skills implementadas hoy:
 - `TankRockHit`
 - `HunterHighPounce`
 - `JockeyHighPounce`
+- `SmokerLedgeHang`
+- `JockeyLedgeHang`
 - `JockeyJumpStop`
 - `JockeySkeetMelee`
 - `ChargerInstaKill`
 - `ChargerDeathSetup`
+- `ChargerLedgeHang`
 - `ChargerBowl`
+- `TankLedgeHang`
 - `SpecialPinClear`
 - `BoomerVomitLanded`
 - `BunnyHopStreak`
@@ -503,7 +529,6 @@ event
         "chip_damage"               "84"
         "shots"                     "1"
         "rating"                    "3"
-        "would_qualify_at_baseline" "1"
     }
 }
 ```
@@ -531,7 +556,6 @@ event
     {
         "damage"                    "250"
         "shots"                     "1"
-        "would_qualify_at_baseline" "1"
         "perfect"                   "1"
     }
 }
@@ -607,7 +631,6 @@ event
     {
         "damage"                    "250"
         "shots"                     "1"
-        "would_qualify_at_baseline" "1"
         "grenade_launcher"          "1"
     }
 }
@@ -747,7 +770,6 @@ event
     {
         "damage"                    "325"
         "shots"                     "1"
-        "would_qualify_at_baseline" "1"
         "perfect"                   "1"
     }
 }
@@ -958,10 +980,16 @@ event
         "rating"                      "2"
         "shots"                       "1"
         "chip_damage"                 "184"
-        "would_qualify_at_baseline" "1"
     }
 }
 ```
+
+Notas:
+
+- si `perfect = 1`, el evento representa `PerfectLevel`;
+- si `perfect` no existe y `chip_damage > 0` o hay assists, representa la variante
+  no perfect de `Level`;
+- el announce visible no necesita imprimir la palabra `chip`.
 
 ### ChargerBowl
 
@@ -1042,9 +1070,41 @@ event
         "was_carried"       "1"
         "damage"            "150"
         "incapped"          "1"
-        "ledge_hang"        "1"
         "fatal_fall"        "1"
         "deadly_slam"       "1"
+    }
+}
+```
+
+### ChargerLedgeHang
+
+```text
+event
+{
+    "id"                "29"
+    "type_id"           "19"
+
+    "actor_userid"      "15"
+    "actor_accountid"   "0"
+    "actor_name"        "Charger"
+    "actor_bot"         "1"
+
+    "victim_userid"     "41"
+    "victim_accountid"  "123456"
+    "victim_name"       "Lechuga"
+    "victim_bot"        "0"
+
+    "assists_count"     "0"
+
+    "assists"
+    {
+    }
+
+    "skill_properties"
+    {
+        "zombie_class"      "6"
+        "was_carried"       "1"
+        "ledge_hang"        "1"
     }
 }
 ```
@@ -1325,9 +1385,9 @@ No todas las skills necesitan los mismos campos.
 
 Ejemplos:
 
-- `Skeet` necesita `damage`, `chip_damage`, `shots`, `would_qualify_at_baseline`
+- `Skeet` necesita `damage`, `chip_damage`, `shots` y `perfect` cuando aplique
 - `BoomerPop` necesita `shove_count`, `time_a`
-- `ChargerLevel` usa `damage`, `chip_damage` y `would_qualify_at_baseline`
+- `ChargerLevel` usa `damage`, `chip_damage` y `perfect` cuando aplique
 - `TankDead` usa `tank_session`
 - `WitchDead` usa `damage`, `chip_damage`, `shots`, `crown`, `startled` y `witch_session` según el caso
 - `WitchIncap` usa `amount`, `startled` y `witch_session`
@@ -1347,3 +1407,23 @@ Notas prácticas:
   - `2` = `SkillWindow`
 
 La regla actual es agregar contexto solo cuando ayude a reconstruir el significado real del evento.
+
+## Chat vs Payload
+
+El payload API y el announce de chat no tienen por qué usar exactamente el mismo
+lenguaje.
+
+Regla actual:
+
+- el payload conserva contexto tecnico como `chip_damage`, `damage_scope` y
+  `assist_scope`;
+- el chat prioriza lectura corta y semantica de jugada.
+
+Ejemplos:
+
+- `HunterSkeet`
+  - payload puede incluir `chip_damage`;
+  - chat puede omitir la palabra `chip` y mostrar solo `(damage/shots)` y assists.
+- `ChargerLevel`
+  - payload puede incluir `chip_damage`;
+  - chat puede mostrar `Level (dmg/shots)` en vez de wording explicito de chip.

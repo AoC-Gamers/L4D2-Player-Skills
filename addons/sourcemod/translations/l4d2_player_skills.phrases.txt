@@ -160,44 +160,30 @@
 
 	"SkeetSingleShotAssisted"
 	{
-		"#format"	"{1:s},{2:s},{3:d},{4:s}"
-		"en"		"{olive}{1} {blue}skeeted {olive}{2} {blue}with {green}{3} {blue}shot, assisted by {olive}{4}{blue}."
-		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}de {green}{3} {blue}disparo, asistido por {olive}{4}{blue}."
+		"#format"	"{1:s},{2:s},{3:d},{4:d},{5:s}"
+		"en"		"{olive}{1} {blue}skeeted {olive}{2} {blue}({green}{3}{blue}/{green}{4}{blue}), assisted by {olive}{5}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}({green}{3}{blue}/{green}{4}{blue}), asistido por {olive}{5}{blue}."
 	}
 
 	"SkeetMultiShotAssisted"
 	{
-		"#format"	"{1:s},{2:s},{3:d},{4:s}"
-		"en"		"{olive}{1} {blue}skeeted {olive}{2} {blue}with {green}{3} {blue}shots, assisted by {olive}{4}{blue}."
-		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}de {green}{3} {blue}disparos, asistido por {olive}{4}{blue}."
+		"#format"	"{1:s},{2:s},{3:d},{4:d},{5:s}"
+		"en"		"{olive}{1} {blue}skeeted {olive}{2} {blue}({green}{3}{blue}/{green}{4}{blue}), assisted by {olive}{5}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}({green}{3}{blue}/{green}{4}{blue}), asistido por {olive}{5}{blue}."
 	}
 
 	"SkeetSingleShot"
 	{
-		"#format"	"{1:s},{2:s},{3:d}"
-		"en"		"{olive}{1} {blue}skeeted {olive}{2} {blue}with {green}{3} {blue}shot."
-		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}de {green}{3} {blue}disparo."
+		"#format"	"{1:s},{2:s},{3:d},{4:d}"
+		"en"		"{olive}{1} {blue}skeeted {olive}{2} {blue}({green}{3}{blue}/{green}{4}{blue})."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}({green}{3}{blue}/{green}{4}{blue})."
 	}
 
 	"SkeetMultiShot"
 	{
-		"#format"	"{1:s},{2:s},{3:d}"
-		"en"		"{olive}{1} {blue}skeeted {olive}{2} {blue}with {green}{3} {blue}shots."
-		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}de {green}{3} {blue}disparos."
-	}
-
-	"SkeetSingleShotFullHp"
-	{
 		"#format"	"{1:s},{2:s},{3:d},{4:d}"
-		"en"		"{olive}{1} {blue}skeeted {olive}{2} {blue}for {green}{3} {blue}damage with {green}{4} {blue}shot {olive}(would kill at full HP){blue}."
-		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}con {green}{3} {blue}de daño de {green}{4} {blue}disparo {olive}(lo mataba con vida completa){blue}."
-	}
-
-	"SkeetMultiShotFullHp"
-	{
-		"#format"	"{1:s},{2:s},{3:d},{4:d}"
-		"en"		"{olive}{1} {blue}skeeted {olive}{2} {blue}for {green}{3} {blue}damage with {green}{4} {blue}shots {olive}(would kill at full HP){blue}."
-		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}con {green}{3} {blue}de daño de {green}{4} {blue}disparos {olive}(lo mataba con vida completa){blue}."
+		"en"		"{olive}{1} {blue}skeeted {olive}{2} {blue}({green}{3}{blue}/{green}{4}{blue})."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}({green}{3}{blue}/{green}{4}{blue})."
 	}
 
 	"SkeetMelee"
@@ -221,11 +207,18 @@
 		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}con sniper de {green}{3}{blue}."
 	}
 
-	"HunterSkeetSniperFullHp"
+	"HunterSkeetSniperPerfect"
 	{
 		"#format"	"{1:s},{2:s},{3:s}"
-		"en"		"{olive}{1} {blue}skeeted {olive}{2} {blue}with a sniper {green}{3} {olive}(would kill at full HP){blue}."
-		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}con sniper de {green}{3} {olive}(lo mataba con vida completa){blue}."
+		"en"		"{olive}{1} {blue}landed a {green}PerfectSkeet {blue}on {olive}{2} {blue}with a sniper {green}{3}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}PerfectSkeet {blue}a {olive}{2} {blue}con sniper de {green}{3}{blue}."
+	}
+
+	"HunterSkeetSniperAssist"
+	{
+		"#format"	"{1:s},{2:s},{3:s},{4:s}"
+		"en"		"{olive}{1} {blue}skeeted {olive}{2} {blue}with a sniper {green}{3}{blue}, assisted by {olive}{4}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}con sniper de {green}{3}{blue}, asistido por {olive}{4}{blue}."
 	}
 
 	"HunterSkeetGL"
@@ -235,11 +228,32 @@
 		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}con impacto directo de {green}Grenade Launcher {blue}por {green}{3} {blue}de daño."
 	}
 
-	"HunterSkeetGLFullHp"
+	"HunterSkeetGLPerfect"
 	{
 		"#format"	"{1:s},{2:s},{3:d}"
-		"en"		"{olive}{1} {blue}skeeted {olive}{2} {blue}with a direct {green}Grenade Launcher {blue}hit for {green}{3} {blue}damage {olive}(would kill at full HP){blue}."
-		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}con impacto directo de {green}Grenade Launcher {blue}por {green}{3} {blue}de daño {olive}(lo mataba con vida completa){blue}."
+		"en"		"{olive}{1} {blue}landed a {green}PerfectSkeet {blue}on {olive}{2} {blue}with a direct {green}Grenade Launcher {blue}hit for {green}{3} {blue}damage."
+		"es"		"{olive}{1} {blue}hizo {green}PerfectSkeet {blue}a {olive}{2} {blue}con impacto directo de {green}Grenade Launcher {blue}por {green}{3} {blue}de daño."
+	}
+
+	"HunterSkeetGLAssist"
+	{
+		"#format"	"{1:s},{2:s},{3:d},{4:s}"
+		"en"		"{olive}{1} {blue}skeeted {olive}{2} {blue}with a direct {green}Grenade Launcher {blue}hit for {green}{3} {blue}damage, assisted by {olive}{4}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}con impacto directo de {green}Grenade Launcher {blue}por {green}{3} {blue}de daño, asistido por {olive}{4}{blue}."
+	}
+
+	"PerfectSkeetSingleShot"
+	{
+		"#format"	"{1:s},{2:s},{3:d},{4:d}"
+		"en"		"{olive}{1} {blue}landed a {green}PerfectSkeet {blue}on {olive}{2} {blue}({green}{3}{blue}/{green}{4}{blue})."
+		"es"		"{olive}{1} {blue}hizo {green}PerfectSkeet {blue}a {olive}{2} {blue}({green}{3}{blue}/{green}{4}{blue})."
+	}
+
+	"PerfectSkeetMultiShot"
+	{
+		"#format"	"{1:s},{2:s},{3:d},{4:d}"
+		"en"		"{olive}{1} {blue}landed a {green}PerfectSkeet {blue}on {olive}{2} {blue}({green}{3}{blue}/{green}{4}{blue})."
+		"es"		"{olive}{1} {blue}hizo {green}PerfectSkeet {blue}a {olive}{2} {blue}({green}{3}{blue}/{green}{4}{blue})."
 	}
 
 	"HunterDeadstop"
@@ -261,6 +275,20 @@
 		"#format"	"{1:s},{2:s},{3:.0f}"
 		"en"		"{olive}{1} {red}landed a {green}HighPounce {red}on {olive}{2} {red}from {green}{3} {red}height."
 		"es"		"{olive}{1} {red}hizo {green}HighPounce {red}a {olive}{2} {red}desde {green}{3} {red}de altura."
+	}
+
+	"SmokerLedgeHang"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"{olive}{1} {red}left {olive}{2} {red}hanging from the ledge."
+		"es"		"{olive}{1} {red}dejo colgando a {olive}{2}{red}."
+	}
+
+	"JockeyLedgeHang"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"{olive}{1} {red}left {olive}{2} {red}hanging from the ledge."
+		"es"		"{olive}{1} {red}dejo colgando a {olive}{2}{red}."
 	}
 
 	"JockeyJumpStop"
@@ -382,18 +410,18 @@
 		"es"		"{olive}{1} {blue}hizo {green}Level {blue}a {olive}{2}{blue}, asistido por {olive}{3}{blue}."
 	}
 
-	"ChargerLevelChip"
+	"ChargerLevelStat"
 	{
 		"#format"	"{1:s},{2:s},{3:s}"
-		"en"		"{olive}{1} {blue}leveled {olive}{2}{blue} with chip {olive}({3}){blue}."
-		"es"		"{olive}{1} {blue}hizo {green}Level {blue}a {olive}{2}{blue} con chip {olive}({3}){blue}."
+		"en"		"{olive}{1} {blue}leveled {olive}{2} {blue}({green}{3}{blue})."
+		"es"		"{olive}{1} {blue}hizo {green}Level {blue}a {olive}{2} {blue}({green}{3}{blue})."
 	}
 
-	"ChargerLevelChipAssist"
+	"ChargerLevelStatAssist"
 	{
 		"#format"	"{1:s},{2:s},{3:s},{4:s}"
-		"en"		"{olive}{1} {blue}leveled {olive}{2}{blue} with chip {olive}({3}){blue}, assisted by {olive}{4}{blue}."
-		"es"		"{olive}{1} {blue}hizo {green}Level {blue}a {olive}{2}{blue} con chip {olive}({3}){blue}, asistido por {olive}{4}{blue}."
+		"en"		"{olive}{1} {blue}leveled {olive}{2} {blue}({green}{3}{blue}), assisted by {olive}{4}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Level {blue}a {olive}{2} {blue}({green}{3}{blue}), asistido por {olive}{4}{blue}."
 	}
 
 	"ChargerLevelPerfect"
@@ -438,32 +466,32 @@
 		"es"		"{olive}{1} {red}hizo {green}InstaKill {red}a {olive}{2} {red}desde {green}{3} {red}de altura."
 	}
 
-	"ChargerInstaKillCarryLedge"
-	{
-		"#format"	"{1:s},{2:s},{3:.0f}"
-		"en"		"{olive}{1} {red}landed a ledge {green}InstaKill {red}on {olive}{2} {red}from {green}{3} {red}height."
-		"es"		"{olive}{1} {red}hizo {green}InstaKill {red}de ledge a {olive}{2} {red}desde {green}{3} {red}de altura."
-	}
-
 	"ChargerInstaKillCarryDeadly"
 	{
 		"#format"	"{1:s},{2:s},{3:.0f}"
-		"en"		"{olive}{1} {red}landed a deadly {green}InstaKill {red}on {olive}{2} {red}from {green}{3} {red}height."
-		"es"		"{olive}{1} {red}hizo {green}InstaKill {red}deadly a {olive}{2} {red}desde {green}{3} {red}de altura."
+		"en"		"{olive}{1} {red}landed an {green}InstaKill {red}on {olive}{2} {red}slamming them to death from {green}{3} {red}height."
+		"es"		"{olive}{1} {red}hizo {green}InstaKill {red}a {olive}{2} {red}estrellandolo hasta matarlo desde {green}{3} {red}de altura."
 	}
 
 	"ChargerInstaKillCarryFatalFall"
 	{
 		"#format"	"{1:s},{2:s},{3:.0f}"
-		"en"		"{olive}{1} {red}landed a fatal-fall {green}InstaKill {red}on {olive}{2} {red}from {green}{3} {red}height."
-		"es"		"{olive}{1} {red}hizo {green}InstaKill {red}por fatal fall a {olive}{2} {red}desde {green}{3} {red}de altura."
+		"en"		"{olive}{1} {red}landed an {green}InstaKill {red}on {olive}{2} {red}dropping them to death from {green}{3} {red}height."
+		"es"		"{olive}{1} {red}hizo {green}InstaKill {red}a {olive}{2} {red}haciendolo caer hasta matarlo desde {green}{3} {red}de altura."
 	}
 
 	"ChargerInstaKillCarryIncap"
 	{
 		"#format"	"{1:s},{2:s},{3:.0f}"
-		"en"		"{olive}{1} {red}finished an incap {green}InstaKill {red}on {olive}{2} {red}from {green}{3} {red}height."
-		"es"		"{olive}{1} {red}cerro un {green}InstaKill {red}tras incap a {olive}{2} {red}desde {green}{3} {red}de altura."
+		"en"		"{olive}{1} {red}landed an {green}InstaKill {red}on {olive}{2} {red}after leaving them incapacitated from {green}{3} {red}height."
+		"es"		"{olive}{1} {red}hizo {green}InstaKill {red}a {olive}{2} {red}tras dejarlo incapacitado desde {green}{3} {red}de altura."
+	}
+
+	"ChargerInstaKillIncapSimple"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"{olive}{1} {red}landed an {green}InstaKill {red}on {olive}{2}{red}."
+		"es"		"{olive}{1} {red}hizo {green}InstaKill {red}a {olive}{2}{red}."
 	}
 
 	"ChargerInstaKillImpact"
@@ -473,32 +501,25 @@
 		"es"		"{olive}{1} {red}hizo {green}InstaKill {red}de impacto a {olive}{2} {red}desde {green}{3} {red}de altura."
 	}
 
-	"ChargerInstaKillImpactLedge"
-	{
-		"#format"	"{1:s},{2:s},{3:.0f}"
-		"en"		"{olive}{1} {red}landed an impact ledge {green}InstaKill {red}on {olive}{2} {red}from {green}{3} {red}height."
-		"es"		"{olive}{1} {red}hizo {green}InstaKill {red}de impacto en ledge a {olive}{2} {red}desde {green}{3} {red}de altura."
-	}
-
 	"ChargerInstaKillImpactDeadly"
 	{
 		"#format"	"{1:s},{2:s},{3:.0f}"
-		"en"		"{olive}{1} {red}landed a deadly impact {green}InstaKill {red}on {olive}{2} {red}from {green}{3} {red}height."
-		"es"		"{olive}{1} {red}hizo {green}InstaKill {red}deadly de impacto a {olive}{2} {red}desde {green}{3} {red}de altura."
+		"en"		"{olive}{1} {red}landed an impact {green}InstaKill {red}on {olive}{2} {red}slamming them to death from {green}{3} {red}height."
+		"es"		"{olive}{1} {red}hizo {green}InstaKill {red}de impacto a {olive}{2} {red}estrellandolo hasta matarlo desde {green}{3} {red}de altura."
 	}
 
 	"ChargerInstaKillImpactFatalFall"
 	{
 		"#format"	"{1:s},{2:s},{3:.0f}"
-		"en"		"{olive}{1} {red}landed an impact fatal-fall {green}InstaKill {red}on {olive}{2} {red}from {green}{3} {red}height."
-		"es"		"{olive}{1} {red}hizo {green}InstaKill {red}de impacto por fatal fall a {olive}{2} {red}desde {green}{3} {red}de altura."
+		"en"		"{olive}{1} {red}landed an impact {green}InstaKill {red}on {olive}{2} {red}dropping them to death from {green}{3} {red}height."
+		"es"		"{olive}{1} {red}hizo {green}InstaKill {red}de impacto a {olive}{2} {red}haciendolo caer hasta matarlo desde {green}{3} {red}de altura."
 	}
 
 	"ChargerInstaKillImpactIncap"
 	{
 		"#format"	"{1:s},{2:s},{3:.0f}"
-		"en"		"{olive}{1} {red}finished an impact incap {green}InstaKill {red}on {olive}{2} {red}from {green}{3} {red}height."
-		"es"		"{olive}{1} {red}cerro un {green}InstaKill {red}de impacto tras incap a {olive}{2} {red}desde {green}{3} {red}de altura."
+		"en"		"{olive}{1} {red}landed an impact {green}InstaKill {red}on {olive}{2} {red}after leaving them incapacitated from {green}{3} {red}height."
+		"es"		"{olive}{1} {red}hizo {green}InstaKill {red}de impacto a {olive}{2} {red}tras dejarlo incapacitado desde {green}{3} {red}de altura."
 	}
 
 	"SkillAssistSuffix"
@@ -508,11 +529,11 @@
 		"es"		"{blue}, asistido por {olive}{1}{blue}."
 	}
 
-	"ChargerDeathSetupLedge"
+	"ChargerLedgeHang"
 	{
 		"#format"	"{1:s},{2:s}"
-		"en"		"{olive}{1} {red}left {olive}{2} {red}hanging."
-		"es"		"{olive}{1} {red}dejo a {olive}{2} {red}colgando."
+		"en"		"{olive}{1} {red}left {olive}{2} {red}hanging from the ledge."
+		"es"		"{olive}{1} {red}dejo a {olive}{2} {red}colgando del borde."
 	}
 
 	"ChargerDeathSetupIncap"
@@ -520,6 +541,13 @@
 		"#format"	"{1:s},{2:s}"
 		"en"		"{olive}{1} {red}left {olive}{2} {red}incapacitated."
 		"es"		"{olive}{1} {red}dejo a {olive}{2} {red}incapacitado."
+	}
+
+	"TankLedgeHang"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"{olive}{1} {red}left {olive}{2} {red}hanging from the ledge."
+		"es"		"{olive}{1} {red}dejo colgando a {olive}{2}{red}."
 	}
 
 	"CarAlarmTriggered"

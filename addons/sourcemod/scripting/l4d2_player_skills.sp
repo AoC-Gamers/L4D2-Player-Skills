@@ -254,12 +254,12 @@ public void OnPluginStart()
 	g_cvDebug			   		= CreateConVar("l4d2_player_skills_debug", "255", "Debug bitmask for l4d2_player_skills. 0=None 1=Core 2=Event 4=Detect 8=Boss 16=Pin 32=Physics 64=Api 128=Announce 255=all.");
 	g_cvEnable			   		= CreateConVar("l4d2_player_skills_enable", "1", "Enable the l4d2_player_skills plugin.");
 	g_cvAnnounceWitch			= CreateConVar("l4d2_player_skills_announce_wich", "7", "Bitmask for Witch announcements. 1=damage 2=misc 4=crown 7=all.");
-	g_cvAnnounceTank			= CreateConVar("l4d2_player_skills_announce_tank", "7", "Bitmask for Tank announcements. 1=damage 2=rock_skeet 4=rock_hit 7=all.");
+	g_cvAnnounceTank			= CreateConVar("l4d2_player_skills_announce_tank", "15", "Bitmask for Tank announcements. 1=damage 2=rock_skeet 4=rock_hit 8=ledge_hang 15=all.");
 	g_cvAnnounceHunter			= CreateConVar("l4d2_player_skills_announce_hunter", "63", "Bitmask for Hunter announcements. 1=skeet 2=skeet_melee 4=deadstop 8=high_pounce 16=special_clear 32=kill 63=all.");
-	g_cvAnnounceSmoker			= CreateConVar("l4d2_player_skills_announce_smoker", "15", "Bitmask for Smoker announcements. 1=tongue_cut 2=self_clear 4=special_clear 8=kill 15=all.");
+	g_cvAnnounceSmoker			= CreateConVar("l4d2_player_skills_announce_smoker", "31", "Bitmask for Smoker announcements. 1=tongue_cut 2=self_clear 4=special_clear 8=kill 16=ledge_hang 31=all.");
 	g_cvAnnounceBoomer			= CreateConVar("l4d2_player_skills_announce_boomer", "7", "Bitmask for Boomer announcements. 1=pop 2=vomit 4=kill 7=all.");
 	g_cvAnnounceSpitter			= CreateConVar("l4d2_player_skills_announce_spitter", "1", "Bitmask for Spitter announcements. 1=kill 1=all.");
-	g_cvAnnounceJockey			= CreateConVar("l4d2_player_skills_announce_jockey", "31", "Bitmask for Jockey announcements. 1=high_pounce 2=special_clear 4=kill 8=jump_stop 16=skeet_melee 31=all.");
+	g_cvAnnounceJockey			= CreateConVar("l4d2_player_skills_announce_jockey", "63", "Bitmask for Jockey announcements. 1=high_pounce 2=special_clear 4=kill 8=jump_stop 16=skeet_melee 32=ledge_hang 63=all.");
 	g_cvAnnounceCharger			= CreateConVar("l4d2_player_skills_announce_charger", "63", "Bitmask for Charger announcements. 1=level 2=insta_kill 4=death_setup 8=special_clear 16=kill 32=bowl 63=all.");
 	g_cvAnnounceOther			= CreateConVar("l4d2_player_skills_announce_other", "3", "Bitmask for other announcements. 1=bunnyhop 2=car_alarm 3=all.");
 	g_cvBoomerVomitMinTargets	= CreateConVar("l4d2_player_skills_boomer_vomit_min_targets", "3", "Minimum number of vomited survivors required to announce BoomerVomitLanded. 0=disabled.");
@@ -314,6 +314,7 @@ public void OnPluginStart()
 	HookEvent("player_hurt", Event_PlayerHurt, EventHookMode_Post);
 	HookEvent("player_death", Event_PlayerDeath, EventHookMode_Post);
 	HookEvent("player_incapacitated_start", Event_PlayerIncapacitatedStart, EventHookMode_Post);
+	HookEvent("player_ledge_grab", Event_PlayerLedgeGrab, EventHookMode_Post);
 	HookEvent("player_shoved", Event_PlayerShoved, EventHookMode_Post);
 	HookEvent("player_now_it", Event_PlayerNowIt, EventHookMode_Post);
 	HookEvent("boomer_exploded", Event_BoomerExploded, EventHookMode_Post);
@@ -823,6 +824,16 @@ void Event_PlayerIncapacitatedStart(Event event, const char[] name, bool dontBro
 
 	Boss_EventPlayerIncapacitatedStart(event);
 	Detect_EventPlayerIncapacitatedStart(event);
+}
+
+void Event_PlayerLedgeGrab(Event event, const char[] name, bool dontBroadcast)
+{
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
+	Detect_EventPlayerLedgeGrab(event);
 }
 
 void Event_PlayerShoved(Event event, const char[] name, bool dontBroadcast)

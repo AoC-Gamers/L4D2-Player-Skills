@@ -176,7 +176,7 @@ enum L4D2SkillBoolField
 	L4D2SkillBool_LedgeHang,
 	L4D2SkillBool_FatalFall,
 	L4D2SkillBool_DeadlySlam,
-	L4D2SkillBool_WouldQualifyAtBaseline,
+	L4D2SkillBool_WouldQualifyAtBaseline, // deprecated, always false
 	L4D2SkillBool_Crown,
 	L4D2SkillBool_Startled,
 	L4D2SkillBool_Perfect,

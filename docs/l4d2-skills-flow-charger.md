@@ -47,14 +47,21 @@ Se emite `ChargerLevel` cuando:
 
 - el `Charger` muere por melee,
 - seguía en `charge` o el juego reporta que murió `charging`,
-- y el golpe final cumple el umbral de `level` contra el baseline del `Charger`.
+- y el golpe final cumple el umbral tecnico de `level`.
 
 ### Properties
 
 - `damage`
 - `chip_damage`
-- `would_qualify_at_baseline`
 - `perfect`
+
+Notas:
+
+- `chip_damage` sigue existiendo como dato tecnico del evento;
+- el announce visible ya no usa wording explicito de `chip`;
+- si hubo daño previo propio del actor, el chat imprime `Level ... (dmg/shots)`;
+- si hubo asistencia previa, el chat imprime `Level ..., asistido por ...`;
+- `PerfectLevel` reemplaza al `Level` limpio y ocupa su lugar en chat.
 
 ### Flow
 
@@ -126,9 +133,27 @@ No se emite si otro SI se vuelve el causante principal de la muerte.
 - `was_carried`
 - `damage`
 - `incapped`
-- `ledge_hang`
 - `fatal_fall`
 - `deadly_slam`
+
+### Internal Terms
+
+Estos conceptos deben mantenerse como nombres tecnicos en codigo y API:
+
+- `ledge_hang`
+  - el survivor termina colgando del borde
+- `deadly_slam`
+  - el survivor muere por el golpe/estrellon de la carga
+- `fatal_fall`
+  - el survivor muere por la caida posterior al desplazamiento del Charger
+
+En chat no hace falta exponer esos nombres literalmente. El announce debe priorizar el resultado visible:
+
+- `deadly_slam` -> "estrellandolo hasta matarlo"
+- `fatal_fall` -> "haciendolo caer hasta matarlo"
+
+`ledge_hang` ya no forma parte de `ChargerInstaKill`; hoy vive como skill separada
+en `ChargerLedgeHang`.
 
 ### Flow
 
@@ -143,6 +168,34 @@ flowchart TD
     G -->|no| F
     G -->|yes| H[Emit ChargerInstaKill]
 ```
+
+## ChargerLedgeHang
+
+### Sources
+
+- `L4D_OnLedgeGrabbed_Post`
+- `L4D_OnIncapacitated_Post`
+- `player_incapacitated_start`
+
+### State
+
+Comparte el tracking de victima de `ChargerInstaKill` y ademas usa:
+
+- `g_bDetectChargeSetupEmitted`
+
+### Emit
+
+Se emite `ChargerLedgeHang` cuando el `Charger` deja a un survivor:
+
+- colgando del borde
+
+sin mezclar ese resultado con una muerte ni con un `InstaKill`.
+
+### Properties
+
+- `zombie_class`
+- `was_carried`
+- `ledge_hang`
 
 ## ChargerDeathSetup
 
@@ -162,7 +215,6 @@ Comparte el tracking de víctima de `ChargerInstaKill` y además usa:
 
 Se emite `ChargerDeathSetup` cuando el `Charger` deja a un survivor:
 
-- colgando de una ledge, o
 - incapacitado,
 
 sin mezclar ese resultado con una muerte confirmada.
@@ -172,7 +224,13 @@ sin mezclar ese resultado con una muerte confirmada.
 - `zombie_class`
 - `was_carried`
 - `incapped`
-- `ledge_hang`
+
+### Internal Terms
+
+Para `ChargerDeathSetup`:
+
+- `incapped`
+  - debe entenderse como survivor incapacitado sin muerte confirmada del flujo
 
 ### Flow
 

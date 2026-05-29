@@ -155,19 +155,15 @@ Incluye:
 
 - `SkeetSingleShot`
 - `SkeetMultiShot`
-- `SkeetSingleShotFullHp`
-- `SkeetMultiShotFullHp`
 - `HunterSkeetSniper`
-- `HunterSkeetSniperFullHp`
 - `HunterSkeetGL`
-- `HunterSkeetGLFullHp`
 
 #### SkeetPerfect
 
 Incluye:
 
-- eventos `HunterSkeet` cuyo flag `wouldQualifyAtBaseline = true`
-- representa skeets que habrían calificado desde vida base completa
+- eventos `HunterSkeet` cuyo flag `perfect = true`
+- representa skeets perfectos de autoría exclusiva
 
 #### SkeetMelees
 
@@ -220,8 +216,8 @@ Incluye:
 
 Incluye:
 
-- `ChargerLevel`
-- `ChargerLevelPerfect`
+- eventos `ChargerLevel` cuyo flag `perfect = false`
+- representa solo `Level` no perfect
 
 #### LevelPerfect
 
@@ -353,12 +349,10 @@ Incluye:
 Incluye:
 
 - `ChargerInstaKillCarry`
-- `ChargerInstaKillCarryLedge`
 - `ChargerInstaKillCarryDeadly`
 - `ChargerInstaKillCarryFatalFall`
 - `ChargerInstaKillCarryIncap`
 - `ChargerInstaKillImpact`
-- `ChargerInstaKillImpactLedge`
 - `ChargerInstaKillImpactDeadly`
 - `ChargerInstaKillImpactFatalFall`
 - `ChargerInstaKillImpactIncap`
@@ -367,8 +361,13 @@ Incluye:
 
 Incluye:
 
-- `ChargerDeathSetupLedge`
 - `ChargerDeathSetupIncap`
+
+#### ChargerLedgeHangs
+
+Incluye:
+
+- `ChargerLedgeHang`
 
 #### TankRockHits
 

@@ -41,9 +41,13 @@ enum L4D2SkillType
 	L4D2Skill_TankRockHit,
 	L4D2Skill_HunterHighPounce,
 	L4D2Skill_JockeyHighPounce,
+	L4D2Skill_SmokerLedgeHang,
+	L4D2Skill_JockeyLedgeHang,
 	L4D2Skill_ChargerInstaKill,
 	L4D2Skill_ChargerDeathSetup,
+	L4D2Skill_ChargerLedgeHang,
 	L4D2Skill_ChargerBowl,
+	L4D2Skill_TankLedgeHang,
 	L4D2Skill_SpecialPinClear,
 	L4D2Skill_BoomerVomitLanded,
 	L4D2Skill_BunnyHopStreak,
@@ -129,7 +133,8 @@ enum PlayerSkillsAnnounceSmokerFlag
 	PlayerSkillsAnnounceSmoker_TongueCut = 1 << 0,
 	PlayerSkillsAnnounceSmoker_SelfClear = 1 << 1,
 	PlayerSkillsAnnounceSmoker_SpecialClear = 1 << 2,
-	PlayerSkillsAnnounceSmoker_Kill = 1 << 3
+	PlayerSkillsAnnounceSmoker_Kill = 1 << 3,
+	PlayerSkillsAnnounceSmoker_LedgeHang = 1 << 4
 }
 
 enum PlayerSkillsAnnounceBoomerFlag
@@ -153,7 +158,8 @@ enum PlayerSkillsAnnounceJockeyFlag
 	PlayerSkillsAnnounceJockey_SpecialClear = 1 << 1,
 	PlayerSkillsAnnounceJockey_Kill = 1 << 2,
 	PlayerSkillsAnnounceJockey_JumpStop = 1 << 3,
-	PlayerSkillsAnnounceJockey_SkeetMelee = 1 << 4
+	PlayerSkillsAnnounceJockey_SkeetMelee = 1 << 4,
+	PlayerSkillsAnnounceJockey_LedgeHang = 1 << 5
 }
 
 enum PlayerSkillsAnnounceChargerFlag
@@ -181,7 +187,8 @@ enum PlayerSkillsAnnounceBossFlag
 	PlayerSkillsAnnounceBoss_Misc = 1 << 1,
 	PlayerSkillsAnnounceBoss_Crown = 1 << 2,
 	PlayerSkillsAnnounceBoss_RockSkeet = 1 << 2,
-	PlayerSkillsAnnounceBoss_RockHit = 1 << 3
+	PlayerSkillsAnnounceBoss_RockHit = 1 << 3,
+	PlayerSkillsAnnounceBoss_LedgeHang = 1 << 4
 }
 
 enum PlayerSkillsGameMode
@@ -630,7 +637,6 @@ enum struct L4D2SkillEventData
 	bool		  ledgeHang;
 	bool		  fatalFall;
 	bool		  deadlySlam;
-	bool		  wouldQualifyAtBaseline;
 	bool		  perfect;
 	bool		  headshot;
 	bool		  sniper;
@@ -687,7 +693,6 @@ enum struct L4D2SkillEventData
 		this.ledgeHang				= false;
 		this.fatalFall				= false;
 		this.deadlySlam			 	= false;
-		this.wouldQualifyAtBaseline	= false;
 		this.perfect				= false;
 		this.headshot				= false;
 		this.sniper					= false;

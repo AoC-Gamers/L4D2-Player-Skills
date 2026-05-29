@@ -261,10 +261,14 @@ L4DTeam API_GetSummaryActorTeam(int eventIndex)
 	{
 		case L4D2Skill_HunterHighPounce,
 			L4D2Skill_JockeyHighPounce,
+			L4D2Skill_SmokerLedgeHang,
+			L4D2Skill_JockeyLedgeHang,
 			L4D2Skill_ChargerInstaKill,
 			L4D2Skill_ChargerDeathSetup,
+			L4D2Skill_ChargerLedgeHang,
 			L4D2Skill_BoomerVomitLanded,
-			L4D2Skill_TankRockHit:
+			L4D2Skill_TankRockHit,
+			L4D2Skill_TankLedgeHang:
 		{
 			return L4DTeam_Infected;
 		}
@@ -625,11 +629,6 @@ void API_WriteEventSkillProperties(Handle kv, int eventIndex)
 	if (g_SkillEvents[eventIndex].streak > 0)
 	{
 		KvSetNum(kv, "streak", g_SkillEvents[eventIndex].streak);
-	}
-
-	if (g_SkillEvents[eventIndex].wouldQualifyAtBaseline)
-	{
-		KvSetNum(kv, "would_qualify_at_baseline", 1);
 	}
 
 	if (g_SkillEvents[eventIndex].perfect)
@@ -1035,7 +1034,7 @@ public int Native_PlayerSkills_GetEventBool(Handle plugin, int numParams)
 		case 6: return g_SkillEvents[eventIndex].ledgeHang;
 		case 7: return g_SkillEvents[eventIndex].fatalFall;
 		case 8: return g_SkillEvents[eventIndex].deadlySlam;
-		case 9: return g_SkillEvents[eventIndex].wouldQualifyAtBaseline;
+		case 9: return false;
 		case 10: return g_SkillEvents[eventIndex].crown;
 		case 11: return g_SkillEvents[eventIndex].startled;
 		case 12: return g_SkillEvents[eventIndex].perfect;

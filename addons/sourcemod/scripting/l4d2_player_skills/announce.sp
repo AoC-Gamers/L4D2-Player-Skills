@@ -6,7 +6,7 @@
 int g_iAnnounceSortSession = -1;
 
 #define L4D2_SKILLS_SURVIVOR_TABLE_FAMILIES 17
-#define L4D2_SKILLS_INFECTED_TABLE_FAMILIES 14
+#define L4D2_SKILLS_INFECTED_TABLE_FAMILIES 18
 
 bool Announce_HasMask(ConVar cvar, int bit)
 {
@@ -242,6 +242,16 @@ bool Announce_ShouldAnnounceSkill(int eventIndex)
 		{
 			shouldAnnounce = Announce_HasMask(g_cvAnnounceJockey, view_as<int>(PlayerSkillsAnnounceJockey_HighPounce));
 		}
+		case L4D2Skill_SmokerLedgeHang:
+		{
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceSmoker, view_as<int>(PlayerSkillsAnnounceSmoker_LedgeHang))
+				|| (g_cvAnnounceSmoker != null && g_cvAnnounceSmoker.IntValue == 15);
+		}
+		case L4D2Skill_JockeyLedgeHang:
+		{
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceJockey, view_as<int>(PlayerSkillsAnnounceJockey_LedgeHang))
+				|| (g_cvAnnounceJockey != null && g_cvAnnounceJockey.IntValue == 31);
+		}
 		case L4D2Skill_JockeyJumpStop:
 		{
 			shouldAnnounce = Announce_HasMask(g_cvAnnounceJockey, view_as<int>(PlayerSkillsAnnounceJockey_JumpStop))
@@ -269,6 +279,10 @@ bool Announce_ShouldAnnounceSkill(int eventIndex)
 			shouldAnnounce = Announce_HasMask(g_cvAnnounceCharger, view_as<int>(PlayerSkillsAnnounceCharger_InstaKill));
 		}
 		case L4D2Skill_ChargerDeathSetup:
+		{
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceCharger, view_as<int>(PlayerSkillsAnnounceCharger_DeathSetup));
+		}
+		case L4D2Skill_ChargerLedgeHang:
 		{
 			shouldAnnounce = Announce_HasMask(g_cvAnnounceCharger, view_as<int>(PlayerSkillsAnnounceCharger_DeathSetup));
 		}
@@ -315,6 +329,11 @@ bool Announce_ShouldAnnounceSkill(int eventIndex)
 		case L4D2Skill_TankRockHit:
 		{
 			shouldAnnounce = Announce_HasMask(g_cvAnnounceTank, view_as<int>(PlayerSkillsAnnounceBoss_RockHit));
+		}
+		case L4D2Skill_TankLedgeHang:
+		{
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceTank, view_as<int>(PlayerSkillsAnnounceBoss_LedgeHang))
+				|| (g_cvAnnounceTank != null && g_cvAnnounceTank.IntValue == 7);
 		}
 		case L4D2Skill_BunnyHopStreak:
 		{
@@ -538,7 +557,7 @@ int Announce_CountPerfectSkillTypeForClient(int client, L4D2SkillType type)
 	return count;
 }
 
-int Announce_CountBaselineSkillTypeForClient(int client, L4D2SkillType type)
+int Announce_CountNonPerfectSkillTypeForClient(int client, L4D2SkillType type)
 {
 	if (!IsValidClient(client))
 	{
@@ -556,7 +575,7 @@ int Announce_CountBaselineSkillTypeForClient(int client, L4D2SkillType type)
 		if (g_SkillEvents[index].id <= 0
 			|| g_SkillEvents[index].type != type
 			|| !g_SkillEvents[index].actor.IsSamePersistentPlayer(client)
-			|| !g_SkillEvents[index].wouldQualifyAtBaseline
+			|| g_SkillEvents[index].perfect
 			|| !Skills_IsSkillEventEnabledInCurrentMode(index))
 		{
 			continue;
@@ -663,10 +682,14 @@ int Announce_MapInfectedTableFamily(L4D2SkillType type)
 		case L4D2Skill_HunterHighPounce: return 0;
 		case L4D2Skill_JockeyHighPounce: return 2;
 		case L4D2Skill_BoomerVomitLanded: return 4;
-		case L4D2Skill_ChargerInstaKill: return 8;
-		case L4D2Skill_ChargerDeathSetup: return 9;
-		case L4D2Skill_TankRockHit: return 10;
-		case L4D2Skill_ChargerBowl: return 11;
+		case L4D2Skill_SmokerLedgeHang: return 8;
+		case L4D2Skill_JockeyLedgeHang: return 9;
+		case L4D2Skill_ChargerInstaKill: return 10;
+		case L4D2Skill_ChargerDeathSetup: return 11;
+		case L4D2Skill_ChargerLedgeHang: return 12;
+		case L4D2Skill_TankRockHit: return 13;
+		case L4D2Skill_TankLedgeHang: return 14;
+		case L4D2Skill_ChargerBowl: return 15;
 	}
 
 	return -1;
@@ -709,12 +732,16 @@ void Announce_GetInfectedTableFamilyName(int family, char[] buffer, int maxlen)
 		case 5: strcopy(buffer, maxlen, "BoomerVomitTargets");
 		case 6: strcopy(buffer, maxlen, "BoomerVomitPerfect");
 		case 7: strcopy(buffer, maxlen, "BoomerVomitBest");
-		case 8: strcopy(buffer, maxlen, "ChargerInstaKills");
-		case 9: strcopy(buffer, maxlen, "ChargerDeathSetups");
-		case 10: strcopy(buffer, maxlen, "TankRockHits");
-		case 11: strcopy(buffer, maxlen, "ChargerBowls");
-		case 12: strcopy(buffer, maxlen, "ChargerBowlTargets");
-		case 13: strcopy(buffer, maxlen, "ChargerBowlBest");
+		case 8: strcopy(buffer, maxlen, "SmokerLedgeHangs");
+		case 9: strcopy(buffer, maxlen, "JockeyLedgeHangs");
+		case 10: strcopy(buffer, maxlen, "ChargerInstaKills");
+		case 11: strcopy(buffer, maxlen, "ChargerDeathSetups");
+		case 12: strcopy(buffer, maxlen, "ChargerLedgeHangs");
+		case 13: strcopy(buffer, maxlen, "TankRockHits");
+		case 14: strcopy(buffer, maxlen, "TankLedgeHangs");
+		case 15: strcopy(buffer, maxlen, "ChargerBowls");
+		case 16: strcopy(buffer, maxlen, "ChargerBowlTargets");
+		case 17: strcopy(buffer, maxlen, "ChargerBowlBest");
 		default: buffer[0] = '\0';
 	}
 }
@@ -762,10 +789,14 @@ bool Announce_IsInfectedTableFamilyVisible(int family)
 		case 2: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_JockeyHighPounce);
 		case 3: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_JockeyHighPounce);
 		case 4, 5, 6, 7: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_BoomerVomitLanded);
-		case 8: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_ChargerInstaKill);
-		case 9: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_ChargerDeathSetup);
-		case 10: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_TankRockHit);
-		case 11, 12, 13: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_ChargerBowl);
+		case 8: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_SmokerLedgeHang);
+		case 9: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_JockeyLedgeHang);
+		case 10: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_ChargerInstaKill);
+		case 11: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_ChargerDeathSetup);
+		case 12: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_ChargerLedgeHang);
+		case 13: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_TankRockHit);
+		case 14: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_TankLedgeHang);
+		case 15, 16, 17: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_ChargerBowl);
 	}
 
 	return false;
@@ -776,14 +807,14 @@ int Announce_CountSurvivorTableFamilyForClient(int client, int family)
 	switch (family)
 	{
 		case 0: return Announce_CountSkillTypeForClient(client, L4D2Skill_HunterSkeet);
-		case 1: return Announce_CountBaselineSkillTypeForClient(client, L4D2Skill_HunterSkeet);
+		case 1: return Announce_CountPerfectSkillTypeForClient(client, L4D2Skill_HunterSkeet);
 		case 2: return Announce_CountSkillTypeForClient(client, L4D2Skill_HunterSkeetMelee);
 		case 3: return Announce_CountSkillTypeForClient(client, L4D2Skill_HunterDeadstop);
 		case 4: return Announce_CountSkillTypeForClient(client, L4D2Skill_SpecialPinClear);
 		case 5: return Announce_CountSkillTypeForClient(client, L4D2Skill_SmokerTongueCut);
 		case 6: return Announce_CountSkillTypeForClient(client, L4D2Skill_SmokerSelfClear);
 		case 7: return Announce_CountSkillTypeForClient(client, L4D2Skill_BoomerPop);
-		case 8: return Announce_CountSkillTypeForClient(client, L4D2Skill_ChargerLevel);
+		case 8: return Announce_CountNonPerfectSkillTypeForClient(client, L4D2Skill_ChargerLevel);
 		case 9: return Announce_CountPerfectSkillTypeForClient(client, L4D2Skill_ChargerLevel);
 		case 10: return Announce_CountSkillTypeForClient(client, L4D2Skill_CarAlarmTriggered);
 		case 11: return Announce_CountSkillTypeForClient(client, L4D2Skill_BunnyHopStreak);
@@ -817,12 +848,16 @@ int Announce_CountInfectedTableFamilyForClient(int client, int family)
 		case 5: return Announce_SumSkillAmountForClient(client, L4D2Skill_BoomerVomitLanded);
 		case 6: return Announce_CountPerfectSkillTypeForClient(client, L4D2Skill_BoomerVomitLanded);
 		case 7: return Announce_MaxSkillAmountForClient(client, L4D2Skill_BoomerVomitLanded);
-		case 8: return Announce_CountSkillTypeForClient(client, L4D2Skill_ChargerInstaKill);
-		case 9: return Announce_CountSkillTypeForClient(client, L4D2Skill_ChargerDeathSetup);
-		case 10: return Announce_CountSkillTypeForClient(client, L4D2Skill_TankRockHit);
-		case 11: return Announce_CountSkillTypeForClient(client, L4D2Skill_ChargerBowl);
-		case 12: return Announce_SumSkillAmountForClient(client, L4D2Skill_ChargerBowl);
-		case 13: return Announce_MaxSkillAmountForClient(client, L4D2Skill_ChargerBowl);
+		case 8: return Announce_CountSkillTypeForClient(client, L4D2Skill_SmokerLedgeHang);
+		case 9: return Announce_CountSkillTypeForClient(client, L4D2Skill_JockeyLedgeHang);
+		case 10: return Announce_CountSkillTypeForClient(client, L4D2Skill_ChargerInstaKill);
+		case 11: return Announce_CountSkillTypeForClient(client, L4D2Skill_ChargerDeathSetup);
+		case 12: return Announce_CountSkillTypeForClient(client, L4D2Skill_ChargerLedgeHang);
+		case 13: return Announce_CountSkillTypeForClient(client, L4D2Skill_TankRockHit);
+		case 14: return Announce_CountSkillTypeForClient(client, L4D2Skill_TankLedgeHang);
+		case 15: return Announce_CountSkillTypeForClient(client, L4D2Skill_ChargerBowl);
+		case 16: return Announce_SumSkillAmountForClient(client, L4D2Skill_ChargerBowl);
+		case 17: return Announce_MaxSkillAmountForClient(client, L4D2Skill_ChargerBowl);
 	}
 
 	return 0;
@@ -905,17 +940,57 @@ int Announce_CountTableFamilyForBots(L4DTeam team, int family)
 
 		if (team == L4DTeam_Infected && g_SkillEvents[index].type == L4D2Skill_ChargerBowl)
 		{
-			if (family == 11)
+			if (family == 15)
 			{
 				count++;
 			}
-			else if (family == 12)
+			else if (family == 16)
 			{
 				count += g_SkillEvents[index].amount;
 			}
-			else if (family == 13 && g_SkillEvents[index].amount > count)
+			else if (family == 17 && g_SkillEvents[index].amount > count)
 			{
 				count = g_SkillEvents[index].amount;
+			}
+
+			continue;
+		}
+
+		if (team == L4DTeam_Infected && g_SkillEvents[index].type == L4D2Skill_SmokerLedgeHang)
+		{
+			if (family == 8)
+			{
+				count++;
+			}
+
+			continue;
+		}
+
+		if (team == L4DTeam_Infected && g_SkillEvents[index].type == L4D2Skill_JockeyLedgeHang)
+		{
+			if (family == 9)
+			{
+				count++;
+			}
+
+			continue;
+		}
+
+		if (team == L4DTeam_Infected && g_SkillEvents[index].type == L4D2Skill_ChargerLedgeHang)
+		{
+			if (family == 12)
+			{
+				count++;
+			}
+
+			continue;
+		}
+
+		if (team == L4DTeam_Infected && g_SkillEvents[index].type == L4D2Skill_TankLedgeHang)
+		{
+			if (family == 14)
+			{
+				count++;
 			}
 
 			continue;
@@ -930,7 +1005,7 @@ int Announce_CountTableFamilyForBots(L4DTeam team, int family)
 			}
 			else if (family == 1)
 			{
-				count += g_SkillEvents[index].wouldQualifyAtBaseline ? 1 : 0;
+				count += g_SkillEvents[index].perfect ? 1 : 0;
 				continue;
 			}
 		}
@@ -939,7 +1014,7 @@ int Announce_CountTableFamilyForBots(L4DTeam team, int family)
 		{
 			if (family == 8)
 			{
-				count++;
+				count += g_SkillEvents[index].perfect ? 0 : 1;
 				continue;
 			}
 			else if (family == 9)
@@ -1191,24 +1266,48 @@ void Announce_Skill(int eventId)
 
 			if (g_SkillEvents[eventIndex].grenadeLauncher)
 			{
-				CPrintToChatAll("%s %t", tag,
-					g_SkillEvents[eventIndex].wouldQualifyAtBaseline ? "HunterSkeetGLFullHp" : "HunterSkeetGL",
-					actorName,
-					victimName,
-					g_SkillEvents[eventIndex].damage);
+				if (g_SkillEvents[eventIndex].perfect)
+				{
+					CPrintToChatAll("%s %t", tag, "HunterSkeetGLPerfect", actorName, victimName, g_SkillEvents[eventIndex].damage);
+				}
+				else if (g_SkillEvents[eventIndex].assistsCount > 0)
+				{
+					CPrintToChatAll("%s %t", tag, "HunterSkeetGLAssist", actorName, victimName, g_SkillEvents[eventIndex].damage, assistList);
+				}
+				else
+				{
+					CPrintToChatAll("%s %t", tag,
+						"HunterSkeetGL",
+						actorName,
+						victimName,
+						g_SkillEvents[eventIndex].damage);
+				}
 			}
 			else if (g_SkillEvents[eventIndex].sniper)
 			{
-				CPrintToChatAll("%s %t", tag,
-					g_SkillEvents[eventIndex].wouldQualifyAtBaseline ? "HunterSkeetSniperFullHp" : "HunterSkeetSniper",
-					actorName,
-					victimName,
-					g_SkillEvents[eventIndex].headshot ? "headshot" : "shot");
+				char hitType[16];
+				strcopy(hitType, sizeof(hitType), g_SkillEvents[eventIndex].headshot ? "headshot" : "shot");
+				if (g_SkillEvents[eventIndex].perfect)
+				{
+					CPrintToChatAll("%s %t", tag, "HunterSkeetSniperPerfect", actorName, victimName, hitType);
+				}
+				else if (g_SkillEvents[eventIndex].assistsCount > 0)
+				{
+					CPrintToChatAll("%s %t", tag, "HunterSkeetSniperAssist", actorName, victimName, hitType, assistList);
+				}
+				else
+				{
+					CPrintToChatAll("%s %t", tag,
+						"HunterSkeetSniper",
+						actorName,
+						victimName,
+						hitType);
+				}
 			}
-			else if (g_SkillEvents[eventIndex].wouldQualifyAtBaseline)
+			else if (g_SkillEvents[eventIndex].perfect)
 			{
 				CPrintToChatAll("%s %t", tag,
-					g_SkillEvents[eventIndex].shots == 1 ? "SkeetSingleShotFullHp" : "SkeetMultiShotFullHp",
+					g_SkillEvents[eventIndex].shots == 1 ? "PerfectSkeetSingleShot" : "PerfectSkeetMultiShot",
 					actorName,
 					victimName,
 					g_SkillEvents[eventIndex].damage,
@@ -1220,6 +1319,7 @@ void Announce_Skill(int eventId)
 					g_SkillEvents[eventIndex].shots == 1 ? "SkeetSingleShotAssisted" : "SkeetMultiShotAssisted",
 					actorName,
 					victimName,
+					g_SkillEvents[eventIndex].damage,
 					g_SkillEvents[eventIndex].shots,
 					assistList);
 			}
@@ -1228,6 +1328,7 @@ void Announce_Skill(int eventId)
 				CPrintToChatAll("%s %t", tag, "SkeetSingleShot",
 					actorName,
 					victimName,
+					g_SkillEvents[eventIndex].damage,
 					g_SkillEvents[eventIndex].shots);
 			}
 			else
@@ -1235,6 +1336,7 @@ void Announce_Skill(int eventId)
 				CPrintToChatAll("%s %t", tag, "SkeetMultiShot",
 					actorName,
 					victimName,
+					g_SkillEvents[eventIndex].damage,
 					g_SkillEvents[eventIndex].shots);
 			}
 		}
@@ -1269,6 +1371,20 @@ void Announce_Skill(int eventId)
 				actorName,
 				victimName,
 				g_SkillEvents[eventIndex].height);
+		}
+
+		case L4D2Skill_SmokerLedgeHang:
+		{
+			CPrintToChatAll("%s %t", tag, "SmokerLedgeHang",
+				actorName,
+				victimName);
+		}
+
+		case L4D2Skill_JockeyLedgeHang:
+		{
+			CPrintToChatAll("%s %t", tag, "JockeyLedgeHang",
+				actorName,
+				victimName);
 		}
 
 		case L4D2Skill_JockeyJumpStop:
@@ -1485,11 +1601,11 @@ void Announce_Skill(int eventId)
 			}
 			else if (g_SkillEvents[eventIndex].actorChipDamage > 0 && g_SkillEvents[eventIndex].assistsCount > 0)
 			{
-				CPrintToChatAll("%s %t", tag, "ChargerLevelChipAssist", actorName, victimName, chipStat, assistList);
+				CPrintToChatAll("%s %t", tag, "ChargerLevelStatAssist", actorName, victimName, chipStat, assistList);
 			}
 			else if (g_SkillEvents[eventIndex].actorChipDamage > 0)
 			{
-				CPrintToChatAll("%s %t", tag, "ChargerLevelChip", actorName, victimName, chipStat);
+				CPrintToChatAll("%s %t", tag, "ChargerLevelStat", actorName, victimName, chipStat);
 			}
 			else if (g_SkillEvents[eventIndex].assistsCount > 0)
 			{
@@ -1528,23 +1644,19 @@ void Announce_Skill(int eventId)
 			char phrase[48];
 			char assistNames[256];
 			Announce_FormatAssistNames(eventIndex, assistNames, sizeof(assistNames));
-			if (g_SkillEvents[eventIndex].wasCarried)
+			if (g_SkillEvents[eventIndex].incapped)
 			{
-				if (g_SkillEvents[eventIndex].ledgeHang)
-				{
-					strcopy(phrase, sizeof(phrase), "ChargerInstaKillCarryLedge");
-				}
-				else if (g_SkillEvents[eventIndex].deadlySlam)
+				strcopy(phrase, sizeof(phrase), "ChargerInstaKillIncapSimple");
+			}
+			else if (g_SkillEvents[eventIndex].wasCarried)
+			{
+				if (g_SkillEvents[eventIndex].deadlySlam)
 				{
 					strcopy(phrase, sizeof(phrase), "ChargerInstaKillCarryDeadly");
 				}
 				else if (g_SkillEvents[eventIndex].fatalFall)
 				{
 					strcopy(phrase, sizeof(phrase), "ChargerInstaKillCarryFatalFall");
-				}
-				else if (g_SkillEvents[eventIndex].incapped)
-				{
-					strcopy(phrase, sizeof(phrase), "ChargerInstaKillCarryIncap");
 				}
 				else
 				{
@@ -1553,21 +1665,13 @@ void Announce_Skill(int eventId)
 			}
 			else
 			{
-				if (g_SkillEvents[eventIndex].ledgeHang)
-				{
-					strcopy(phrase, sizeof(phrase), "ChargerInstaKillImpactLedge");
-				}
-				else if (g_SkillEvents[eventIndex].deadlySlam)
+				if (g_SkillEvents[eventIndex].deadlySlam)
 				{
 					strcopy(phrase, sizeof(phrase), "ChargerInstaKillImpactDeadly");
 				}
 				else if (g_SkillEvents[eventIndex].fatalFall)
 				{
 					strcopy(phrase, sizeof(phrase), "ChargerInstaKillImpactFatalFall");
-				}
-				else if (g_SkillEvents[eventIndex].incapped)
-				{
-					strcopy(phrase, sizeof(phrase), "ChargerInstaKillImpactIncap");
 				}
 				else
 				{
@@ -1577,28 +1681,55 @@ void Announce_Skill(int eventId)
 
 			if (g_SkillEvents[eventIndex].assistsCount > 0)
 			{
-				CPrintToChatAll("%s %t %t", tag,
-					phrase,
-					actorName,
-					victimName,
-					g_SkillEvents[eventIndex].height,
-					"SkillAssistSuffix",
-					assistNames);
+				if (g_SkillEvents[eventIndex].incapped)
+				{
+					CPrintToChatAll("%s %t %t", tag,
+						phrase,
+						actorName,
+						victimName,
+						"SkillAssistSuffix",
+						assistNames);
+				}
+				else
+				{
+					CPrintToChatAll("%s %t %t", tag,
+						phrase,
+						actorName,
+						victimName,
+						g_SkillEvents[eventIndex].height,
+						"SkillAssistSuffix",
+						assistNames);
+				}
 			}
 			else
 			{
-				CPrintToChatAll("%s %t", tag,
-					phrase,
-					actorName,
-					victimName,
-					g_SkillEvents[eventIndex].height);
+				if (g_SkillEvents[eventIndex].incapped)
+				{
+					CPrintToChatAll("%s %t", tag, phrase, actorName, victimName);
+				}
+				else
+				{
+					CPrintToChatAll("%s %t", tag,
+						phrase,
+						actorName,
+						victimName,
+						g_SkillEvents[eventIndex].height);
+				}
 			}
 		}
 
 		case L4D2Skill_ChargerDeathSetup:
 		{
 			CPrintToChatAll("%s %t", tag,
-				g_SkillEvents[eventIndex].ledgeHang ? "ChargerDeathSetupLedge" : "ChargerDeathSetupIncap",
+				"ChargerDeathSetupIncap",
+				actorName,
+				victimName);
+		}
+
+		case L4D2Skill_ChargerLedgeHang:
+		{
+			CPrintToChatAll("%s %t", tag,
+				"ChargerLedgeHang",
 				actorName,
 				victimName);
 		}
@@ -1626,6 +1757,13 @@ void Announce_Skill(int eventId)
 				LANG_SERVER,
 				victimName);
 			CPrintToChatAll("%s %s", tag, line);
+		}
+
+		case L4D2Skill_TankLedgeHang:
+		{
+			CPrintToChatAll("%s %t", tag, "TankLedgeHang",
+				actorName,
+				victimName);
 		}
 
 		case L4D2Skill_SmokerKill, L4D2Skill_BoomerKill, L4D2Skill_HunterKill, L4D2Skill_SpitterKill, L4D2Skill_JockeyKill, L4D2Skill_ChargerKill:

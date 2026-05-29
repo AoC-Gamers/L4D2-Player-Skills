@@ -106,7 +106,6 @@ En corto:
 Ejemplos de contexto que deben vivir en el evento y no necesariamente en el enum:
 
 - `chipDamage`
-- `wouldQualifyAtBaseline`
 - `withShove`
 - `wasCarried`
 - `reportedHigh`
@@ -117,6 +116,17 @@ Ejemplos de contexto que deben vivir en el evento y no necesariamente en el enum
 - `sniper`
 - `grenadeLauncher`
 
+Nota de UX:
+
+- `chipDamage` sigue siendo un dato tecnico valido;
+- no obliga a que el announce visible use la palabra `chip`;
+- en `HunterSkeet`, el chat actual prioriza `damage/shots`, `perfect` y `assists`;
+- en `ChargerLevel`, el chat actual prioriza:
+  - `PerfectLevel`
+  - `Level`
+  - `Level (dmg/shots)` si hubo daño previo propio del actor
+  - `Level ..., asistido por ...` si hubo contribución ajena
+
 ---
 
 ## 5. Caso Hunter
@@ -126,7 +136,7 @@ Si un Hunter está pouncing y recibe un blast que lo habría matado aunque estuv
 Entonces:
 
 - `HunterSkeet` sigue siendo la habilidad principal;
-- `chipDamage` o `wouldQualifyAtBaseline` describen el contexto;
+- `chipDamage` y `perfect` describen el contexto;
 - `headshot`, `sniper` o `grenadeLauncher` describen la variante técnica del kill shot sin obligar a crear otro evento base;
 - si una kill en pounce no califica como `HunterSkeet` ni siquiera contra baseline completo, no debe emitirse como skill principal separada.
 
@@ -219,6 +229,12 @@ Por lo tanto:
 - `PerfectLevel` no puede tener assists;
 - si hubo contribución contextual ajena, la jugada puede seguir siendo `Level`,
   pero ya no `PerfectLevel`.
+
+Consecuencia de producto:
+
+- `PerfectLevel` ocupa el lugar del `Level` limpio;
+- `Level` se interpreta como la variante no perfect, es decir, con daño previo propio,
+  asistencia previa o cualquier otra condición que invalide el perfect.
 
 ---
 

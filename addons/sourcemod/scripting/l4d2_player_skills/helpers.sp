@@ -900,9 +900,13 @@ stock void Skills_GetSkillTypeName(L4D2SkillType type, char[] buffer, int maxlen
 		case L4D2Skill_TankRockHit: strcopy(buffer, maxlen, "TankRockHit");
 		case L4D2Skill_HunterHighPounce: strcopy(buffer, maxlen, "HunterHighPounce");
 		case L4D2Skill_JockeyHighPounce: strcopy(buffer, maxlen, "JockeyHighPounce");
+		case L4D2Skill_SmokerLedgeHang: strcopy(buffer, maxlen, "SmokerLedgeHang");
+		case L4D2Skill_JockeyLedgeHang: strcopy(buffer, maxlen, "JockeyLedgeHang");
 		case L4D2Skill_ChargerInstaKill: strcopy(buffer, maxlen, "ChargerInstaKill");
 		case L4D2Skill_ChargerDeathSetup: strcopy(buffer, maxlen, "ChargerDeathSetup");
+		case L4D2Skill_ChargerLedgeHang: strcopy(buffer, maxlen, "ChargerLedgeHang");
 		case L4D2Skill_ChargerBowl: strcopy(buffer, maxlen, "ChargerBowl");
+		case L4D2Skill_TankLedgeHang: strcopy(buffer, maxlen, "TankLedgeHang");
 		case L4D2Skill_SpecialPinClear: strcopy(buffer, maxlen, "SpecialPinClear");
 		case L4D2Skill_BoomerVomitLanded: strcopy(buffer, maxlen, "BoomerVomitLanded");
 		case L4D2Skill_BunnyHopStreak: strcopy(buffer, maxlen, "BunnyHopStreak");
@@ -1011,15 +1015,23 @@ stock void Skills_FormatEventPlayerRoleName(int eventIndex, int slot, char[] buf
 			{
 				zombieClass = L4D2ZombieClass_Jockey;
 			}
+			case L4D2Skill_SmokerLedgeHang:
+			{
+				zombieClass = L4D2ZombieClass_Smoker;
+			}
+			case L4D2Skill_JockeyLedgeHang:
+			{
+				zombieClass = L4D2ZombieClass_Jockey;
+			}
 			case L4D2Skill_BoomerVomitLanded:
 			{
 				zombieClass = L4D2ZombieClass_Boomer;
 			}
-		case L4D2Skill_ChargerInstaKill, L4D2Skill_ChargerDeathSetup, L4D2Skill_ChargerBowl:
+			case L4D2Skill_ChargerInstaKill, L4D2Skill_ChargerDeathSetup, L4D2Skill_ChargerLedgeHang, L4D2Skill_ChargerBowl:
 			{
 				zombieClass = L4D2ZombieClass_Charger;
 			}
-			case L4D2Skill_TankDead:
+			case L4D2Skill_TankLedgeHang, L4D2Skill_TankDead:
 			{
 				zombieClass = L4D2ZombieClass_Tank;
 			}
@@ -1092,11 +1104,11 @@ stock bool Skills_IsSkillTypeEnabledInCurrentMode(L4D2SkillType type)
 		{
 			return Skills_IsZombieClassEnabledInCurrentContext(L4D2ZombieClass_Boomer);
 		}
-		case L4D2Skill_ChargerLevel, L4D2Skill_ChargerInstaKill, L4D2Skill_ChargerDeathSetup, L4D2Skill_ChargerBowl:
+		case L4D2Skill_ChargerLevel, L4D2Skill_ChargerInstaKill, L4D2Skill_ChargerDeathSetup, L4D2Skill_ChargerLedgeHang, L4D2Skill_ChargerBowl:
 		{
 			return Skills_IsZombieClassEnabledInCurrentContext(L4D2ZombieClass_Charger);
 		}
-		case L4D2Skill_SmokerTongueCut, L4D2Skill_SmokerSelfClear:
+		case L4D2Skill_SmokerTongueCut, L4D2Skill_SmokerSelfClear, L4D2Skill_SmokerLedgeHang:
 		{
 			return Skills_IsZombieClassEnabledInCurrentContext(L4D2ZombieClass_Smoker);
 		}
@@ -1104,7 +1116,7 @@ stock bool Skills_IsSkillTypeEnabledInCurrentMode(L4D2SkillType type)
 		{
 			return Skills_IsZombieClassEnabledInCurrentContext(L4D2ZombieClass_Smoker);
 		}
-		case L4D2Skill_JockeyHighPounce, L4D2Skill_JockeyJumpStop, L4D2Skill_JockeySkeetMelee:
+		case L4D2Skill_JockeyHighPounce, L4D2Skill_JockeyJumpStop, L4D2Skill_JockeySkeetMelee, L4D2Skill_JockeyLedgeHang:
 		{
 			return Skills_IsZombieClassEnabledInCurrentContext(L4D2ZombieClass_Jockey);
 		}
@@ -1127,6 +1139,10 @@ stock bool Skills_IsSkillTypeEnabledInCurrentMode(L4D2SkillType type)
 		case L4D2Skill_ChargerKill:
 		{
 			return Skills_IsZombieClassEnabledInCurrentContext(L4D2ZombieClass_Charger);
+		}
+		case L4D2Skill_TankLedgeHang:
+		{
+			return true;
 		}
 	}
 
@@ -1251,6 +1267,10 @@ stock int Skills_GetEventRating(int eventIndex)
 		{
 			return 3;
 		}
+		case L4D2Skill_SmokerLedgeHang, L4D2Skill_JockeyLedgeHang, L4D2Skill_TankLedgeHang:
+		{
+			return 2;
+		}
 		case L4D2Skill_BoomerVomitLanded:
 		{
 			int survivorLimit = Skills_GetConfiguredSurvivorLimit();
@@ -1298,6 +1318,10 @@ stock int Skills_GetEventRating(int eventIndex)
 			return 3;
 		}
 		case L4D2Skill_ChargerDeathSetup:
+		{
+			return 2;
+		}
+		case L4D2Skill_ChargerLedgeHang:
 		{
 			return 2;
 		}

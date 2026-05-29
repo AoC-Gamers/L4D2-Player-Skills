@@ -462,7 +462,7 @@ bool Detect_IsChargerDeathSetupEligible(int victim, bool incapped, bool ledgeHan
 
 	if (ledgeHang)
 	{
-		return true;
+		return false;
 	}
 
 	if (!incapped)
@@ -478,6 +478,48 @@ bool Detect_IsChargerDeathSetupEligible(int victim, bool incapped, bool ledgeHan
 	float height = Detect_GetChargeVerticalDrop(victim);
 	float threshold = g_cvDetectDeathSetupHeight != null ? g_cvDetectDeathSetupHeight.FloatValue : 100.0;
 	return height >= threshold;
+}
+
+void Detect_EmitChargerLedgeHang(int victim)
+{
+	if (!IsValidSurvivor(victim) || g_DetectChargeVictim[victim].setupEmitted)
+	{
+		return;
+	}
+
+	int charger = g_DetectChargeVictim[victim].charger;
+	if (!IsValidZombieClass(charger, L4D2ZombieClass_Charger))
+	{
+		return;
+	}
+
+	float startTime = g_DetectChargeVictim[victim].startTime;
+	if (startTime <= 0.0 || (GetGameTime() - startTime) > L4D2_SKILLS_CHARGE_TRACK_WINDOW)
+	{
+		return;
+	}
+
+	int eventId = Skills_CreateEvent(L4D2Skill_ChargerLedgeHang);
+	int eventIndex = Skills_GetEventIndex(eventId);
+	if (eventIndex == -1)
+	{
+		return;
+	}
+
+	g_SkillEvents[eventIndex].actor.Capture(charger);
+	g_SkillEvents[eventIndex].victim.Capture(victim);
+	g_SkillEvents[eventIndex].zombieClass = view_as<int>(L4D2ZombieClass_Charger);
+	g_SkillEvents[eventIndex].wasCarried = g_DetectChargeVictim[victim].wasCarried;
+	g_SkillEvents[eventIndex].ledgeHang = true;
+	g_SkillEvents[eventIndex].height = Detect_GetChargeVerticalDrop(victim);
+
+	g_DetectChargeVictim[victim].setupEmitted = true;
+
+	Action result = API_FireSkillDetected(eventId, L4D2Skill_ChargerLedgeHang);
+	if (result < Plugin_Handled)
+	{
+		Announce_Skill(eventId);
+	}
 }
 
 void Detect_EmitChargerDeathSetup(int victim, bool incapped, bool ledgeHang)
@@ -526,6 +568,26 @@ void Detect_EmitChargerDeathSetup(int victim, bool incapped, bool ledgeHang)
 	{
 		Announce_Skill(eventId);
 	}
+}
+
+Action Detect_TimerEmitChargerDeathSetup(Handle timer, any userid)
+{
+	int victim = GetClientOfUserId(userid);
+	if (!IsValidSurvivor(victim))
+	{
+		return Plugin_Stop;
+	}
+
+	g_DetectChargeVictim[victim].setupQueued = false;
+	if (g_DetectChargeVictim[victim].setupEmitted || !IsPlayerAlive(victim))
+	{
+		return Plugin_Stop;
+	}
+
+	bool ledgeHang = (g_DetectChargeVictim[victim].flags & DCFLAG_LEDGE) != 0;
+	bool incapped = (g_DetectChargeVictim[victim].flags & DCFLAG_INCAP) != 0;
+	Detect_EmitChargerDeathSetup(victim, incapped, ledgeHang);
+	return Plugin_Stop;
 }
 
 void Detect_CheckChargerInstaKill(Event event, int victim)
@@ -579,6 +641,12 @@ void Detect_CheckChargerInstaKill(Event event, int victim)
 	bool recentMapDamage = Detect_HasRecentChargeMapDamage(victim);
 	bool mapDeathSignal = (g_DetectChargeVictim[victim].flags & (DCFLAG_FALL | DCFLAG_DROWN | DCFLAG_TRIGGER | DCFLAG_DEADLY | DCFLAG_LEDGE)) != 0;
 	bool chargeIncapContext = (g_DetectChargeVictim[victim].flags & DCFLAG_INCAP) != 0;
+	if ((g_DetectChargeVictim[victim].flags & DCFLAG_LEDGE) != 0)
+	{
+		Detect_ResetChargeTrack(victim);
+		return;
+	}
+
 	if (height < threshold && !recentMapDamage && !chargeIncapContext)
 	{
 		Detect_ResetChargeTrack(victim);
@@ -738,7 +806,6 @@ void Detect_HandleChargerHurt(int victim, int attacker, int damageType, int appl
 			g_SkillEvents[eventIndex].actorDamage = chargerHealthBeforeDamage;
 			g_SkillEvents[eventIndex].chipDamage = chipDamage;
 			g_SkillEvents[eventIndex].shots = 1;
-			g_SkillEvents[eventIndex].wouldQualifyAtBaseline = qualifiesAtBaseline;
 			int assistsFound = Detect_WriteSiTrackAssistsToEventAsSkillWindow(eventIndex, victim, attacker);
 			Detect_FillChargerLevelPriorDamage(eventIndex, victim, attacker, chipDamage);
 			g_SkillEvents[eventIndex].perfect = (g_SkillEvents[eventIndex].chipDamage == 0) && assistsFound == 0;
@@ -821,7 +888,6 @@ bool Detect_TryEmitChargerLevelFromDeath(int victim, int attacker)
 	g_SkillEvents[eventIndex].actorDamage = chargerHealthBeforeDamage;
 	g_SkillEvents[eventIndex].chipDamage = chipDamage;
 	g_SkillEvents[eventIndex].shots = 1;
-	g_SkillEvents[eventIndex].wouldQualifyAtBaseline = qualifiesAtBaseline;
 	int assistsFound = Detect_WriteSiTrackAssistsToEventAsSkillWindow(eventIndex, victim, attacker);
 	Detect_FillChargerLevelPriorDamage(eventIndex, victim, attacker, chipDamage);
 	g_SkillEvents[eventIndex].perfect = (chipDamage == 0) && assistsFound == 0;

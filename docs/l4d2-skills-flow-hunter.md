@@ -46,7 +46,7 @@ Se emite `HunterSkeet` cuando:
 
 - el `Hunter` muere durante el `pounce`,
 - la kill corresponde al flujo válido de skeet,
-- y el golpe final califica contra el baseline del `Hunter`.
+- y el golpe final califica como skeet dentro del flujo valido de pounce.
 
 La variante técnica se expresa con propiedades:
 
@@ -59,10 +59,19 @@ La variante técnica se expresa con propiedades:
 - `damage`
 - `chip_damage`
 - `shots`
-- `would_qualify_at_baseline`
+- `perfect`
 - `headshot`
 - `sniper`
 - `grenade_launcher`
+
+Notas:
+
+- `chip_damage` sigue existiendo como dato tecnico del evento;
+- ya no forma parte obligatoria del announce de chat para `HunterSkeet`;
+- el announce visible usa:
+  - `PerfectSkeet ... (damage/shots)`
+  - `Skeet ... (damage/shots)`
+  - `Skeet ... (damage/shots), asistido por ...`
 
 ### Flow
 
@@ -73,7 +82,7 @@ flowchart TD
     C --> D[Hunter dies]
     D --> E{Killed while valid pounce state}
     E -->|no| F[Stop]
-    E -->|yes| G{Qualifies at baseline}
+    E -->|yes| G{Valid skeet shot / fallback shotgun}
     G -->|no| F
     G -->|yes| H[Emit HunterSkeet]
 ```
@@ -97,7 +106,7 @@ Comparte el tracking base de `HunterSkeet`, incluyendo:
 - estado de `pounce`
 - último `raw damage`
 - salud previa al golpe
-- flags de baseline
+- flag de `perfect`
 
 ### Emit
 
@@ -110,7 +119,6 @@ Se emite `HunterSkeetMelee` cuando:
 ### Properties
 
 - `damage`
-- `would_qualify_at_baseline`
 - `perfect`
 
 ### Flow
