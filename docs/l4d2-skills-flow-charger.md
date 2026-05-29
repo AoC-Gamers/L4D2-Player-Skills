@@ -58,10 +58,12 @@ Se emite `ChargerLevel` cuando:
 Notas:
 
 - `chip_damage` sigue existiendo como dato tecnico del evento;
+- `damage` y `actor_damage` deben representar daño efectivo de la jugada, no
+  `raw damage` inflado del melee final;
 - el announce visible ya no usa wording explicito de `chip`;
 - si hubo daño previo propio del actor, el chat imprime `Level ... (dmg/shots)`;
 - si hubo asistencia previa, el chat imprime `Level ..., asistido por ...`;
-- `PerfectLevel` reemplaza al `Level` limpio y ocupa su lugar en chat.
+- `Level Perfecto` reemplaza al `Level` limpio y ocupa su lugar en chat.
 
 ### Flow
 

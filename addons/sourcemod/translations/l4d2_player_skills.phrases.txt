@@ -46,8 +46,8 @@
 
 	"SkillsLabelSkeetMelee"
 	{
-		"en"		"SkeetMelee"
-		"es"		"SkeetMelee"
+		"en"		"Skeet-Melee"
+		"es"		"Skeet-Melee"
 	}
 
 	"SkillsLabelDeadstop"
@@ -136,8 +136,8 @@
 
 	"SkillsLabelRockSkeet"
 	{
-		"en"		"RockSkeet"
-		"es"		"RockSkeet"
+		"en"		"Skeet-Rock"
+		"es"		"Skeet-Rock"
 	}
 
 	"SkillsLabelBowl"
@@ -189,15 +189,15 @@
 	"SkeetMelee"
 	{
 		"#format"	"{1:s},{2:s}"
-		"en"		"{olive}{1} {blue}melee-skeeted {olive}{2}{blue}."
-		"es"		"{olive}{1} {blue}hizo {green}SkeetMelee {blue}a {olive}{2}{blue}."
+		"en"		"{olive}{1} {blue}landed a {green}Skeet-Melee {blue}on {olive}{2}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet-Melee {blue}a {olive}{2}{blue}."
 	}
 
 	"SkeetMeleePerfect"
 	{
 		"#format"	"{1:s},{2:s}"
-		"en"		"{olive}{1} {blue}melee-skeeted {olive}{2}{blue}."
-		"es"		"{olive}{1} {blue}hizo {green}SkeetMelee {blue}a {olive}{2}{blue}."
+		"en"		"{olive}{1} {blue}landed a {green}Skeet-Melee Perfect {blue}on {olive}{2}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet-Melee Perfecto {blue}a {olive}{2}{blue}."
 	}
 
 	"HunterSkeetSniper"
@@ -210,8 +210,8 @@
 	"HunterSkeetSniperPerfect"
 	{
 		"#format"	"{1:s},{2:s},{3:s}"
-		"en"		"{olive}{1} {blue}landed a {green}PerfectSkeet {blue}on {olive}{2} {blue}with a sniper {green}{3}{blue}."
-		"es"		"{olive}{1} {blue}hizo {green}PerfectSkeet {blue}a {olive}{2} {blue}con sniper de {green}{3}{blue}."
+		"en"		"{olive}{1} {blue}landed a {green}Skeet Perfect {blue}on {olive}{2} {blue}with a sniper {green}{3}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet Perfecto {blue}a {olive}{2} {blue}con sniper de {green}{3}{blue}."
 	}
 
 	"HunterSkeetSniperAssist"
@@ -231,8 +231,8 @@
 	"HunterSkeetGLPerfect"
 	{
 		"#format"	"{1:s},{2:s},{3:d}"
-		"en"		"{olive}{1} {blue}landed a {green}PerfectSkeet {blue}on {olive}{2} {blue}with a direct {green}Grenade Launcher {blue}hit for {green}{3} {blue}damage."
-		"es"		"{olive}{1} {blue}hizo {green}PerfectSkeet {blue}a {olive}{2} {blue}con impacto directo de {green}Grenade Launcher {blue}por {green}{3} {blue}de daño."
+		"en"		"{olive}{1} {blue}landed a {green}Skeet Perfect {blue}on {olive}{2} {blue}with a direct {green}Grenade Launcher {blue}hit for {green}{3} {blue}damage."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet Perfecto {blue}a {olive}{2} {blue}con impacto directo de {green}Grenade Launcher {blue}por {green}{3} {blue}de daño."
 	}
 
 	"HunterSkeetGLAssist"
@@ -245,15 +245,15 @@
 	"PerfectSkeetSingleShot"
 	{
 		"#format"	"{1:s},{2:s},{3:d},{4:d}"
-		"en"		"{olive}{1} {blue}landed a {green}PerfectSkeet {blue}on {olive}{2} {blue}({green}{3}{blue}/{green}{4}{blue})."
-		"es"		"{olive}{1} {blue}hizo {green}PerfectSkeet {blue}a {olive}{2} {blue}({green}{3}{blue}/{green}{4}{blue})."
+		"en"		"{olive}{1} {blue}landed a {green}Skeet Perfect {blue}on {olive}{2} {blue}({green}{3}{blue}/{green}{4}{blue})."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet Perfecto {blue}a {olive}{2} {blue}({green}{3}{blue}/{green}{4}{blue})."
 	}
 
 	"PerfectSkeetMultiShot"
 	{
 		"#format"	"{1:s},{2:s},{3:d},{4:d}"
-		"en"		"{olive}{1} {blue}landed a {green}PerfectSkeet {blue}on {olive}{2} {blue}({green}{3}{blue}/{green}{4}{blue})."
-		"es"		"{olive}{1} {blue}hizo {green}PerfectSkeet {blue}a {olive}{2} {blue}({green}{3}{blue}/{green}{4}{blue})."
+		"en"		"{olive}{1} {blue}landed a {green}Skeet Perfect {blue}on {olive}{2} {blue}({green}{3}{blue}/{green}{4}{blue})."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet Perfecto {blue}a {olive}{2} {blue}({green}{3}{blue}/{green}{4}{blue})."
 	}
 
 	"HunterDeadstop"
@@ -427,8 +427,8 @@
 	"ChargerLevelPerfect"
 	{
 		"#format"	"{1:s},{2:s}"
-		"en"		"{olive}{1} {blue}landed a {green}PerfectLevel {blue}on {olive}{2}{blue}."
-		"es"		"{olive}{1} {blue}hizo {green}PerfectLevel {blue}a {olive}{2}{blue}."
+		"en"		"{olive}{1} {blue}landed a {green}Level Perfect {blue}on {olive}{2}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Level Perfecto {blue}a {olive}{2}{blue}."
 	}
 
 	"ChargerBowl"
@@ -679,8 +679,8 @@
 	"TankRockSkeet"
 	{
 		"#format"	"{1:s}"
-		"en"		"{olive}{1} {blue}skeeted a {olive}Tank rock{blue}."
-		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a una {olive}Tank rock{blue}."
+		"en"		"{olive}{1} {blue}landed a {green}Skeet-Rock {blue}on a {olive}Tank rock{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet-Rock {blue}a una {olive}Tank rock{blue}."
 	}
 
 	"TankRockHit"

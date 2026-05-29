@@ -282,6 +282,15 @@ En corto:
 - `Skill` = technical window summary.
 - `damage_scope` permite distinguirlo sin inferencia.
 
+Regla actual de `damage`:
+
+- `damage_scope = LifeKill`
+  - `damage` y `actor_damage` representan daño efectivo/normalizado sobre la vida real del SI;
+  - el tracking `raw` de la vida puede seguir existiendo internamente, pero no es el valor visible recomendado del payload;
+- `damage_scope = SkillWindow`
+  - `damage` y `actor_damage` representan daño efectivo/semántico de la jugada,
+    no necesariamente el `raw damage` reportado por el motor.
+
 ## Current Limitation
 
 Hoy `PlayerSkills_FillEventKeyValues(...)` ya expone:
@@ -394,10 +403,21 @@ Reglas practicas:
 
 - `HunterSkeet`
   - el chat usa `damage/shots`, `perfect` y `assists`;
+  - el nombre visible recomendado es:
+    - `Skeet`
+    - `Skeet Perfecto`
+    - `Skeet-Melee`
   - `chip_damage` sigue existiendo en payload.
 - `ChargerLevel`
-  - el chat usa `PerfectLevel`, `Level`, `Level (dmg/shots)` y `assists`;
+  - el chat usa `Level Perfecto`, `Level`, `Level (dmg/shots)` y `assists`;
   - `chip_damage` sigue existiendo en payload.
+
+Eso implica:
+
+- `HunterSkeet` y `ChargerLevel` ya no deben usar `raw damage` inflado del motor
+  para el announce visible;
+- `*Kill` simples ya no deben mostrar overkill `raw` en el announce visible;
+- el announce humano de `*Kill` debe usar daño normalizado a la vida del SI.
 
 ## Perfect Variants
 
@@ -1167,7 +1187,9 @@ event
     "skill_properties"
     {
         "damage"        "1000"
+        "actor_damage"  "1000"
         "chip_damage"   "300"
+        "damage_scope"  "2"
         "shots"         "1"
         "crown"         "1"
         "startled"      "1"
@@ -1181,6 +1203,14 @@ event
     }
 }
 ```
+
+Notas:
+
+- `WitchDead` usa `damage_scope = SkillWindow`.
+- `damage` y `actor_damage` representan daño efectivo sobre la vida real de la
+  `Witch`, no overkill `raw`.
+- la detección de `crown` puede usar `raw` interno del blast final, pero ese
+  valor no reemplaza el daño efectivo expuesto por la API.
 
 ### WitchIncap
 

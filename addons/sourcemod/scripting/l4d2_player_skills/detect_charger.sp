@@ -720,24 +720,17 @@ void Detect_FillChargerLevelPriorDamage(int eventIndex, int victim, int attacker
 		assistDamageTotal += g_SkillEvents[eventIndex].assistDamage[i];
 	}
 
-	int actorChipDamage = chipDamage - assistDamageTotal;
-	if (actorChipDamage < 0)
+	int actorChipDamage = Detect_GetSiLifeContributorPreviousDamage(victim, attacker);
+	int actorChipShots = Detect_GetSiLifeContributorPreviousShots(victim, attacker);
+	int inferredChipDamage = actorChipDamage + assistDamageTotal;
+	if (chipDamage > inferredChipDamage)
 	{
-		actorChipDamage = 0;
-	}
-
-	int actorChipShots = 0;
-	if (actorChipDamage > 0)
-	{
-		actorChipShots = Detect_GetSiLifeContributorShots(victim, attacker) - 1;
-		if (actorChipShots < 0)
-		{
-			actorChipShots = 0;
-		}
+		inferredChipDamage = chipDamage;
 	}
 
 	g_SkillEvents[eventIndex].actorChipDamage = actorChipDamage;
 	g_SkillEvents[eventIndex].actorChipShots = actorChipShots;
+	g_SkillEvents[eventIndex].chipDamage = inferredChipDamage;
 }
 
 void Detect_HandleChargerHurt(int victim, int attacker, int damageType, int appliedDamage, int postHealth)
@@ -825,7 +818,7 @@ void Detect_HandleChargerHurt(int victim, int attacker, int damageType, int appl
 				victim,
 				attacker,
 				chargerHealthBeforeDamage,
-				chipDamage,
+				g_SkillEvents[eventIndex].chipDamage,
 				qualifiesAtBaseline ? 1 : 0,
 				g_SkillEvents[eventIndex].perfect ? 1 : 0);
 		}
@@ -890,7 +883,7 @@ bool Detect_TryEmitChargerLevelFromDeath(int victim, int attacker)
 	g_SkillEvents[eventIndex].shots = 1;
 	int assistsFound = Detect_WriteSiTrackAssistsToEventAsSkillWindow(eventIndex, victim, attacker);
 	Detect_FillChargerLevelPriorDamage(eventIndex, victim, attacker, chipDamage);
-	g_SkillEvents[eventIndex].perfect = (chipDamage == 0) && assistsFound == 0;
+	g_SkillEvents[eventIndex].perfect = (g_SkillEvents[eventIndex].chipDamage == 0) && assistsFound == 0;
 
 	Action result = API_FireSkillDetected(eventId, L4D2Skill_ChargerLevel);
 	if (result < Plugin_Handled)
@@ -906,7 +899,7 @@ bool Detect_TryEmitChargerLevelFromDeath(int victim, int attacker)
 			victim,
 			attacker,
 			chargerHealthBeforeDamage,
-			chipDamage,
+			g_SkillEvents[eventIndex].chipDamage,
 			qualifiesAtBaseline ? 1 : 0,
 			g_SkillEvents[eventIndex].perfect ? 1 : 0,
 			rawDamage);

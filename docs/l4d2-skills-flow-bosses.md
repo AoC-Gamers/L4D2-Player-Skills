@@ -103,6 +103,10 @@ Se emite `TankRockSkeet` cuando:
 - no llegó a tocar survivor antes de resolverse,
 - y el cierre diferido confirma que no fue realmente un hit.
 
+Nombre visible:
+
+- `Skeet-Rock`
+
 ### Properties
 
 No agrega `skill_properties` especiales hoy.
@@ -190,9 +194,19 @@ flowchart TD
 
 El contexto `crown` se decide sobre el blast final acumulado.
 
+Regla de daño:
+
+- `lastShotDamage` y `lastBlastDamage`
+  - guardan daño efectivo capeado por la vida restante de la `Witch`;
+- `lastShotRawDamage` y `lastBlastRawDamage`
+  - se conservan solo como contexto técnico para heurísticas como `crown`;
+- el payload final de `WitchDead`
+  - expone daño efectivo, no overkill `raw`.
+
 ### Properties
 
 - `damage`
+- `actor_damage`
 - `chip_damage`
 - `shots`
 - `crown`

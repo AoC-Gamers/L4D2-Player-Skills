@@ -103,6 +103,16 @@ En corto:
 - `Kill` = resumen total de vida.
 - `Skill` = resumen técnico de la jugada.
 
+Regla de daño actual:
+
+- `*Kill`
+  - usa daño efectivo/normalizado sobre la vida real del SI;
+  - el tracking `raw` puede mantenerse internamente para debug y auditoría;
+- skills técnicas con `damage_scope = SkillWindow`
+  - usan daño efectivo/semántico de la jugada;
+- el payload puede conservar contexto técnico adicional aunque el chat no lo
+  imprima literalmente.
+
 Ejemplos de contexto que deben vivir en el evento y no necesariamente en el enum:
 
 - `chipDamage`
@@ -122,10 +132,34 @@ Nota de UX:
 - no obliga a que el announce visible use la palabra `chip`;
 - en `HunterSkeet`, el chat actual prioriza `damage/shots`, `perfect` y `assists`;
 - en `ChargerLevel`, el chat actual prioriza:
-  - `PerfectLevel`
+  - `Level Perfecto`
   - `Level`
   - `Level (dmg/shots)` si hubo daño previo propio del actor
   - `Level ..., asistido por ...` si hubo contribución ajena
+
+### 4.2. Naming visual de announces
+
+El nombre visible de chat debe separar:
+
+- habilidad base
+- propiedades
+- contexto
+
+Reglas:
+
+- las habilidades compuestas usan guion
+  - `Skeet-Melee`
+  - `Skeet-Rock`
+- las propiedades no forman parte del nombre base
+  - `Skeet Perfecto`
+  - `Level Perfecto`
+- el nombre interno del enum no debe imprimirse directo en chat
+  - evitar `PerfectSkeet`, `PerfectLevel`, `SkeetMelee`, `RockSkeet`
+- el nombre base va primero y el modificador técnico después
+  - `Skeet-Rock`, no `Rock-Skeet`
+- el contexto visible debe ir al final del announce
+  - `(.../...)`
+  - `asistido por ...`
 
 ---
 
@@ -200,6 +234,13 @@ Entonces:
 - si hubo un blast de crown suficiente, eso debe marcarse como propiedad del evento;
 - el startled o el chip se conservan como metadata;
 - no se debe crear una skill principal aparte solo para ese caso.
+
+Regla de daño:
+
+- el resumen de boss de `Witch` usa daño efectivo acumulado sobre su vida real;
+- `WitchDead` expone daño efectivo del blast/shot final en `damage`;
+- el `raw` del blast final puede conservarse internamente para decidir `crown`,
+  pero no debe filtrarse como daño visible del evento.
 
 ---
 

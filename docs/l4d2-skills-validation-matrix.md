@@ -53,11 +53,12 @@ El objetivo es comprobar que:
   - `HunterKill`
 - payload:
   - `damage_scope = LifeKill`
-  - `damage = daño total del killer en la vida`
-  - `actor_damage = daño total del killer en la vida`
+  - `damage = daño efectivo/normalizado del killer sobre la vida del Hunter`
+  - `actor_damage = daño efectivo/normalizado del killer sobre la vida del Hunter`
 - assists:
   - `assist_scope = LifeKill`
   - refleja contribuidores de la vida completa
+  - con daño visible normalizado dentro de la vida máxima del SI
 
 ---
 
@@ -134,8 +135,8 @@ El objetivo es comprobar que:
   - `ChargerKill`
 - payload:
   - `damage_scope = LifeKill`
-  - `damage = daño total del killer en la vida`
-  - `actor_damage = daño total del killer en la vida`
+  - `damage = daño efectivo/normalizado del killer sobre la vida del Charger`
+  - `actor_damage = daño efectivo/normalizado del killer sobre la vida del Charger`
 - assists:
   - `assist_scope = LifeKill`
 
@@ -205,3 +206,6 @@ La validación se considera correcta si se cumplen simultáneamente estas reglas
 - `actor_damage` sigue la misma semántica que `damage_scope`
 - `assist_scope` no mezcla `LifeKill` con `SkillWindow`
 - `chip_damage` representa daño previo respecto del baseline, no solo daño previo del killer
+- `LifeKill` visible usa daño normalizado a la vida del SI
+- `SkillWindow` usa daño efectivo/semántico de la jugada
+- el `raw damage` puede quedar en tracking interno, no en el announce humano

@@ -68,8 +68,10 @@ Notas:
 
 - `chip_damage` sigue existiendo como dato tecnico del evento;
 - ya no forma parte obligatoria del announce de chat para `HunterSkeet`;
+- `damage` y `actor_damage` deben representar daño efectivo de la jugada, no
+  `raw damage` inflado del blast final;
 - el announce visible usa:
-  - `PerfectSkeet ... (damage/shots)`
+  - `Skeet Perfecto ... (damage/shots)`
   - `Skeet ... (damage/shots)`
   - `Skeet ... (damage/shots), asistido por ...`
 
@@ -115,6 +117,12 @@ Se emite `HunterSkeetMelee` cuando:
 - el `Hunter` muere durante el `pounce`,
 - la kill final fue por melee,
 - y la jugada cae en la categoría mecánica separada de melee skeet.
+
+Nombre visible:
+
+- `Skeet-Melee`
+- si además califica como perfecto:
+  - `Skeet-Melee Perfecto`
 
 ### Properties
 

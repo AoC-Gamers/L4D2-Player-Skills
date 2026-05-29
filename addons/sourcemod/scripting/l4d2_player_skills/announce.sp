@@ -1588,10 +1588,25 @@ void Announce_Skill(int eventId)
 		{
 			char assistList[256];
 			Announce_FormatAssistList(eventIndex, assistList, sizeof(assistList));
+			int assistDamageTotal = 0;
+			for (int i = 0; i < g_SkillEvents[eventIndex].assistsCount && i < L4D2_SKILLS_MAX_EVENT_ASSISTS; i++)
+			{
+				assistDamageTotal += g_SkillEvents[eventIndex].assistDamage[i];
+			}
+
+			int actorLevelDamage = Skills_GetSpecialMaxHealth(L4D2ZombieClass_Charger) - assistDamageTotal;
+			if (actorLevelDamage < 0)
+			{
+				actorLevelDamage = 0;
+			}
+
+			int actorLevelShots = g_SkillEvents[eventIndex].actorChipDamage > 0
+				? g_SkillEvents[eventIndex].actorChipShots + 1
+				: 0;
 			char chipStat[64];
 			Announce_FormatSimpleKillStat(
-				g_SkillEvents[eventIndex].actorChipDamage,
-				g_SkillEvents[eventIndex].actorChipShots,
+				actorLevelDamage,
+				actorLevelShots,
 				chipStat,
 				sizeof(chipStat));
 

@@ -925,21 +925,33 @@ void Boss_OnWitchTakeDamagePost(int witch, int attacker, int inflictor, float da
 		return;
 	}
 
+	int effectiveDamage = roundedDamage;
+	int maxHealth = g_BossSessions[sessionIndex].maxHealth;
+	if (maxHealth > 0 && g_BossSessions[sessionIndex].totalDamage + effectiveDamage > maxHealth)
+	{
+		effectiveDamage = maxHealth - g_BossSessions[sessionIndex].totalDamage;
+		if (effectiveDamage < 0)
+		{
+			effectiveDamage = 0;
+		}
+	}
+
 	g_BossSessions[sessionIndex].lastShotTime = GetGameTime();
 	g_BossSessions[sessionIndex].lastShotAttacker = attacker;
-	g_BossSessions[sessionIndex].lastShotDamage = roundedDamage;
+	g_BossSessions[sessionIndex].lastShotDamage = effectiveDamage;
+	g_BossSessions[sessionIndex].lastShotRawDamage = damage;
 	g_BossSessions[sessionIndex].lastDamageType = damagetype;
 	g_BossSessions[sessionIndex].lastShotIsShotgun = (damagetype & DMG_BUCKSHOT) != 0;
 
 	if (g_BossSessions[sessionIndex].lastShotIsShotgun)
 	{
-		g_BossSessions[sessionIndex].lastBlastDamage += roundedDamage;
+		g_BossSessions[sessionIndex].lastBlastDamage += effectiveDamage;
 		g_BossSessions[sessionIndex].lastBlastRawDamage += damage;
 	}
 	else
 	{
 		g_BossSessions[sessionIndex].lastBlastStartTime = 0.0;
-		g_BossSessions[sessionIndex].lastBlastDamage = roundedDamage;
+		g_BossSessions[sessionIndex].lastBlastDamage = effectiveDamage;
 		g_BossSessions[sessionIndex].lastBlastRawDamage = damage;
 	}
 
@@ -948,18 +960,12 @@ void Boss_OnWitchTakeDamagePost(int witch, int attacker, int inflictor, float da
 		return;
 	}
 
-	int maxHealth = g_BossSessions[sessionIndex].maxHealth;
-	if (maxHealth > 0 && g_BossSessions[sessionIndex].totalDamage + roundedDamage > maxHealth)
-	{
-		roundedDamage = maxHealth - g_BossSessions[sessionIndex].totalDamage;
-	}
-
-	if (roundedDamage <= 0)
+	if (effectiveDamage <= 0)
 	{
 		return;
 	}
 
-	L4D2BossSession(sessionIndex).AddDamage(attacker, roundedDamage);
+	L4D2BossSession(sessionIndex).AddDamage(attacker, effectiveDamage);
 
 	int health = GetEntProp(witch, Prop_Data, "m_iHealth");
 	g_BossSessions[sessionIndex].lastHealth = health > 0 ? health : 0;
@@ -994,6 +1000,8 @@ void Boss_CreateWitchDeadEvent(int sessionIndex, int killer)
 	g_SkillEvents[eventIndex].victim.bot = true;
 	strcopy(g_SkillEvents[eventIndex].victim.name, sizeof(g_SkillEvents[eventIndex].victim.name), "Witch");
 	strcopy(g_SkillEvents[eventIndex].victim.auth, sizeof(g_SkillEvents[eventIndex].victim.auth), "WITCH");
+	g_SkillEvents[eventIndex].damageScope = L4D2SkillDamageScope_SkillWindow;
+	g_SkillEvents[eventIndex].actorDamage = actualDamage;
 	g_SkillEvents[eventIndex].damage = actualDamage;
 	g_SkillEvents[eventIndex].chipDamage = chipDamage < 0 ? 0 : chipDamage;
 	g_SkillEvents[eventIndex].shots = crown ? 1 : 0;
