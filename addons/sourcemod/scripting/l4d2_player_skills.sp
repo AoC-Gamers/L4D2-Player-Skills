@@ -4,11 +4,13 @@
 #include <sourcemod>
 #include <sdkhooks>
 #include <sdktools>
-#include <colors>
 #include <console_table>
 #include <left4dhooks>
 #include <l4d2util_weapons>
 #include <l4d2util_constants>
+
+#define MAX_MESSAGE_LENGTH 512
+#include <colors>
 
 #define LIBRARY_LEFT4DHOOKS "left4dhooks"
 #define LOG_DIRECTORY "logs/l4d2_player_skills.log"
@@ -59,6 +61,7 @@ ConVar	g_cvVersusChargerLimit	 = null;
 ConVar	g_cvHunterHighPounceHeight = null;
 ConVar	g_cvJockeyHighPounceHeight = null;
 ConVar	g_cvWitchPrintMaxEntries = null;
+ConVar	g_cvChargerClawPrintMinHits = null;
 bool	g_bWitchPrintOnIncap	 = true;
 char	g_sDebugLogPath[PLATFORM_MAX_PATH];
 
@@ -263,6 +266,7 @@ public void OnPluginStart()
 	g_cvJockeyHighPounceHeight	= CreateConVar("l4d2_player_skills_jockey_high_pounce_height", "300", "Minimum vertical height for JockeyHighPounce.");
 	g_cvDetectInstaKillHeight	= CreateConVar("l4d2_player_skills_charger_instakill_height", "400", "Minimum vertical drop for ChargerInstaKill.");
 	g_cvDetectDeathSetupHeight	= CreateConVar("l4d2_player_skills_charger_death_setup_height", "100", "Minimum vertical drop for ChargerDeathSetup incap classification.");
+	g_cvChargerClawPrintMinHits = CreateConVar("l4d2_player_skills_charger_claw_print_min_hits", "0", "Minimum Charger claw hits required to print a life summary. 0=disabled.");
 	g_cvDetectBHopMinStreak		= CreateConVar("l4d2_player_skills_bhop_streak_min", "3", "Minimum amount of successful hops for BunnyHopStreak.");
 	g_cvDetectBHopMinInitSpeed	= CreateConVar("l4d2_player_skills_bhop_init_speed", "150", "Minimum initial jump speed to start tracking BunnyHopStreak.");
 	g_cvDetectBHopContSpeed		= CreateConVar("l4d2_player_skills_bhop_keep_speed", "300", "Minimum speed that keeps a hop streak even without acceleration.");
@@ -328,6 +332,7 @@ public void OnPluginStart()
 	HookEvent("pounce_end", Event_PounceEnd, EventHookMode_Post);
 
 	RegConsoleCmd("sm_skills", Command_Skills, "Print the detected skills summary in chat and the comparative skills table in console.");
+	RegConsoleCmd("sm_skills_stats", Command_SkillsStats, "Print team skill stats to console. Usage: sm_skills_stats <surv|infect|all>.");
 
 	AutoExecConfig(false, "l4d2_player_skills");
 	Boss_Init();
@@ -403,18 +408,15 @@ public void L4D_OnGameModeChange(int gamemode)
 public void OnPluginEnd()
 {
 	g_Runtime.roundLive = false;
-	Skills_ResetEvents();
-	Boss_ResetAll();
-	Detect_ResetAll();
+	Boss_Shutdown();
+	Detect_Shutdown();
 }
 
 public void L4D_OnFirstSurvivorLeftSafeArea_Post(int client)
 {
 	Skills_Debug(PlayerSkillsDebug_Event, "[L4D_OnFirstSurvivorLeftSafeArea_Post] client=%d", client);
 
-	if (!Skills_IsEnabled()
-		|| g_Runtime.roundLive
-		|| g_Runtime.roundLiveSignal != PlayerSkillsRoundLiveSignal_SafeArea)
+	if (!Skills_IsEnabled() || g_Runtime.roundLive || g_Runtime.roundLiveSignal != PlayerSkillsRoundLiveSignal_SafeArea)
 	{
 		return;
 	}
@@ -651,12 +653,7 @@ void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 {
 	char message[128];
 	event.GetString("message", message, sizeof(message));
-	Skills_Debug(PlayerSkillsDebug_Event, "[%s] winner=%d reason=%d message=%s time=%.1f",
-		name,
-		event.GetInt("winner"),
-		event.GetInt("reason"),
-		message,
-		event.GetFloat("time"));
+	Skills_Debug(PlayerSkillsDebug_Event, "[%s] winner=%d reason=%d message=%s time=%.1f", name, event.GetInt("winner"), event.GetInt("reason"), message, event.GetFloat("time"));
 
 	if (g_Runtime.baseMode == PlayerSkillsGameMode_Versus)
 	{
@@ -1104,14 +1101,22 @@ Action Command_Skills(int client, int args)
 				L4D2Skill_ChargerInstaKill, "SkillsLabelInstaKill",
 				L4D2Skill_ChargerDeathSetup, "SkillsLabelDeathSetup",
 				L4D2Skill_SpecialPinClear, "SkillsLabelPinClear",
-				L4D2Skill_BunnyHopStreak, "SkillsLabelBHop");
+				L4D2Skill_ChargerBowl, "SkillsLabelBowl");
 
 			Announce_PrintSkillsSummaryLine(client, counts,
 				L4D2Skill_HunterHighPounce, "SkillsLabelHunterHighPounce",
 				L4D2Skill_JockeyHighPounce, "SkillsLabelJockeyHighPounce",
+				L4D2Skill_JockeyJumpStop, "SkillsLabelJumpStop",
+				L4D2Skill_JockeySkeetMelee, "SkillsLabelJockeySkeetMelee",
 				L4D2Skill_BoomerVomitLanded, "SkillsLabelVomit",
-				L4D2Skill_CarAlarmTriggered, "SkillsLabelCarAlarm",
+				L4D2Skill_CarAlarmTriggered, "SkillsLabelCarAlarm");
+
+			Announce_PrintSkillsSummaryLine(client, counts,
+				L4D2Skill_BunnyHopStreak, "SkillsLabelBHop",
 				L4D2Skill_TankRockSkeet, "SkillsLabelRockSkeet",
+				L4D2Skill_None, "",
+				L4D2Skill_None, "",
+				L4D2Skill_None, "",
 				L4D2Skill_None, "");
 		}
 	}
@@ -1172,6 +1177,85 @@ Action Command_Skills(int client, int args)
 	if (showInfected)
 	{
 		Announce_RenderSkillsTeamTable(client, L4DTeam_Infected, infectedFocus);
+	}
+
+	return Plugin_Handled;
+}
+
+Action Command_SkillsStats(int client, int args)
+{
+	if (client <= 0 || !IsValidClient(client))
+	{
+		Announce_ReplyCommand(client, "%t sm_skills_stats is in-game only.", "Tag");
+		return Plugin_Handled;
+	}
+
+	if (!Skills_IsEnabled())
+	{
+		Announce_ReplyCommand(client, "%t {red}Plugin disabled.{default}", "Tag");
+		return Plugin_Handled;
+	}
+
+	bool showSurvivor = false;
+	bool showInfected = false;
+
+	if (args >= 1)
+	{
+		char scope[16];
+		GetCmdArg(1, scope, sizeof(scope));
+
+		if (StrEqual(scope, "surv", false) || StrEqual(scope, "survivor", false) || StrEqual(scope, "survivors", false))
+		{
+			showSurvivor = true;
+		}
+		else if (StrEqual(scope, "infect", false) || StrEqual(scope, "infected", false))
+		{
+			showInfected = true;
+		}
+		else if (StrEqual(scope, "all", false))
+		{
+			showSurvivor = true;
+			showInfected = true;
+		}
+		else
+		{
+			Announce_ReplyCommand(client, "%t %t", "Tag", "SkillsStatsUsage");
+			return Plugin_Handled;
+		}
+	}
+	else
+	{
+		L4DTeam clientTeam = GetClientL4DTeam(client);
+		if (clientTeam == L4DTeam_Survivor)
+		{
+			showSurvivor = true;
+		}
+		else if (clientTeam == L4DTeam_Infected)
+		{
+			showInfected = true;
+		}
+		else
+		{
+			showSurvivor = true;
+			showInfected = true;
+		}
+	}
+
+	if (!showSurvivor && !showInfected)
+	{
+		Announce_ReplyCommand(client, "%t %t", "Tag", "SkillsComparableTableUnavailable");
+		return Plugin_Handled;
+	}
+
+	Announce_NotifyConsoleDelivery(client);
+
+	if (showSurvivor)
+	{
+		Announce_RenderSkillsTeamTable(client, L4DTeam_Survivor, GetClientL4DTeam(client) == L4DTeam_Survivor ? client : 0);
+	}
+	if (showInfected)
+	{
+		Announce_RenderSkillsTeamTable(client, L4DTeam_Infected, GetClientL4DTeam(client) == L4DTeam_Infected ? client : 0);
 	}
 
 	return Plugin_Handled;

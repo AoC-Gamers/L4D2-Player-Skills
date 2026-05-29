@@ -253,6 +253,35 @@ Reglas:
 - cambia la semántica del origen de esos assists;
 - esa semántica debe poder consultarse desde API.
 
+## LifeKill vs SkillWindow
+
+La API debe preservar una separación obligatoria entre:
+
+- `LifeKill`
+  - resumen total de la vida del target;
+  - usado por eventos `*Kill`;
+- `SkillWindow`
+  - resumen técnico de la jugada;
+  - usado por skills ricas o contextuales.
+
+Reglas de consumo:
+
+- `SmokerKill`, `BoomerKill`, `HunterKill`, `SpitterKill`, `JockeyKill` y
+  `ChargerKill` deben interpretarse como resumen de vida completa;
+- `HunterSkeet`, `BoomerPop`, `SmokerSelfClear`, `ChargerLevel`,
+  `ChargerInstaKill` y `ChargerBowl` deben interpretarse como lectura técnica de
+  una ventana específica;
+- un consumidor externo no debe asumir que `damage` significa lo mismo en un
+  `*Kill` y en una skill rica;
+- si ambos eventos existen para una misma secuencia, no deben fusionarse como si
+  fueran duplicados semánticos: describen capas distintas.
+
+En corto:
+
+- `*Kill` = total life summary.
+- `Skill` = technical window summary.
+- `damage_scope` permite distinguirlo sin inferencia.
+
 ## Current Limitation
 
 Hoy `PlayerSkills_FillEventKeyValues(...)` ya expone:
@@ -265,6 +294,7 @@ Hoy `PlayerSkills_FillEventKeyValues(...)` ya expone:
 - `assists[].damage`
 - `assists[].shots`
 - `assists[].weaponid`
+- `damage_scope`
 
 Pero la capa de natives genéricos no expone bien:
 
@@ -331,9 +361,15 @@ La propuesta compatible es:
 
 ```text
 "assist_scope"          "1|2"
+"damage_scope"          "1|2"
 ```
 
 donde:
+
+- `1` = `LifeKill`
+- `2` = `SkillWindow`
+
+Para `damage_scope`:
 
 - `1` = `LifeKill`
 - `2` = `SkillWindow`
@@ -463,6 +499,7 @@ event
         "damage"                    "166"
         "actor_damage"              "166"
         "assist_scope"              "2"
+        "damage_scope"              "2"
         "chip_damage"               "84"
         "shots"                     "1"
         "rating"                    "3"
@@ -496,6 +533,53 @@ event
         "shots"                     "1"
         "would_qualify_at_baseline" "1"
         "perfect"                   "1"
+    }
+}
+```
+
+### ChargerKill
+
+```text
+event
+{
+    "id"                    "41"
+    "type_id"               "28"
+
+    "actor_userid"          "43"
+    "actor_accountid"       "222333"
+    "actor_name"            "Ellis"
+    "actor_bot"             "0"
+
+    "victim_userid"         "19"
+    "victim_accountid"      "0"
+    "victim_name"           "Charger (IA)"
+    "victim_bot"            "1"
+
+    "assists_count"         "1"
+
+    "assists"
+    {
+        "0"
+        {
+            "userid"        "44"
+            "accountid"     "444555"
+            "name"          "Rochelle"
+            "bot"           "0"
+            "damage"        "201"
+            "shots"         "5"
+            "weaponid"      "6"
+        }
+    }
+
+    "skill_properties"
+    {
+        "damage"            "436"
+        "actor_damage"      "436"
+        "assister_damage"   "201"
+        "assister_shots"    "5"
+        "assist_scope"      "1"
+        "damage_scope"      "1"
+        "shots"             "9"
     }
 }
 ```
@@ -709,6 +793,53 @@ event
 }
 ```
 
+### SmokerKill
+
+```text
+event
+{
+    "id"                    "24"
+    "type_id"               "22"
+
+    "actor_userid"          "41"
+    "actor_accountid"       "123456"
+    "actor_name"            "Lechuga"
+    "actor_bot"             "0"
+
+    "victim_userid"         "16"
+    "victim_accountid"      "0"
+    "victim_name"           "Smoker (IA)"
+    "victim_bot"            "1"
+
+    "assists_count"         "1"
+
+    "assists"
+    {
+        "0"
+        {
+            "userid"        "42"
+            "accountid"     "654321"
+            "name"          "Pasta"
+            "bot"           "0"
+            "damage"        "33"
+            "shots"         "2"
+            "weaponid"      "5"
+        }
+    }
+
+    "skill_properties"
+    {
+        "damage"            "270"
+        "actor_damage"      "270"
+        "assister_damage"   "33"
+        "assister_shots"    "2"
+        "assist_scope"      "1"
+        "damage_scope"      "1"
+        "shots"             "3"
+    }
+}
+```
+
 ### BoomerPop
 
 ```text
@@ -745,10 +876,13 @@ event
 
     "skill_properties"
     {
-        "assist_scope"    "2"
-        "rating"          "2"
-        "shove_count"    "1"
-        "time_a"         "1.7"
+        "assist_scope"      "2"
+        "damage_scope"      "2"
+        "assister_damage"   "19"
+        "assister_shots"    "1"
+        "rating"            "2"
+        "shove_count"       "1"
+        "time_a"            "1.7"
     }
 }
 ```
@@ -815,11 +949,15 @@ event
 
     "skill_properties"
     {
-        "assist_scope"  "2"
-        "damage"        "600"
-        "rating"        "2"
-        "shots"         "1"
-        "chip_damage"   "184"
+        "assist_scope"                "2"
+        "damage_scope"                "2"
+        "damage"                      "600"
+        "actor_damage"                "600"
+        "assister_damage"             "184"
+        "assister_shots"              "1"
+        "rating"                      "2"
+        "shots"                       "1"
+        "chip_damage"                 "184"
         "would_qualify_at_baseline" "1"
     }
 }
@@ -1202,6 +1340,9 @@ Notas prácticas:
 - `victim_*` aparece cuando el evento tiene una víctima semántica útil
 - `pinvictim_*` aparece cuando el evento además necesita identificar al survivor dominado o cargado
 - `assist_scope`
+  - `1` = `LifeKill`
+  - `2` = `SkillWindow`
+- `damage_scope`
   - `1` = `LifeKill`
   - `2` = `SkillWindow`
 

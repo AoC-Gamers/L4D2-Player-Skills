@@ -35,6 +35,14 @@ void Boss_ResetAll()
 	}
 }
 
+void Boss_Shutdown()
+{
+	for (int client = 1; client <= MaxClients; client++)
+	{
+		Boss_UnhookTankDamageClient(client);
+	}
+}
+
 // Client lifecycle and control-transfer flow.
 void Boss_OnClientPutInServer(int client)
 {

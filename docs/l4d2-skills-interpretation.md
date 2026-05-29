@@ -58,6 +58,51 @@ Regla práctica:
 - las skills ricas leen su ventana técnica;
 - las kills genéricas de SI leen el acumulado de vida total.
 
+### 4.1. Separación obligatoria
+
+Esta separación no es opcional.
+
+`l4d2_player_skills` está obligado a mantener dos lecturas distintas del mismo
+proceso:
+
+- `LifeKill`
+  - resume toda la vida del SI;
+  - acumula todo el daño y todos los disparos que el sistema decide registrar
+    para esa vida;
+  - alimenta announces y payloads de:
+    - `SmokerKill`
+    - `BoomerKill`
+    - `HunterKill`
+    - `SpitterKill`
+    - `JockeyKill`
+    - `ChargerKill`
+- `skill window`
+  - resume solo la ventana técnica que define una jugada rica;
+  - alimenta announces y payloads de:
+    - `HunterSkeet`
+    - `HunterSkeetMelee`
+    - `BoomerPop`
+    - `SmokerSelfClear`
+    - `ChargerLevel`
+    - `PerfectLevel`
+    - `ChargerInstaKill`
+    - `ChargerBowl`
+
+Consecuencias:
+
+- una `kill` simple debe resumir daño total de vida, no solo el tramo final;
+- una `skill` rica no debe heredar automáticamente el daño o los assists de
+  `LifeKill`;
+- una `skill` rica puede coexistir con una lectura de `LifeKill`, pero no debe
+  mezclar su semántica con ella;
+- si una limpieza o filtro mejora la clasificación de una `skill`, no debe
+  recortar por accidente el resumen total de una `kill`.
+
+En corto:
+
+- `Kill` = resumen total de vida.
+- `Skill` = resumen técnico de la jugada.
+
 Ejemplos de contexto que deben vivir en el evento y no necesariamente en el enum:
 
 - `chipDamage`

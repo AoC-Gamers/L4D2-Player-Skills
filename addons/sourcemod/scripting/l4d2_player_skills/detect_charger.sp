@@ -16,6 +16,7 @@ void Detect_ResetCharger(int charger)
 	g_bDetectChargerKilledMelee[charger] = false;
 	g_bDetectChargerKilledCharging[charger] = false;
 	g_DetectChargerBowl[charger].Reset();
+	g_DetectChargerClaw[charger].Reset();
 }
 
 void Detect_SetChargerCharging(int charger, bool state)
@@ -193,6 +194,115 @@ bool Detect_RecordChargerBowlImpact(int charger, int victim)
 	return true;
 }
 
+void Detect_RecordChargerClawHit(int charger, int victim, int damage)
+{
+	if (!IsValidZombieClass(charger, L4D2ZombieClass_Charger)
+		|| !IsValidSurvivor(victim)
+		|| damage <= 0)
+	{
+		return;
+	}
+
+	g_DetectChargerClaw[charger].totalHits++;
+	g_DetectChargerClaw[charger].totalDamage += damage;
+	g_DetectChargerClaw[charger].victimHits[victim]++;
+	g_DetectChargerClaw[charger].victimDamage[victim] += damage;
+
+	if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
+	{
+		Skills_Debug(PlayerSkillsDebug_Detect,
+			"Charger claw hit recorded. charger=%d victim=%d damage=%d total_hits=%d total_damage=%d",
+			charger,
+			victim,
+			damage,
+			g_DetectChargerClaw[charger].totalHits,
+			g_DetectChargerClaw[charger].totalDamage);
+	}
+}
+
+void Detect_RecordChargerClawHitFromDamage(int victim, int attacker, int inflictor, float damage, int damagetype)
+{
+	if (!Skills_IsEnabled()
+		|| !IsValidSurvivor(victim)
+		|| !IsValidZombieClass(attacker, L4D2ZombieClass_Charger))
+	{
+		return;
+	}
+
+	int minHits = g_cvChargerClawPrintMinHits != null ? g_cvChargerClawPrintMinHits.IntValue : 0;
+	if (minHits <= 0)
+	{
+		return;
+	}
+
+	if (Detect_IsChargerEffectivelyCharging(attacker)
+		|| g_iDetectPinnedClass[attacker] == view_as<int>(L4D2ZombieClass_Charger)
+		|| g_iDetectPinnedVictim[attacker] > 0)
+	{
+		return;
+	}
+
+	if (inflictor > 0 && inflictor != attacker)
+	{
+		return;
+	}
+
+	bool meleeLikeDamage = (damagetype & DMG_CLUB) != 0 || (damagetype & DMG_SLASH) != 0;
+	if (!meleeLikeDamage && inflictor != attacker)
+	{
+		return;
+	}
+
+	int appliedDamage = RoundToFloor(damage);
+	if (appliedDamage <= 0)
+	{
+		return;
+	}
+
+	Detect_RecordChargerClawHit(attacker, victim, appliedDamage);
+}
+
+bool Detect_ShouldAnnounceChargerClawSummary(int charger)
+{
+	if (!IsValidZombieClass(charger, L4D2ZombieClass_Charger))
+	{
+		return false;
+	}
+
+	int minHits = g_cvChargerClawPrintMinHits != null ? g_cvChargerClawPrintMinHits.IntValue : 0;
+	return minHits > 0 && g_DetectChargerClaw[charger].totalHits >= minHits;
+}
+
+int Detect_GetChargerClawTotalHits(int charger)
+{
+	return (charger >= 1 && charger <= MaxClients) ? g_DetectChargerClaw[charger].totalHits : 0;
+}
+
+int Detect_GetChargerClawTotalDamage(int charger)
+{
+	return (charger >= 1 && charger <= MaxClients) ? g_DetectChargerClaw[charger].totalDamage : 0;
+}
+
+int Detect_GetChargerClawVictimHits(int charger, int victim)
+{
+	if (charger < 1 || charger > MaxClients || victim < 1 || victim > MaxClients)
+	{
+		return 0;
+	}
+
+	return g_DetectChargerClaw[charger].victimHits[victim];
+}
+
+int Detect_GetChargerClawVictimDamage(int charger, int victim)
+{
+	if (charger < 1 || charger > MaxClients || victim < 1 || victim > MaxClients)
+	{
+		return 0;
+	}
+
+	return g_DetectChargerClaw[charger].victimDamage[victim];
+}
+
 int Detect_GetChargerBowlImpactCount(int charger)
 {
 	if (charger < 1 || charger > MaxClients)
@@ -235,6 +345,7 @@ void Detect_CheckChargerBowl(int charger)
 
 	g_SkillEvents[eventIndex].actor.Capture(charger);
 	g_SkillEvents[eventIndex].zombieClass = view_as<int>(L4D2ZombieClass_Charger);
+	g_SkillEvents[eventIndex].damageScope = L4D2SkillDamageScope_SkillWindow;
 	g_SkillEvents[eventIndex].amount = g_DetectChargerBowl[charger].impactedCount;
 	if (IsValidSurvivor(g_DetectChargerBowl[charger].carriedVictim))
 	{
@@ -496,6 +607,7 @@ void Detect_CheckChargerInstaKill(Event event, int victim)
 	g_SkillEvents[eventIndex].actor.Capture(charger);
 	g_SkillEvents[eventIndex].victim.Capture(victim);
 	g_SkillEvents[eventIndex].zombieClass = view_as<int>(L4D2ZombieClass_Charger);
+	g_SkillEvents[eventIndex].damageScope = L4D2SkillDamageScope_SkillWindow;
 	g_SkillEvents[eventIndex].height = height;
 	g_SkillEvents[eventIndex].distance = GetVectorDistance(g_DetectChargeVictim[victim].startOrigin, deathPos);
 	g_SkillEvents[eventIndex].wasCarried = g_DetectChargeVictim[victim].wasCarried;
@@ -525,6 +637,39 @@ bool Detect_IsChargerCharging(int charger)
 {
 	int abilityEnt = GetEntPropEnt(charger, Prop_Send, "m_customAbility");
 	return IsValidEntity(abilityEnt) && GetEntProp(abilityEnt, Prop_Send, "m_isCharging") != 0;
+}
+
+void Detect_FillChargerLevelPriorDamage(int eventIndex, int victim, int attacker, int chipDamage)
+{
+	if (eventIndex < 0 || eventIndex >= L4D2_SKILLS_MAX_EVENTS)
+	{
+		return;
+	}
+
+	int assistDamageTotal = 0;
+	for (int i = 0; i < g_SkillEvents[eventIndex].assistsCount && i < L4D2_SKILLS_MAX_EVENT_ASSISTS; i++)
+	{
+		assistDamageTotal += g_SkillEvents[eventIndex].assistDamage[i];
+	}
+
+	int actorChipDamage = chipDamage - assistDamageTotal;
+	if (actorChipDamage < 0)
+	{
+		actorChipDamage = 0;
+	}
+
+	int actorChipShots = 0;
+	if (actorChipDamage > 0)
+	{
+		actorChipShots = Detect_GetSiLifeContributorShots(victim, attacker) - 1;
+		if (actorChipShots < 0)
+		{
+			actorChipShots = 0;
+		}
+	}
+
+	g_SkillEvents[eventIndex].actorChipDamage = actorChipDamage;
+	g_SkillEvents[eventIndex].actorChipShots = actorChipShots;
 }
 
 void Detect_HandleChargerHurt(int victim, int attacker, int damageType, int appliedDamage, int postHealth)
@@ -588,11 +733,14 @@ void Detect_HandleChargerHurt(int victim, int attacker, int damageType, int appl
 		{
 			g_SkillEvents[eventIndex].actor.Capture(attacker);
 			g_SkillEvents[eventIndex].victim.Capture(victim);
+			g_SkillEvents[eventIndex].damageScope = L4D2SkillDamageScope_SkillWindow;
 			g_SkillEvents[eventIndex].damage = chargerHealthBeforeDamage;
+			g_SkillEvents[eventIndex].actorDamage = chargerHealthBeforeDamage;
 			g_SkillEvents[eventIndex].chipDamage = chipDamage;
 			g_SkillEvents[eventIndex].shots = 1;
 			g_SkillEvents[eventIndex].wouldQualifyAtBaseline = qualifiesAtBaseline;
 			int assistsFound = Detect_WriteSiTrackAssistsToEventAsSkillWindow(eventIndex, victim, attacker);
+			Detect_FillChargerLevelPriorDamage(eventIndex, victim, attacker, chipDamage);
 			g_SkillEvents[eventIndex].perfect = (g_SkillEvents[eventIndex].chipDamage == 0) && assistsFound == 0;
 
 			Action result = API_FireSkillDetected(eventId, L4D2Skill_ChargerLevel);
@@ -627,4 +775,76 @@ void Detect_HandleChargerHurt(int victim, int attacker, int damageType, int appl
 		g_bDetectChargerKilledMelee[victim] = false;
 		g_bDetectChargerKilledCharging[victim] = false;
 	}
+}
+
+bool Detect_TryEmitChargerLevelFromDeath(int victim, int attacker)
+{
+	if (!IsValidZombieClass(victim, L4D2ZombieClass_Charger) || !IsValidSurvivor(attacker))
+	{
+		return false;
+	}
+
+	if (!g_bDetectChargerKilledMelee[victim] || !g_bDetectChargerKilledCharging[victim])
+	{
+		return false;
+	}
+
+	int chargerHealth = Skills_GetSpecialMaxHealth(L4D2ZombieClass_Charger);
+	int chargerHealthBeforeDamage = g_DetectChargerDamageSnapshot[victim].lastHealthBeforeDamage > 0
+		? g_DetectChargerDamageSnapshot[victim].lastHealthBeforeDamage
+		: (g_DetectChargerDamageSnapshot[victim].lastHealth > 0 ? g_DetectChargerDamageSnapshot[victim].lastHealth : chargerHealth);
+	int chipDamage = chargerHealth - chargerHealthBeforeDamage;
+	if (chipDamage < 0)
+	{
+		chipDamage = 0;
+	}
+
+	float rawDamage = g_DetectChargerDamageSnapshot[victim].lastRawDamage;
+	if (rawDamage <= 0.0)
+	{
+		rawDamage = float(Detect_GetSiLifeContributorDamage(victim, attacker));
+	}
+
+	bool qualifiesAtBaseline = rawDamage >= float(chargerHealth);
+
+	int eventId = Skills_CreateEvent(L4D2Skill_ChargerLevel);
+	int eventIndex = Skills_GetEventIndex(eventId);
+	if (eventIndex == -1)
+	{
+		return false;
+	}
+
+	g_SkillEvents[eventIndex].actor.Capture(attacker);
+	g_SkillEvents[eventIndex].victim.Capture(victim);
+	g_SkillEvents[eventIndex].damageScope = L4D2SkillDamageScope_SkillWindow;
+	g_SkillEvents[eventIndex].damage = chargerHealthBeforeDamage;
+	g_SkillEvents[eventIndex].actorDamage = chargerHealthBeforeDamage;
+	g_SkillEvents[eventIndex].chipDamage = chipDamage;
+	g_SkillEvents[eventIndex].shots = 1;
+	g_SkillEvents[eventIndex].wouldQualifyAtBaseline = qualifiesAtBaseline;
+	int assistsFound = Detect_WriteSiTrackAssistsToEventAsSkillWindow(eventIndex, victim, attacker);
+	Detect_FillChargerLevelPriorDamage(eventIndex, victim, attacker, chipDamage);
+	g_SkillEvents[eventIndex].perfect = (chipDamage == 0) && assistsFound == 0;
+
+	Action result = API_FireSkillDetected(eventId, L4D2Skill_ChargerLevel);
+	if (result < Plugin_Handled)
+	{
+		Announce_Skill(eventId);
+	}
+
+	Detect_MarkSiLifeKillSuppressed(victim);
+	if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
+	{
+		Skills_Debug(PlayerSkillsDebug_Detect,
+			"Charger level fallback classified. charger=%d attacker=%d pre=%d chip=%d qualifies_at_baseline=%d perfect=%d raw=%.1f",
+			victim,
+			attacker,
+			chargerHealthBeforeDamage,
+			chipDamage,
+			qualifiesAtBaseline ? 1 : 0,
+			g_SkillEvents[eventIndex].perfect ? 1 : 0,
+			rawDamage);
+	}
+
+	return true;
 }

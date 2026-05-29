@@ -5,8 +5,8 @@
 
 int g_iAnnounceSortSession = -1;
 
-#define L4D2_SKILLS_SURVIVOR_TABLE_FAMILIES 16
-#define L4D2_SKILLS_INFECTED_TABLE_FAMILIES 6
+#define L4D2_SKILLS_SURVIVOR_TABLE_FAMILIES 15
+#define L4D2_SKILLS_INFECTED_TABLE_FAMILIES 7
 
 bool Announce_HasMask(ConVar cvar, int bit)
 {
@@ -72,6 +72,72 @@ void Announce_FormatAssistNames(int eventIndex, char[] buffer, int maxlen)
 
 		StrCat(buffer, maxlen, segment);
 	}
+}
+
+void Announce_ChargerClawSummary(int charger)
+{
+	if (!Detect_ShouldAnnounceChargerClawSummary(charger))
+	{
+		return;
+	}
+
+	L4D2PlayerRef actor;
+	actor.Capture(charger);
+
+	char actorName[64];
+	Skills_FormatInfectedPlayerRefName(actor, L4D2ZombieClass_Charger, actorName, sizeof(actorName));
+
+	int victims[MAXPLAYERS + 1];
+	int victimCount = 0;
+	for (int client = 1; client <= MaxClients; client++)
+	{
+		if (Detect_GetChargerClawVictimHits(charger, client) <= 0)
+		{
+			continue;
+		}
+
+		victims[victimCount++] = client;
+	}
+
+	for (int pass = 0; pass < victimCount - 1; pass++)
+	{
+		for (int i = 0; i < victimCount - 1 - pass; i++)
+		{
+			if (Detect_GetChargerClawVictimDamage(charger, victims[i + 1]) <= Detect_GetChargerClawVictimDamage(charger, victims[i]))
+			{
+				continue;
+			}
+
+			int temp = victims[i];
+			victims[i] = victims[i + 1];
+			victims[i + 1] = temp;
+		}
+	}
+
+	char victimList[256];
+	victimList[0] = '\0';
+	for (int i = 0; i < victimCount; i++)
+	{
+		char victimName[64];
+		GetClientName(victims[i], victimName, sizeof(victimName));
+
+		char segment[96];
+		FormatEx(segment, sizeof(segment), "%s%s (%d/%d)",
+			i == 0 ? "" : ", ",
+			victimName,
+			Detect_GetChargerClawVictimHits(charger, victims[i]),
+			Detect_GetChargerClawVictimDamage(charger, victims[i]));
+		StrCat(victimList, sizeof(victimList), segment);
+	}
+
+	char tag[32];
+	FormatEx(tag, sizeof(tag), "%T", "Tag", LANG_SERVER);
+	CPrintToChatAll("%s %t", tag,
+		"ChargerClawSummary",
+		actorName,
+		Detect_GetChargerClawTotalHits(charger),
+		Detect_GetChargerClawTotalDamage(charger),
+		victimList);
 }
 
 void Announce_FormatChargerBowlTargets(int eventIndex, char[] firstName, int firstMaxlen, char[] secondName, int secondMaxlen)
@@ -318,6 +384,21 @@ void Announce_ReplyCommand(int client, const char[] message, any ...)
 	CReplyToCommand(client, "%s", buffer);
 }
 
+bool Announce_WasCommandInvokedFromChat(int client)
+{
+	return client > 0 && IsValidClient(client) && GetCmdReplySource() == SM_REPLY_TO_CHAT;
+}
+
+void Announce_NotifyConsoleDelivery(int client)
+{
+	if (!Announce_WasCommandInvokedFromChat(client))
+	{
+		return;
+	}
+
+	Announce_ReplyCommand(client, "%t %t", "Tag", "ConsoleDeliveryNotice");
+}
+
 // Skill summary helpers.
 void Announce_PrintSkillsSummaryLine(int client, const int counts[L4D2Skill_Size],
 	L4D2SkillType typeA, const char[] phraseA,
@@ -422,7 +503,6 @@ int Announce_MapSurvivorTableFamily(L4D2SkillType type)
 		case L4D2Skill_SmokerKill, L4D2Skill_BoomerKill, L4D2Skill_HunterKill, L4D2Skill_SpitterKill, L4D2Skill_JockeyKill, L4D2Skill_ChargerKill: return 12;
 		case L4D2Skill_JockeyJumpStop: return 13;
 		case L4D2Skill_JockeySkeetMelee: return 14;
-		case L4D2Skill_ChargerBowl: return 15;
 	}
 
 	return -1;
@@ -438,6 +518,7 @@ int Announce_MapInfectedTableFamily(L4D2SkillType type)
 		case L4D2Skill_ChargerInstaKill: return 3;
 		case L4D2Skill_ChargerDeathSetup: return 4;
 		case L4D2Skill_TankRockHit: return 5;
+		case L4D2Skill_ChargerBowl: return 6;
 	}
 
 	return -1;
@@ -462,7 +543,6 @@ void Announce_GetSurvivorTableFamilyName(int family, char[] buffer, int maxlen)
 		case 12: strcopy(buffer, maxlen, "SpecialInfectedKills");
 		case 13: strcopy(buffer, maxlen, "JockeyJumpStops");
 		case 14: strcopy(buffer, maxlen, "JockeySkeetMelees");
-		case 15: strcopy(buffer, maxlen, "ChargerBowls");
 		default: buffer[0] = '\0';
 	}
 }
@@ -477,6 +557,7 @@ void Announce_GetInfectedTableFamilyName(int family, char[] buffer, int maxlen)
 		case 3: strcopy(buffer, maxlen, "ChargerInstaKills");
 		case 4: strcopy(buffer, maxlen, "ChargerDeathSetups");
 		case 5: strcopy(buffer, maxlen, "TankRockHits");
+		case 6: strcopy(buffer, maxlen, "ChargerBowls");
 		default: buffer[0] = '\0';
 	}
 }
@@ -508,7 +589,6 @@ bool Announce_IsSurvivorTableFamilyVisible(int family)
 		}
 		case 13: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_JockeyJumpStop);
 		case 14: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_JockeySkeetMelee);
-		case 15: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_ChargerBowl);
 	}
 
 	return false;
@@ -524,6 +604,7 @@ bool Announce_IsInfectedTableFamilyVisible(int family)
 		case 3: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_ChargerInstaKill);
 		case 4: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_ChargerDeathSetup);
 		case 5: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_TankRockHit);
+		case 6: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_ChargerBowl);
 	}
 
 	return false;
@@ -556,7 +637,6 @@ int Announce_CountSurvivorTableFamilyForClient(int client, int family)
 		}
 		case 13: return Announce_CountSkillTypeForClient(client, L4D2Skill_JockeyJumpStop);
 		case 14: return Announce_CountSkillTypeForClient(client, L4D2Skill_JockeySkeetMelee);
-		case 15: return Announce_CountSkillTypeForClient(client, L4D2Skill_ChargerBowl);
 	}
 
 	return 0;
@@ -572,6 +652,7 @@ int Announce_CountInfectedTableFamilyForClient(int client, int family)
 		case 3: return Announce_CountSkillTypeForClient(client, L4D2Skill_ChargerInstaKill);
 		case 4: return Announce_CountSkillTypeForClient(client, L4D2Skill_ChargerDeathSetup);
 		case 5: return Announce_CountSkillTypeForClient(client, L4D2Skill_TankRockHit);
+		case 6: return Announce_CountSkillTypeForClient(client, L4D2Skill_ChargerBowl);
 	}
 
 	return 0;
@@ -801,17 +882,6 @@ void Announce_PrintSimpleKillLine(const char[] tag, char[] line, bool finalize =
 	}
 
 	CPrintToChatAll("%s", line);
-}
-
-void Announce_BeginWrappedSimpleKillContinuation(char[] buffer, int maxlen, const char[] segment)
-{
-	if (segment[0] == ',' && segment[1] == ' ')
-	{
-		strcopy(buffer, maxlen, segment[2]);
-		return;
-	}
-
-	strcopy(buffer, maxlen, segment);
 }
 
 void Announce_Skill(int eventId)
@@ -1128,14 +1198,33 @@ void Announce_Skill(int eventId)
 		{
 			char assistList[256];
 			Announce_FormatAssistList(eventIndex, assistList, sizeof(assistList));
+			char chipStat[64];
+			Announce_FormatSimpleKillStat(
+				g_SkillEvents[eventIndex].actorChipDamage,
+				g_SkillEvents[eventIndex].actorChipShots,
+				chipStat,
+				sizeof(chipStat));
 
-			CPrintToChatAll("%s %t", tag,
-				g_SkillEvents[eventIndex].perfect
-					? "ChargerLevelPerfect"
-					: (g_SkillEvents[eventIndex].assistsCount > 0 ? "ChargerLevelAssist" : "ChargerLevel"),
-				actorName,
-				victimName,
-				assistList);
+			if (g_SkillEvents[eventIndex].perfect)
+			{
+				CPrintToChatAll("%s %t", tag, "ChargerLevelPerfect", actorName, victimName);
+			}
+			else if (g_SkillEvents[eventIndex].actorChipDamage > 0 && g_SkillEvents[eventIndex].assistsCount > 0)
+			{
+				CPrintToChatAll("%s %t", tag, "ChargerLevelChipAssist", actorName, victimName, chipStat, assistList);
+			}
+			else if (g_SkillEvents[eventIndex].actorChipDamage > 0)
+			{
+				CPrintToChatAll("%s %t", tag, "ChargerLevelChip", actorName, victimName, chipStat);
+			}
+			else if (g_SkillEvents[eventIndex].assistsCount > 0)
+			{
+				CPrintToChatAll("%s %t", tag, "ChargerLevelAssist", actorName, victimName, assistList);
+			}
+			else
+			{
+				CPrintToChatAll("%s %t", tag, "ChargerLevel", actorName, victimName);
+			}
 		}
 
 		case L4D2Skill_ChargerBowl:
@@ -1267,9 +1356,7 @@ void Announce_Skill(int eventId)
 
 		case L4D2Skill_SmokerKill, L4D2Skill_BoomerKill, L4D2Skill_HunterKill, L4D2Skill_SpitterKill, L4D2Skill_JockeyKill, L4D2Skill_ChargerKill:
 		{
-			const int SIMPLE_KILL_CHAT_WRAP = 176;
 			char line[1024];
-			bool printedLead = false;
 			char actorStat[64];
 			Announce_FormatSimpleKillStat(
 				g_SkillEvents[eventIndex].actorDamage,
@@ -1299,19 +1386,10 @@ void Announce_Skill(int eventId)
 					g_SkillEvents[eventIndex].assists[assistIndex].name,
 					assistStat);
 
-				if ((strlen(line) + strlen(assistSegment)) >= SIMPLE_KILL_CHAT_WRAP)
-				{
-					Announce_PrintSimpleKillLine(tag, line, false, !printedLead);
-					printedLead = true;
-					Announce_BeginWrappedSimpleKillContinuation(line, sizeof(line), assistSegment);
-				}
-				else
-				{
-					StrCat(line, sizeof(line), assistSegment);
-				}
+				StrCat(line, sizeof(line), assistSegment);
 			}
 
-			Announce_PrintSimpleKillLine(tag, line, true, !printedLead);
+			Announce_PrintSimpleKillLine(tag, line, true, true);
 		}
 	}
 

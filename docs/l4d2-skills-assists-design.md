@@ -43,6 +43,14 @@ La asistencia debe separarse por dominio semántico:
 - `Skill assists`
   - responden a: "quién contribuyó dentro de la ventana técnica de esta skill"
 
+Esta separación es obligatoria, no una optimización futura.
+
+Si el sistema mezcla ambos dominios:
+
+- una `kill` termina subreportando el daño real de la vida;
+- una `skill` rica termina heredando contribuciones ajenas a su ventana técnica;
+- el payload deja de tener semántica estable para plugins externos.
+
 La idea no es crear un sistema único y rígido para todas las skills.
 La idea es:
 
@@ -72,6 +80,9 @@ Semántica:
 
 - el killer principal es quien mata;
 - los assists son quienes ayudaron a esa muerte de vida total.
+- el daño y los assists de `LifeKill` deben seguir describiendo la vida completa
+  del SI, aunque una skill rica de la misma secuencia use una lectura más
+  estricta.
 
 ### 3.2. Skill assists
 
@@ -120,6 +131,12 @@ Eso evita:
 - mezclar chip previo con contribución técnica real;
 - que un announce de `Skeet` muestre assists que no participaron del skeet;
 - reintroducir acoplamiento entre los dos flujos.
+
+Regla equivalente:
+
+- `Kill` y `LifeKill assists` responden a "qué pasó en toda la vida".
+- `Skill` y `Skill assists` responden a "qué pasó en la jugada técnica".
+- ambos payloads pueden coexistir, pero no deben contaminarse entre sí.
 
 ---
 

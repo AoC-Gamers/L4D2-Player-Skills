@@ -72,6 +72,13 @@ enum L4D2SkillAssistScope
 	L4D2SkillAssistScope_SkillWindow
 }
 
+enum L4D2SkillDamageScope
+{
+	L4D2SkillDamageScope_None = 0,
+	L4D2SkillDamageScope_LifeKill,
+	L4D2SkillDamageScope_SkillWindow
+}
+
 enum L4D2BossState
 {
 	L4D2BossState_None = 0,
@@ -591,8 +598,11 @@ enum struct L4D2SkillEventData
 	int			  victim2;
 	int			  assistsCount;
 	L4D2SkillAssistScope assistScope;
+	L4D2SkillDamageScope damageScope;
 	int			  actorWeaponId;
 	int			  actorDamage;
+	int			  actorChipDamage;
+	int			  actorChipShots;
 	int			  assisterDamage;
 	int			  assisterWeaponId;
 	int			  assistDamage[L4D2_SKILLS_MAX_EVENT_ASSISTS];
@@ -648,8 +658,11 @@ enum struct L4D2SkillEventData
 		this.victim2				= 0;
 		this.assistsCount			= 0;
 		this.assistScope			= L4D2SkillAssistScope_None;
+		this.damageScope			= L4D2SkillDamageScope_None;
 		this.actorWeaponId			= WEPID_NONE;
 		this.actorDamage			= 0;
+		this.actorChipDamage		= 0;
+		this.actorChipShots			= 0;
 		this.assisterDamage			= 0;
 		this.assisterWeaponId		= WEPID_NONE;
 		this.assisterShots			= 0;

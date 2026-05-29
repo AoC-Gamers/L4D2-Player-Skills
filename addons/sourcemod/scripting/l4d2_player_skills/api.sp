@@ -34,6 +34,7 @@ void API_CreateNatives()
 	CreateNative("PlayerSkills_GetEventPlayerAuth", Native_PlayerSkills_GetEventPlayerAuth);
 	CreateNative("PlayerSkills_GetEventAssistsCount", Native_PlayerSkills_GetEventAssistsCount);
 	CreateNative("PlayerSkills_GetEventAssistScope", Native_PlayerSkills_GetEventAssistScope);
+	CreateNative("PlayerSkills_GetEventDamageScope", Native_PlayerSkills_GetEventDamageScope);
 	CreateNative("PlayerSkills_GetEventAssistUserId", Native_PlayerSkills_GetEventAssistUserId);
 	CreateNative("PlayerSkills_GetEventAssistAccountId", Native_PlayerSkills_GetEventAssistAccountId);
 	CreateNative("PlayerSkills_IsEventAssistBot", Native_PlayerSkills_IsEventAssistBot);
@@ -548,6 +549,11 @@ void API_WriteEventSkillProperties(Handle kv, int eventIndex)
 	if (g_SkillEvents[eventIndex].assistScope != L4D2SkillAssistScope_None)
 	{
 		KvSetNum(kv, "assist_scope", g_SkillEvents[eventIndex].assistScope);
+	}
+
+	if (g_SkillEvents[eventIndex].damageScope != L4D2SkillDamageScope_None)
+	{
+		KvSetNum(kv, "damage_scope", g_SkillEvents[eventIndex].damageScope);
 	}
 
 	if (g_SkillEvents[eventIndex].chipDamage > 0)
@@ -1137,6 +1143,12 @@ public int Native_PlayerSkills_GetEventAssistScope(Handle plugin, int numParams)
 {
 	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
 	return eventIndex != -1 ? g_SkillEvents[eventIndex].assistScope : L4D2SkillAssistScope_None;
+}
+
+public int Native_PlayerSkills_GetEventDamageScope(Handle plugin, int numParams)
+{
+	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
+	return eventIndex != -1 ? g_SkillEvents[eventIndex].damageScope : L4D2SkillDamageScope_None;
 }
 
 public int Native_PlayerSkills_GetEventAssistUserId(Handle plugin, int numParams)

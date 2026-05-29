@@ -121,6 +121,16 @@ enum L4D2SkillAssistScope
 }
 
 /**
+ * Semantic origin of damage data inside a skill event payload.
+ */
+enum L4D2SkillDamageScope
+{
+	L4D2SkillDamageScope_None = 0,
+	L4D2SkillDamageScope_LifeKill,
+	L4D2SkillDamageScope_SkillWindow
+}
+
+/**
  * Integer fields available through PlayerSkills_GetEventInt().
  */
 enum L4D2SkillIntField
@@ -258,7 +268,8 @@ native bool PlayerSkills_IsEventValid(int eventId);
  * @remarks The native rewinds the handle and writes an "event" section.
  * @remarks The payload includes event metadata, actor data, assists and
  *          a "skill_properties" subsection for context-specific fields.
- *          It does not include victim data or boss damage tables.
+ *          It includes `assist_scope` and `damage_scope` when applicable.
+ *          It does not include boss damage tables.
  *
  * @param eventId        Runtime skill event identifier.
  * @param kv             KeyValues handle to populate.
@@ -390,6 +401,15 @@ native int PlayerSkills_GetEventAssistsCount(int eventId);
  * @return               A value from L4D2SkillAssistScope.
  */
 native int PlayerSkills_GetEventAssistScope(int eventId);
+
+/**
+ * @brief Returns the semantic source of damage data in a skill event.
+ *
+ * @param eventId        Runtime skill event identifier.
+ *
+ * @return               A value from L4D2SkillDamageScope.
+ */
+native int PlayerSkills_GetEventDamageScope(int eventId);
 
 /**
  * @brief Returns the captured userid for one assist entry.

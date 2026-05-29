@@ -186,6 +186,7 @@ void Detect_EventTonguePullStopped(Event event)
 			g_SkillEvents[eventIndex].actor.Capture(victim);
 			g_SkillEvents[eventIndex].victim.Capture(smoker);
 			g_SkillEvents[eventIndex].withShove = true;
+			g_SkillEvents[eventIndex].damageScope = L4D2SkillDamageScope_SkillWindow;
 			Detect_WriteSiTrackAssistsToEventAsSkillWindow(eventIndex, smoker, victim);
 
 			Action result = API_FireSkillDetected(eventId, L4D2Skill_SmokerSelfClear);
