@@ -13,6 +13,52 @@ bool Announce_HasMask(ConVar cvar, int bit)
 	return cvar != null && (cvar.IntValue & bit) != 0;
 }
 
+void Announce_ShoveAttempt(int actor, int entity)
+{
+	if (!IsValidSurvivor(actor))
+	{
+		return;
+	}
+
+	int shoveMask = g_cvShoveAttempt != null ? g_cvShoveAttempt.IntValue : 0;
+	if (shoveMask == 0)
+	{
+		return;
+	}
+
+	char targetName[64];
+	targetName[0] = '\0';
+
+	if ((shoveMask & 1) != 0 && IsValidZombieClass(entity, L4D2ZombieClass_Charger))
+	{
+		L4D2PlayerRef target;
+		target.Capture(entity);
+		Skills_FormatInfectedPlayerRefName(target, L4D2ZombieClass_Charger, targetName, sizeof(targetName));
+	}
+	else if ((shoveMask & 2) != 0 && IsValidTank(entity))
+	{
+		L4D2PlayerRef target;
+		target.Capture(entity);
+		Skills_FormatInfectedPlayerRefName(target, L4D2ZombieClass_Tank, targetName, sizeof(targetName));
+	}
+	else if ((shoveMask & 4) != 0 && IsWitchEntity(entity))
+	{
+		strcopy(targetName, sizeof(targetName), "Witch");
+	}
+
+	if (targetName[0] == '\0')
+	{
+		return;
+	}
+
+	char actorName[64];
+	GetClientName(actor, actorName, sizeof(actorName));
+
+	char tag[32];
+	FormatEx(tag, sizeof(tag), "%T", "Tag", LANG_SERVER);
+	CPrintToChatAll("%s %t", tag, "ShoveAttempt", actorName, targetName);
+}
+
 void Announce_FormatSimpleKillStat(int damage, int count, char[] buffer, int maxlen)
 {
 	FormatEx(buffer, maxlen, "%d/%d", damage, count);

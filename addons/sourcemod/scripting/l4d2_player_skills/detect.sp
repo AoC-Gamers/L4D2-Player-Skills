@@ -2486,6 +2486,8 @@ void Detect_OnEntityShovedPost(int client, int entity, int weapon, const float v
 		return;
 	}
 
+	Announce_ShoveAttempt(client, entity);
+
 	if (IsValidZombieClass(entity, L4D2ZombieClass_Jockey))
 	{
 		Skills_Debug(PlayerSkillsDebug_Detect,

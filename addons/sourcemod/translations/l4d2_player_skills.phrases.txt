@@ -170,6 +170,13 @@
 		"es"		"JockeySkeet"
 	}
 
+	"ShoveAttempt"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"{olive}{1} {blue}tried to shove {olive}{2}{blue}."
+		"es"		"{olive}{1} {blue}intento empujar a {olive}{2}{blue}."
+	}
+
 	"SkeetSingleShotAssisted"
 	{
 		"#format"	"{1:s},{2:s},{3:d},{4:d},{5:s}"

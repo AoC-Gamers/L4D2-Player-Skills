@@ -40,6 +40,7 @@ ConVar	g_cvAnnounceSpitter		 = null;
 ConVar	g_cvAnnounceJockey		 = null;
 ConVar	g_cvAnnounceCharger		 = null;
 ConVar	g_cvAnnounceOther		 = null;
+ConVar	g_cvShoveAttempt		 = null;
 ConVar	g_cvBoomerVomitMinTargets = null;
 ConVar	g_cvBoomerHealth		 = null;
 ConVar	g_cvSmokerHealth		 = null;
@@ -265,6 +266,7 @@ public void OnPluginStart()
 	g_cvAnnounceJockey			= CreateConVar("l4d2_player_skills_announce_jockey", "63", "Bitmask for Jockey announcements. 1=high_pounce 2=special_clear 4=kill 8=jump_stop 16=skeet_melee 32=ledge_hang 63=all.");
 	g_cvAnnounceCharger			= CreateConVar("l4d2_player_skills_announce_charger", "63", "Bitmask for Charger announcements. 1=level 2=insta_kill 4=death_setup 8=special_clear 16=kill 32=bowl 63=all.");
 	g_cvAnnounceOther			= CreateConVar("l4d2_player_skills_announce_other", "3", "Bitmask for other announcements. 1=bunnyhop 2=car_alarm 3=all.");
+	g_cvShoveAttempt			= CreateConVar("l4d2_player_skills_shove_attempt", "7", "Bitmask for shove-attempt announcements. 1=charger 2=tank 4=witch 7=all.");
 	g_cvBoomerVomitMinTargets	= CreateConVar("l4d2_player_skills_boomer_vomit_min_targets", "3", "Minimum number of vomited survivors required to announce BoomerVomitLanded. 0=disabled.");
 	g_cvWitchPrintMaxEntries	= CreateConVar("l4d2_player_skills_witch_print_max_entries", "4", "Maximum number of Witch damage entries to print before combining the rest as others.");
 	g_cvHunterHighPounceHeight	= CreateConVar("l4d2_player_skills_hunter_high_pounce_height", "400", "Minimum vertical height for HunterHighPounce.");
