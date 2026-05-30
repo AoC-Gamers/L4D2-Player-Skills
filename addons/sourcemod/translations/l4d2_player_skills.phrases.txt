@@ -394,6 +394,13 @@
 		"es"		"{olive}{1} {blue}libero con empujón a {olive}{3} {blue}de {olive}{2}{blue}."
 	}
 
+	"SpecialPinClearKill"
+	{
+		"#format"	"{1:s},{2:s},{3:s},{4:s}"
+		"en"		"{olive}{1} {blue}killed {olive}{2} {blue}({olive}{3}{blue}), freeing {olive}{4}{blue}."
+		"es"		"{olive}{1} {blue}mato a {olive}{2} {blue}({olive}{3}{blue}), liberando a {olive}{4}{blue}."
+	}
+
 	"SmokerSpecialPinClearShot"
 	{
 		"#format"	"{1:s},{2:s},{3:s}"
@@ -548,11 +555,25 @@
 		"es"		"{olive}{1} {blue}hizo un {green}Level {blue}a {olive}{2}{blue}."
 	}
 
+	"ChargerLevelClear"
+	{
+		"#format"	"{1:s},{2:s},{3:s}"
+		"en"		"{olive}{1} {blue}leveled {olive}{2}{blue}, freeing {olive}{3}{blue}."
+		"es"		"{olive}{1} {blue}hizo un {green}Level {blue}a {olive}{2}{blue}, liberando a {olive}{3}{blue}."
+	}
+
 	"ChargerLevelAssist"
 	{
 		"#format"	"{1:s},{2:s},{3:s}"
 		"en"		"{olive}{1} {blue}leveled {olive}{2}{blue}, assisted by {olive}{3}{blue}."
 		"es"		"{olive}{1} {blue}hizo un {green}Level {blue}a {olive}{2}{blue}, asistido por {olive}{3}{blue}."
+	}
+
+	"ChargerLevelAssistClear"
+	{
+		"#format"	"{1:s},{2:s},{3:s},{4:s}"
+		"en"		"{olive}{1} {blue}leveled {olive}{2}{blue}, freeing {olive}{3}{blue}, assisted by {olive}{4}{blue}."
+		"es"		"{olive}{1} {blue}hizo un {green}Level {blue}a {olive}{2}{blue}, liberando a {olive}{3}{blue}, asistido por {olive}{4}{blue}."
 	}
 
 	"ChargerLevelStat"
@@ -562,6 +583,13 @@
 		"es"		"{olive}{1} {blue}hizo un {green}Level {blue}a {olive}{2} {blue}({green}{3}{blue})."
 	}
 
+	"ChargerLevelStatClear"
+	{
+		"#format"	"{1:s},{2:s},{3:s},{4:s}"
+		"en"		"{olive}{1} {blue}leveled {olive}{2} {blue}({green}{3}{blue}), freeing {olive}{4}{blue}."
+		"es"		"{olive}{1} {blue}hizo un {green}Level {blue}a {olive}{2} {blue}({green}{3}{blue}), liberando a {olive}{4}{blue}."
+	}
+
 	"ChargerLevelStatAssist"
 	{
 		"#format"	"{1:s},{2:s},{3:s},{4:s}"
@@ -569,11 +597,25 @@
 		"es"		"{olive}{1} {blue}hizo un {green}Level {blue}a {olive}{2} {blue}({green}{3}{blue}), asistido por {olive}{4}{blue}."
 	}
 
+	"ChargerLevelStatAssistClear"
+	{
+		"#format"	"{1:s},{2:s},{3:s},{4:s},{5:s}"
+		"en"		"{olive}{1} {blue}leveled {olive}{2} {blue}({green}{3}{blue}), freeing {olive}{4}{blue}, assisted by {olive}{5}{blue}."
+		"es"		"{olive}{1} {blue}hizo un {green}Level {blue}a {olive}{2} {blue}({green}{3}{blue}), liberando a {olive}{4}{blue}, asistido por {olive}{5}{blue}."
+	}
+
 	"ChargerLevelPerfect"
 	{
 		"#format"	"{1:s},{2:s}"
 		"en"		"{olive}{1} {blue}landed a {green}Level Perfect {blue}on {olive}{2}{blue}."
 		"es"		"{olive}{1} {blue}hizo un {green}Level Perfecto {blue}a {olive}{2}{blue}."
+	}
+
+	"ChargerLevelPerfectClear"
+	{
+		"#format"	"{1:s},{2:s},{3:s}"
+		"en"		"{olive}{1} {blue}landed a {green}Level Perfect {blue}on {olive}{2}{blue}, freeing {olive}{3}{blue}."
+		"es"		"{olive}{1} {blue}hizo un {green}Level Perfecto {blue}a {olive}{2}{blue}, liberando a {olive}{3}{blue}."
 	}
 
 	"ChargerBowl"

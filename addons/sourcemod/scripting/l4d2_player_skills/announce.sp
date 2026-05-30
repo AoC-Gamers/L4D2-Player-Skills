@@ -1490,7 +1490,17 @@ void Announce_Skill(int eventId)
 
 		case L4D2Skill_SpecialPinClear:
 		{
-			if (g_SkillEvents[eventIndex].zombieClass == view_as<int>(L4D2ZombieClass_Smoker) && !g_SkillEvents[eventIndex].withShove)
+			if (g_SkillEvents[eventIndex].damage > 0)
+			{
+				char actorStat[32];
+				Format(actorStat, sizeof(actorStat), "%d/%d", g_SkillEvents[eventIndex].damage, g_SkillEvents[eventIndex].shots);
+				CPrintToChatAll("%s %t", tag, "SpecialPinClearKill",
+					actorName,
+					victimName,
+					actorStat,
+					pinVictimName);
+			}
+			else if (g_SkillEvents[eventIndex].zombieClass == view_as<int>(L4D2ZombieClass_Smoker) && !g_SkillEvents[eventIndex].withShove)
 			{
 				char phrase[64];
 				strcopy(phrase, sizeof(phrase), "SpecialPinClear");
@@ -1741,6 +1751,7 @@ void Announce_Skill(int eventId)
 		case L4D2Skill_ChargerLevel:
 		{
 			char assistList[256];
+			bool freedVictim = pinVictimName[0] != '\0';
 			Announce_FormatAssistList(eventIndex, assistList, sizeof(assistList));
 			int assistDamageTotal = 0;
 			for (int i = 0; i < g_SkillEvents[eventIndex].assistsCount && i < L4D2_SKILLS_MAX_EVENT_ASSISTS; i++)
@@ -1766,23 +1777,44 @@ void Announce_Skill(int eventId)
 
 			if (g_SkillEvents[eventIndex].perfect)
 			{
-				CPrintToChatAll("%s %t", tag, "ChargerLevelPerfect", actorName, victimName);
+				CPrintToChatAll("%s %t", tag, freedVictim ? "ChargerLevelPerfectClear" : "ChargerLevelPerfect", actorName, victimName, pinVictimName);
 			}
 			else if (g_SkillEvents[eventIndex].actorChipDamage > 0 && g_SkillEvents[eventIndex].assistsCount > 0)
 			{
-				CPrintToChatAll("%s %t", tag, "ChargerLevelStatAssist", actorName, victimName, chipStat, assistList);
+				if (freedVictim)
+				{
+					CPrintToChatAll("%s %t", tag, "ChargerLevelStatAssistClear", actorName, victimName, chipStat, pinVictimName, assistList);
+				}
+				else
+				{
+					CPrintToChatAll("%s %t", tag, "ChargerLevelStatAssist", actorName, victimName, chipStat, assistList);
+				}
 			}
 			else if (g_SkillEvents[eventIndex].actorChipDamage > 0)
 			{
-				CPrintToChatAll("%s %t", tag, "ChargerLevelStat", actorName, victimName, chipStat);
+				if (freedVictim)
+				{
+					CPrintToChatAll("%s %t", tag, "ChargerLevelStatClear", actorName, victimName, chipStat, pinVictimName);
+				}
+				else
+				{
+					CPrintToChatAll("%s %t", tag, "ChargerLevelStat", actorName, victimName, chipStat);
+				}
 			}
 			else if (g_SkillEvents[eventIndex].assistsCount > 0)
 			{
-				CPrintToChatAll("%s %t", tag, "ChargerLevelAssist", actorName, victimName, assistList);
+				if (freedVictim)
+				{
+					CPrintToChatAll("%s %t", tag, "ChargerLevelAssistClear", actorName, victimName, pinVictimName, assistList);
+				}
+				else
+				{
+					CPrintToChatAll("%s %t", tag, "ChargerLevelAssist", actorName, victimName, assistList);
+				}
 			}
 			else
 			{
-				CPrintToChatAll("%s %t", tag, "ChargerLevel", actorName, victimName);
+				CPrintToChatAll("%s %t", tag, freedVictim ? "ChargerLevelClear" : "ChargerLevel", actorName, victimName, pinVictimName);
 			}
 		}
 

@@ -835,14 +835,19 @@ void Detect_HandleChargerHurt(int victim, int attacker, int damageType, int appl
 	}
 }
 
-bool Detect_TryEmitChargerLevelFromDeath(int victim, int attacker)
+bool Detect_IsChargerLevelDeathCandidate(int victim, int attacker)
 {
 	if (!IsValidZombieClass(victim, L4D2ZombieClass_Charger) || !IsValidSurvivor(attacker))
 	{
 		return false;
 	}
 
-	if (!g_bDetectChargerKilledMelee[victim] || !g_bDetectChargerKilledCharging[victim])
+	return g_bDetectChargerKilledMelee[victim] && g_bDetectChargerKilledCharging[victim];
+}
+
+bool Detect_TryEmitChargerLevelFromDeath(int victim, int attacker)
+{
+	if (!Detect_IsChargerLevelDeathCandidate(victim, attacker))
 	{
 		return false;
 	}
@@ -877,6 +882,11 @@ bool Detect_TryEmitChargerLevelFromDeath(int victim, int attacker)
 
 	g_SkillEvents[eventIndex].actor.Capture(attacker);
 	g_SkillEvents[eventIndex].victim.Capture(victim);
+	int pinvictim = Detect_GetCurrentPinnedVictim(victim);
+	if (IsValidSurvivor(pinvictim))
+	{
+		g_SkillEvents[eventIndex].pinVictim.Capture(pinvictim);
+	}
 	g_SkillEvents[eventIndex].damageScope = L4D2SkillDamageScope_SkillWindow;
 	g_SkillEvents[eventIndex].damage = chargerHealthBeforeDamage;
 	g_SkillEvents[eventIndex].actorDamage = chargerHealthBeforeDamage;

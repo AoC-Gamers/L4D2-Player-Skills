@@ -918,6 +918,10 @@ stock void Skills_GetZombieClassName(L4D2ZombieClassType zombieClass, char[] buf
 	{
 		// Left4DHooks stores the class-name table 0-based while the public zombie-class enum starts at 1.
 		strcopy(buffer, maxlen, L4D2_GetZombieClassname(view_as<L4D2ZombieClassType>(view_as<int>(zombieClass) - 1)));
+		if (buffer[0] != '\0')
+		{
+			buffer[0] = CharToUpper(buffer[0]);
+		}
 		return;
 	}
 

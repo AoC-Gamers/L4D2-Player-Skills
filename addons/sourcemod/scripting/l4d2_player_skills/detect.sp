@@ -1216,7 +1216,22 @@ Action Detect_TimerEvaluateChargerDeath(Handle timer, any userid)
 			return Plugin_Stop;
 		}
 
-		Detect_EmitSiLifeKill(charger, attacker, headshot);
+		int pinvictim = Detect_GetCurrentPinnedVictim(charger);
+		if (!IsValidSurvivor(pinvictim))
+		{
+			pinvictim = g_DetectPinRegistry.pinnedVictimByAttacker[charger];
+		}
+		if (IsValidSurvivor(pinvictim) && attacker != pinvictim)
+		{
+			Detect_EmitSpecialClear(attacker, charger, false, true);
+			Detect_MarkSiLifeKillSuppressed(charger);
+			Detect_ClearPinStateByAttacker(charger);
+		}
+
+		if (!g_bDetectSuppressSiLifeKill[charger])
+		{
+			Detect_EmitSiLifeKill(charger, attacker, headshot);
+		}
 	}
 
 	if (Detect_ShouldAnnounceChargerClawSummary(charger))
@@ -2651,7 +2666,9 @@ void Detect_EventPlayerHurt(Event event)
 
 void Detect_HandleSmokerDeath(Event event, int victim, int attacker, bool shouldEmitSiLifeKill)
 {
-	bool isVictimKiller = IsValidSurvivor(attacker) && Detect_GetSmokerVictimFromState(victim) == attacker;
+	int pinvictim = Detect_GetSmokerVictimFromState(victim);
+	bool isVictimKiller = IsValidSurvivor(attacker) && pinvictim == attacker;
+	bool emitSpecialClearByKill = false;
 	bool emitSelfClear = false;
 	bool emitDeferredTongueCut = false;
 
@@ -2663,6 +2680,10 @@ void Detect_HandleSmokerDeath(Event event, int victim, int attacker, bool should
 	else if (isVictimKiller && g_DetectSmoker[victim].reached)
 	{
 		emitSelfClear = true;
+	}
+	else if (IsValidSurvivor(attacker) && IsValidSurvivor(pinvictim) && attacker != pinvictim)
+	{
+		emitSpecialClearByKill = true;
 	}
 
 	if (emitSelfClear)
@@ -2685,6 +2706,11 @@ void Detect_HandleSmokerDeath(Event event, int victim, int attacker, bool should
 			}
 		}
 
+		Detect_MarkSiLifeKillSuppressed(victim);
+	}
+	else if (emitSpecialClearByKill)
+	{
+		Detect_EmitSpecialClear(attacker, victim, false, true);
 		Detect_MarkSiLifeKillSuppressed(victim);
 	}
 	else if (emitDeferredTongueCut)
@@ -2899,6 +2925,7 @@ void Detect_EventPlayerDeath(Event event)
 	int victim = GetClientOfUserId(event.GetInt("userid"));
 	int attacker = GetClientOfUserId(event.GetInt("attacker"));
 	bool shouldEmitSiLifeKill = IsValidSurvivor(attacker) && Detect_IsTrackableSiLifeKillClass(victim);
+	int pinvictim = 0;
 	if (IsValidSurvivor(victim))
 	{
 		if (g_DetectChargeVictim[victim].charger > 0 && !L4D_IsPlayerIncapacitated(victim))
@@ -2912,18 +2939,40 @@ void Detect_EventPlayerDeath(Event event)
 
 	if (Detect_IsPinnedClass(victim))
 	{
-		if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
+		pinvictim = Detect_GetCurrentPinnedVictim(victim);
+		if (!IsValidSurvivor(pinvictim))
 		{
-			Skills_Debug(PlayerSkillsDebug_Detect,
-				"SpecialClear suppressed by kill hierarchy. pinner=%d attacker=%d class=%d pinvictim=%d",
-				victim,
-				attacker,
-				g_DetectPinRegistry.pinnedClassByAttacker[victim],
-				g_DetectPinRegistry.pinnedVictimByAttacker[victim]);
+			pinvictim = g_DetectPinRegistry.pinnedVictimByAttacker[victim];
 		}
 
-		Detect_ClearPinStateByAttacker(victim);
+		if (!IsValidZombieClass(victim, L4D2ZombieClass_Smoker)
+			&& !IsValidZombieClass(victim, L4D2ZombieClass_Charger)
+			&& IsValidSurvivor(attacker)
+			&& IsValidSurvivor(pinvictim)
+			&& attacker != pinvictim)
+		{
+			Detect_EmitSpecialClear(attacker, victim, false, true);
+			Detect_MarkSiLifeKillSuppressed(victim);
+			Detect_ClearPinStateByAttacker(victim);
+		}
+		else if (!IsValidZombieClass(victim, L4D2ZombieClass_Smoker)
+			&& !IsValidZombieClass(victim, L4D2ZombieClass_Charger))
+		{
+			if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
+			{
+				Skills_Debug(PlayerSkillsDebug_Detect,
+					"SpecialClear suppressed by kill hierarchy. pinner=%d attacker=%d class=%d pinvictim=%d",
+					victim,
+					attacker,
+					g_DetectPinRegistry.pinnedClassByAttacker[victim],
+					g_DetectPinRegistry.pinnedVictimByAttacker[victim]);
+			}
+
+			Detect_ClearPinStateByAttacker(victim);
+		}
 	}
+
+	shouldEmitSiLifeKill = shouldEmitSiLifeKill && !g_bDetectSuppressSiLifeKill[victim];
 
 	if (IsValidZombieClass(victim, L4D2ZombieClass_Smoker))
 	{

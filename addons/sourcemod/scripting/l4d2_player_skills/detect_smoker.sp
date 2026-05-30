@@ -3,7 +3,7 @@
 #endif
 #define _l4d2_player_skills_detect_smoker_included
 
-#define L4D2_SKILLS_SMOKER_TONGUECUT_CONFIRM_TIME 1.25
+#define L4D2_SKILLS_SMOKER_TONGUECUT_CONFIRM_TIME 0.3
 #define L4D2_SKILLS_SMOKER_BREAK_NONE 0
 #define L4D2_SKILLS_SMOKER_BREAK_SHOT 1
 #define L4D2_SKILLS_SMOKER_BREAK_CUT 2
@@ -564,7 +564,7 @@ bool Detect_IsValidTeamClear(int clearer, int pinner)
 	return true;
 }
 
-void Detect_EmitSpecialClear(int clearer, int pinner, bool withShove)
+void Detect_EmitSpecialClear(int clearer, int pinner, bool withShove, bool fromKill = false)
 {
 	if (!Detect_IsPinnedClass(pinner))
 	{
@@ -631,6 +631,13 @@ void Detect_EmitSpecialClear(int clearer, int pinner, bool withShove)
 	g_SkillEvents[eventIndex].timeB = g_fDetectSpecialClearTimeB[pinner] >= 0.0 ? (now - g_fDetectSpecialClearTimeB[pinner]) : -1.0;
 	g_SkillEvents[eventIndex].withShove = withShove;
 	g_SkillEvents[eventIndex].pinVictim.Capture(pinvictim);
+	if (fromKill)
+	{
+		g_SkillEvents[eventIndex].damageScope = L4D2SkillDamageScope_SkillWindow;
+		g_SkillEvents[eventIndex].damage = Detect_GetSiLifeDamageByAttacker(pinner, clearer);
+		g_SkillEvents[eventIndex].shots = Detect_GetSiLifeShotsByAttacker(pinner, clearer);
+		g_SkillEvents[eventIndex].headshot = Detect_ResolveHeadshot(pinner, clearer, false);
+	}
 
 	if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
 	{
