@@ -32,16 +32,22 @@ Este documento resume los flujos actuales de skills y sesiones relacionadas con 
 
 - `g_BossSessions`
 - `g_BossDamage`
-- owner actual
-- pending owner
-- `inStasis`
-- `maxHealth`
-- `lastHealth`
-- `totalDamage`
-- `rocksThrown`
-- `rocksHit`
-- `incaps`
-- `kills`
+- common session:
+  - owner actual
+  - `maxHealth`
+  - `lastHealth`
+  - `totalDamage`
+- `tank` substate:
+  - pending owner
+  - `inStasis`
+  - `rocksThrown`
+  - `rocksHit`
+
+Regla de ownership:
+
+- cada `Tank` vive en su propia boss session;
+- cualquier métrica nueva de `Tank` debe agregarse como estado por sesión, no como contador global;
+- el diseño actual admite múltiples `Tank` simultáneos siempre que el tracking siga resolviendo por `victim`, `userid`, `entity` o `rock owner`.
 
 ### Emit
 
@@ -173,17 +179,32 @@ flowchart TD
 
 - `g_BossSessions`
 - `g_BossDamage`
-- `startled`
-- `harasser`
-- `lastHealthBeforeDamage`
-- `lastShotAttacker`
-- `lastShotDamage`
-- `lastShotRawDamage`
-- `lastDamageType`
-- `lastShotIsShotgun`
-- `lastBlastStartTime`
-- `lastBlastDamage`
-- `lastBlastRawDamage`
+- common session:
+  - `maxHealth`
+  - `lastHealth`
+  - `totalDamage`
+- `witch` substate:
+  - `startled`
+  - `harasser`
+  - `incapVictim`
+  - `crownDetected`
+  - `crowner`
+  - `lastHealthBeforeDamage`
+  - `lastShotAttacker`
+  - `lastShotDamage`
+  - `lastShotRawDamage`
+  - `lastDamageType`
+  - `lastShotIsShotgun`
+  - `lastBlastStartTime`
+  - `lastBlastDamage`
+  - `lastBlastRawDamage`
+  - death pending state
+
+Regla de ownership:
+
+- cada `Witch` vive en su propia boss session;
+- el estado fino de `crown`, `startle`, `harasser` e `incapVictim` debe permanecer aislado por entidad/session;
+- el diseño actual admite múltiples `Witch` simultáneas siempre que el tracking siga resolviendo por entidad.
 
 ### Emit
 

@@ -1476,6 +1476,14 @@ En `simple kills`:
 Las tablas de daño de `Tank` y `Witch` siguen siendo responsabilidad del sistema de tracking y announcer de bosses.  
 No es necesario incluir esas tablas dentro del KV del evento para que la API siga siendo práctica y replicable.
 
+El ownership interno de boss session ahora está separado por subtipo:
+
+- estado común de sesión
+- subestado `tank`
+- subestado `witch`
+
+Eso permite que múltiples `Tank` o múltiples `Witch` convivan sin compartir estado fino entre sesiones.
+
 Los summaries de cierre tampoco duplican esas tablas completas.  
 Si un consumidor necesita detalle de boss:
 
@@ -1515,6 +1523,23 @@ Notas prácticas:
   - `2` = `SkillWindow`
 
 La regla actual es agregar contexto solo cuando ayude a reconstruir el significado real del evento.
+
+Notas de session payload:
+
+- `tank_session`
+  - expone hoy solo los datos que `PlayerSkills` considera propios del dominio de skills de boss:
+    - `rocks_thrown`
+    - `rocks_hit`
+    - `wipe`
+    - `alive_time`
+- `witch_session`
+  - expone el contexto de cierre relevante para `Witch`:
+    - `alive_time`
+    - `startled`
+    - `total_damage`
+
+Contadores más ricos de performance de `Tank` como `punches`, `hittables`, `incaps` o `kills`
+deben vivir en `PlayerStats`, no en `PlayerSkills`.
 
 ## Chat vs Payload
 

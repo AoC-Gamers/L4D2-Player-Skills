@@ -2245,10 +2245,10 @@ void Announce_WitchDamage(int sessionIndex, bool witchAlive, const char[] tagPhr
 	{
 		if (Announce_HasMask(g_cvAnnounceWitch, view_as<int>(PlayerSkillsAnnounceBoss_Damage)))
 		{
-			if (g_BossSessions[sessionIndex].incapVictim.userid > 0)
+			if (g_BossSessions[sessionIndex].witch.incapVictim.userid > 0)
 			{
 				CPrintToChatAll("%t %t", tagPhrase, "BossWitchHealthRemainingIncap",
-					g_BossSessions[sessionIndex].incapVictim.name,
+					g_BossSessions[sessionIndex].witch.incapVictim.name,
 					g_BossSessions[sessionIndex].lastHealth);
 			}
 			else
@@ -2440,13 +2440,13 @@ bool Announce_IsWitchCrownerEntry(int sessionIndex, int entry)
 		return false;
 	}
 
-	if (!g_BossSessions[sessionIndex].crownDetected)
+	if (!g_BossSessions[sessionIndex].witch.crownDetected)
 	{
 		return false;
 	}
 
-	return g_BossSessions[sessionIndex].crowner.userid > 0
-		&& g_BossDamage[sessionIndex][entry].player.userid == g_BossSessions[sessionIndex].crowner.userid;
+	return g_BossSessions[sessionIndex].witch.crowner.userid > 0
+		&& g_BossDamage[sessionIndex][entry].player.userid == g_BossSessions[sessionIndex].witch.crowner.userid;
 }
 
 void Announce_GetBossName(int sessionIndex, char[] buffer, int maxlen)

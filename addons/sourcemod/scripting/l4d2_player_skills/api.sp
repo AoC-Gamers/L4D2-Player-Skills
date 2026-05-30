@@ -449,7 +449,7 @@ void API_GetBossPlayerRefBySlot(int sessionIndex, int slot, L4D2PlayerRef player
 	switch (slot)
 	{
 		case 0: player = g_BossSessions[sessionIndex].owner;
-		case 1: player = g_BossSessions[sessionIndex].pendingOwner;
+		case 1: player = g_BossSessions[sessionIndex].tank.pendingOwner;
 	}
 }
 
@@ -702,10 +702,8 @@ void API_WriteTankSessionProperties(Handle kv, int eventIndex, int sessionIndex)
 		return;
 	}
 
-	KvSetNum(kv, "rocks_thrown", g_BossSessions[sessionIndex].rocksThrown);
-	KvSetNum(kv, "rocks_hit", g_BossSessions[sessionIndex].rocksHit);
-	KvSetNum(kv, "incaps", g_BossSessions[sessionIndex].incaps);
-	KvSetNum(kv, "kills", g_BossSessions[sessionIndex].kills);
+	KvSetNum(kv, "rocks_thrown", g_BossSessions[sessionIndex].tank.rocksThrown);
+	KvSetNum(kv, "rocks_hit", g_BossSessions[sessionIndex].tank.rocksHit);
 	KvSetNum(kv, "wipe", Boss_DidTankWipe(sessionIndex) ? 1 : 0);
 
 	float aliveTime = 0.0;
@@ -737,7 +735,7 @@ void API_WriteWitchSessionProperties(Handle kv, int eventIndex, int sessionIndex
 	}
 
 	KvSetFloat(kv, "alive_time", aliveTime);
-	KvSetNum(kv, "startled", g_BossSessions[sessionIndex].startled ? 1 : 0);
+	KvSetNum(kv, "startled", g_BossSessions[sessionIndex].witch.startled ? 1 : 0);
 	KvSetNum(kv, "total_damage", g_BossSessions[sessionIndex].totalDamage);
 
 	KvGoBack(kv);
@@ -1317,7 +1315,7 @@ public int Native_PlayerSkills_GetBossTotalDamage(Handle plugin, int numParams)
 public int Native_PlayerSkills_IsBossInStasis(Handle plugin, int numParams)
 {
 	int sessionIndex = API_GetBossSessionIndexById(GetNativeCell(1));
-	return sessionIndex != -1 ? g_BossSessions[sessionIndex].inStasis : false;
+	return sessionIndex != -1 ? g_BossSessions[sessionIndex].tank.inStasis : false;
 }
 
 public int Native_PlayerSkills_GetBossDamageEntryCount(Handle plugin, int numParams)

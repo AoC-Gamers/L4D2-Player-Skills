@@ -509,6 +509,68 @@ enum struct L4D2DamageEntry
 	}
 }
 
+enum struct L4D2TankSessionData
+{
+	int rocksThrown;
+	int rocksHit;
+	bool inStasis;
+	L4D2PlayerRef pendingOwner;
+
+	void Reset()
+	{
+		this.rocksThrown = 0;
+		this.rocksHit = 0;
+		this.inStasis = false;
+		this.pendingOwner.Reset();
+	}
+}
+
+enum struct L4D2WitchSessionData
+{
+	bool startled;
+	L4D2PlayerRef harasser;
+	L4D2PlayerRef incapVictim;
+	bool crownDetected;
+	L4D2PlayerRef crowner;
+	int lastHealthBeforeDamage;
+	float lastShotTime;
+	float lastBlastStartTime;
+	int lastShotAttacker;
+	int lastShotDamage;
+	float lastShotRawDamage;
+	int lastBlastDamage;
+	float lastBlastRawDamage;
+	int lastDamageType;
+	bool lastShotIsShotgun;
+	int pendingKillerUserid;
+	bool pendingWitchOneShot;
+	bool pendingWitchMeleeOnly;
+	bool damageHooksAttached;
+
+	void Reset()
+	{
+		this.startled = false;
+		this.harasser.Reset();
+		this.incapVictim.Reset();
+		this.crownDetected = false;
+		this.crowner.Reset();
+		this.lastHealthBeforeDamage = 0;
+		this.lastShotTime = 0.0;
+		this.lastBlastStartTime = 0.0;
+		this.lastShotAttacker = 0;
+		this.lastShotDamage = 0;
+		this.lastShotRawDamage = 0.0;
+		this.lastBlastDamage = 0;
+		this.lastBlastRawDamage = 0.0;
+		this.lastDamageType = 0;
+		this.lastShotIsShotgun = false;
+		this.pendingKillerUserid = 0;
+		this.pendingWitchOneShot = false;
+		this.pendingWitchMeleeOnly = false;
+		this.damageHooksAttached = false;
+	}
+}
+
 /**
  * @brief Runtime state tracked for one Tank or Witch damage session.
  * @remarks Holds ownership, health, timing and contextual boss data reused by
@@ -527,32 +589,9 @@ enum struct L4D2BossSessionData
 	int			  lastHealth;
 	int			  totalDamage;
 	float		  startedAt;
-	int			  rocksThrown;
-	int			  rocksHit;
-	int			  incaps;
-	int			  kills;
 	bool		  printed;
-	bool		  startled;
-	L4D2PlayerRef harasser;
-	L4D2PlayerRef incapVictim;
-	bool		  crownDetected;
-	L4D2PlayerRef crowner;
-	int			  lastHealthBeforeDamage;
-	float		  lastShotTime;
-	float		  lastBlastStartTime;
-	int			  lastShotAttacker;
-	int			  lastShotDamage;
-	float		  lastShotRawDamage;
-	int			  lastBlastDamage;
-	float		  lastBlastRawDamage;
-	int			  lastDamageType;
-	bool		  lastShotIsShotgun;
-	bool		  inStasis;
-	L4D2PlayerRef pendingOwner;
-	int			  pendingKillerUserid;
-	bool		  pendingWitchOneShot;
-	bool		  pendingWitchMeleeOnly;
-	bool		  damageHooksAttached;
+	L4D2TankSessionData tank;
+	L4D2WitchSessionData witch;
 
 	/**
 	 * @brief Clears the runtime state for a boss damage session.
@@ -572,32 +611,9 @@ enum struct L4D2BossSessionData
 		this.lastHealth  			= 0;
 		this.totalDamage 			= 0;
 		this.startedAt	  			= 0.0;
-		this.rocksThrown 			= 0;
-		this.rocksHit	  			= 0;
-		this.incaps	  				= 0;
-		this.kills		  			= 0;
 		this.printed	  			= false;
-		this.startled	  			= false;
-		this.harasser.Reset();
-		this.incapVictim.Reset();
-		this.crownDetected 			= false;
-		this.crowner.Reset();
-		this.lastHealthBeforeDamage = 0;
-		this.lastShotTime			= 0.0;
-		this.lastBlastStartTime	 	= 0.0;
-		this.lastShotAttacker		= 0;
-		this.lastShotDamage		 	= 0;
-		this.lastShotRawDamage		= 0.0;
-		this.lastBlastDamage		= 0;
-		this.lastBlastRawDamage	 	= 0.0;
-		this.lastDamageType		 	= 0;
-		this.lastShotIsShotgun		 = false;
-		this.inStasis				 = false;
-		this.pendingOwner.Reset();
-		this.pendingKillerUserid     = 0;
-		this.pendingWitchOneShot     = false;
-		this.pendingWitchMeleeOnly   = false;
-		this.damageHooksAttached     = false;
+		this.tank.Reset();
+		this.witch.Reset();
 	}
 }
 
