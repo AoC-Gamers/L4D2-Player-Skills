@@ -289,12 +289,8 @@ bool API_ShouldIncludeEventInSummary(int eventIndex)
 		return false;
 	}
 
-	if (g_SkillEvents[eventIndex].type == L4D2Skill_WitchDead && !g_SkillEvents[eventIndex].crown)
-	{
-		return false;
-	}
-
-	if (g_SkillEvents[eventIndex].type == L4D2Skill_WitchIncap)
+	if (g_SkillEvents[eventIndex].type == L4D2Skill_WitchDead
+		|| g_SkillEvents[eventIndex].type == L4D2Skill_WitchIncap)
 	{
 		return false;
 	}
@@ -950,7 +946,7 @@ public int Native_PlayerSkills_FillEventKeyValues(Handle plugin, int numParams)
 		API_WriteTankSessionProperties(kv, eventIndex, API_GetBossSessionIndexById(g_SkillEvents[eventIndex].actor2));
 	}
 
-	if ((g_SkillEvents[eventIndex].type == L4D2Skill_WitchDead || g_SkillEvents[eventIndex].type == L4D2Skill_WitchIncap)
+	if ((g_SkillEvents[eventIndex].type == L4D2Skill_WitchDead || g_SkillEvents[eventIndex].type == L4D2Skill_WitchCrown || g_SkillEvents[eventIndex].type == L4D2Skill_WitchIncap)
 		&& g_SkillEvents[eventIndex].actor2 > 0)
 	{
 		API_WriteWitchSessionProperties(kv, eventIndex, API_GetBossSessionIndexById(g_SkillEvents[eventIndex].actor2));

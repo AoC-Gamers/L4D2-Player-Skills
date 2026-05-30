@@ -8,6 +8,7 @@ Este documento resume los flujos actuales de skills y sesiones relacionadas con 
 - `TankRockSkeet`
 - `TankRockHit`
 - `WitchDead`
+- `WitchCrown`
 - `WitchIncap`
 - boss damage sessions de `Tank`
 - boss damage sessions de `Witch`
@@ -190,18 +191,23 @@ flowchart TD
 
 - la `Witch` muere,
 - el killer es survivor,
-- y la sesión de boss sigue siendo válida.
+- y no hubo `WitchCrown`.
 
-El contexto `crown` se decide sobre el blast final acumulado.
+`WitchDead` no representa una skill; es el cierre default que imprime el resumen tradicional de daño.
 
 Regla de daño:
 
 - `lastShotDamage` y `lastBlastDamage`
   - guardan daño efectivo capeado por la vida restante de la `Witch`;
 - `lastShotRawDamage` y `lastBlastRawDamage`
-  - se conservan solo como contexto técnico para heurísticas como `crown`;
+  - se conservan solo como contexto técnico;
 - el payload final de `WitchDead`
-  - expone daño efectivo, no overkill `raw`.
+  - expone contexto de cierre de sesión, no una skill de crown.
+
+Regla de announce:
+
+- `WitchDead`
+  - imprime el resumen tradicional de daño hecho a la `Witch`.
 
 ### Properties
 
@@ -209,7 +215,6 @@ Regla de daño:
 - `actor_damage`
 - `chip_damage`
 - `shots`
-- `crown`
 - `startled`
 
 Contexto adicional:
@@ -224,9 +229,50 @@ flowchart TD
     B --> C[OnTakeDamage / OnTakeDamagePost]
     C --> D[Track blast, startled and harasser]
     D --> E[witch_killed]
-    E --> F[Emit WitchDead]
-    F --> G[Finalize boss damage session]
+    E --> F{Was WitchCrown detected}
+    F -->|no| G[Emit WitchDead]
+    F -->|yes| H[Skip default death skill]
+    G --> I[Finalize boss damage session]
+    H --> I
 ```
+
+## WitchCrown
+
+### Sources
+
+- `witch_killed`
+- Witch damage session state
+
+### State
+
+Reutiliza la misma sesión de `Witch`:
+
+- contributors de daño por survivor
+- `lastShotDamage`
+- `lastBlastDamage`
+- `lastShotRawDamage`
+- `lastBlastRawDamage`
+- `lastShotIsShotgun`
+- `pendingWitchOneShot`
+- `pendingWitchMeleeOnly`
+
+### Emit
+
+`WitchCrown` se emite cuando la muerte de la `Witch` clasifica como crown.
+
+### Properties
+
+- `damage`
+- `actor_damage`
+- `chip_damage`
+- `shots`
+- `crown`
+- `perfect`
+- `startled`
+
+Contexto adicional:
+
+- `witch_session`
 
 ## WitchIncap
 

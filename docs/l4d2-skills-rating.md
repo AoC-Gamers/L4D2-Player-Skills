@@ -88,7 +88,8 @@ Consecuencia practica:
 | `JockeyJumpStop` | `1` |
 | `ChargerInstaKill` | `3` |
 | `ChargerDeathSetup` | `2` |
-| `WitchDead` con `crown` | `2` |
+| `WitchCrown` normal | `2` |
+| `WitchCrown` perfecta | `3` |
 | `TankRockSkeet` | `2` |
 | `TankRockHit` | `0` |
 | `WitchIncap` | `0` |

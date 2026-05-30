@@ -464,7 +464,11 @@ Así:
 - `summary.entries[].counts` usa claves con el nombre canónico de `L4D2SkillType`.
 - en summaries, infectados bot se compactan en una entrada `IA` por equipo.
 - `WitchIncap` no entra al summary compacto.
-- `WitchDead` solo entra al summary si `crown=1`.
+- `WitchDead` no entra al summary compacto.
+- `WitchCrown` entra al summary como skill de crown.
+- para integraciones de gameplay:
+  - consumir `WitchCrown` como skill real,
+  - consumir `WitchDead` solo como cierre default de la sesión de `Witch`.
 
 ## Current Skill Set
 
@@ -477,6 +481,7 @@ Skills implementadas hoy:
 - `ChargerLevel`
 - `TankDead`
 - `WitchDead`
+- `WitchCrown`
 - `WitchIncap`
 - `SmokerTongueCut`
 - `SmokerSelfClear`
@@ -1181,17 +1186,18 @@ event
             "accountid"     "654321"
             "name"          "Pasta"
             "bot"           "0"
+            "damage"        "500"
+            "shots"         "1"
         }
     }
 
     "skill_properties"
     {
-        "damage"        "1000"
-        "actor_damage"  "1000"
-        "chip_damage"   "300"
+        "damage"        "500"
+        "actor_damage"  "500"
+        "chip_damage"   "500"
         "damage_scope"  "2"
         "shots"         "1"
-        "crown"         "1"
         "startled"      "1"
     }
 
@@ -1206,11 +1212,70 @@ event
 
 Notas:
 
-- `WitchDead` usa `damage_scope = SkillWindow`.
+- `WitchDead` es el cierre default de la sesión de `Witch`.
+- cuando no hubo `WitchCrown`, el announce visible asociado es el resumen
+  tradicional de daño hecho a la `Witch`.
+- `WitchDead` no debe interpretarse como skill de crown.
+- para gameplay y analytics de skills, preferir `WitchCrown`.
+
+### WitchCrown
+
+```text
+event
+{
+    "id"                "31"
+    "type_id"           "30"
+
+    "actor_userid"      "41"
+    "actor_accountid"   "123456"
+    "actor_name"        "Lechuga"
+    "actor_bot"         "0"
+
+    "assists_count"     "1"
+
+    "assists"
+    {
+        "0"
+        {
+            "userid"        "42"
+            "accountid"     "654321"
+            "name"          "Pasta"
+            "bot"           "0"
+            "damage"        "500"
+            "shots"         "1"
+        }
+    }
+
+    "skill_properties"
+    {
+        "damage"        "500"
+        "actor_damage"  "500"
+        "chip_damage"   "500"
+        "damage_scope"  "2"
+        "shots"         "1"
+        "crown"         "1"
+        "perfect"       "0"
+        "startled"      "1"
+    }
+
+    "witch_session"
+    {
+        "alive_time"    "18.4"
+        "startled"      "1"
+        "total_damage"  "1000"
+    }
+}
+```
+
+Notas:
+
+- `WitchCrown` usa `damage_scope = SkillWindow`.
 - `damage` y `actor_damage` representan daño efectivo sobre la vida real de la
   `Witch`, no overkill `raw`.
-- la detección de `crown` puede usar `raw` interno del blast final, pero ese
-  valor no reemplaza el daño efectivo expuesto por la API.
+- `assists[]` para `WitchCrown` usa contributors reales de la sesión de daño de
+  la `Witch`, con su `damage/shots` acumulado.
+- `perfect=1` implica `Crown Perfecta`.
+- `WitchCrown` es el evento canónico para integrar crowns desde la API.
 
 ### WitchIncap
 
@@ -1419,7 +1484,8 @@ Ejemplos:
 - `BoomerPop` necesita `shove_count`, `time_a`
 - `ChargerLevel` usa `damage`, `chip_damage` y `perfect` cuando aplique
 - `TankDead` usa `tank_session`
-- `WitchDead` usa `damage`, `chip_damage`, `shots`, `crown`, `startled` y `witch_session` según el caso
+- `WitchDead` usa contexto de cierre y `witch_session`
+- `WitchCrown` usa `damage`, `chip_damage`, `shots`, `crown`, `perfect`, `startled` y `witch_session`
 - `WitchIncap` usa `amount`, `startled` y `witch_session`
 - `TankRockSkeet` y `TankRockHit` no agregan propiedades especiales hoy
 - `CarAlarmTriggered` usa `reason`, `indirect` y `forced`; además puede incluir el infectado responsable en `victim`

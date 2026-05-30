@@ -270,29 +270,26 @@ public Action PlayerSkills_OnSkillDetected(int eventId, L4D2SkillType type)
 			Call_Finish();
 		}
 
-		case L4D2Skill_WitchDead:
+		case L4D2Skill_WitchCrown:
 		{
-			if (Legacy_GetEventBool(eventId, L4D2SkillBool_Crown))
-			{
-				int	 damage		= Legacy_GetEventInt(eventId, L4D2SkillInt_Damage);
-				int	 chipDamage = Legacy_GetEventInt(eventId, L4D2SkillInt_ChipDamage);
-				bool startled	= Legacy_GetEventBool(eventId, L4D2SkillBool_Startled);
+			int	 damage		= Legacy_GetEventInt(eventId, L4D2SkillInt_Damage);
+			int	 chipDamage = Legacy_GetEventInt(eventId, L4D2SkillInt_ChipDamage);
+			bool startled	= Legacy_GetEventBool(eventId, L4D2SkillBool_Startled);
 
-				if (startled || chipDamage > 0)
-				{
-					Call_StartForward(g_hForwardStartledCrown);
-					Call_PushCell(actor);
-					Call_PushCell(damage);
-					Call_PushCell(chipDamage);
-					Call_Finish();
-				}
-				else
-				{
-					Call_StartForward(g_hForwardCrown);
-					Call_PushCell(actor);
-					Call_PushCell(damage);
-					Call_Finish();
-				}
+			if (startled || chipDamage > 0)
+			{
+				Call_StartForward(g_hForwardStartledCrown);
+				Call_PushCell(actor);
+				Call_PushCell(damage);
+				Call_PushCell(chipDamage);
+				Call_Finish();
+			}
+			else
+			{
+				Call_StartForward(g_hForwardCrown);
+				Call_PushCell(actor);
+				Call_PushCell(damage);
+				Call_Finish();
 			}
 		}
 

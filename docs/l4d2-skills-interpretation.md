@@ -219,7 +219,8 @@ En ese caso, el contexto adicional sigue siendo útil:
 
 ## 6. Caso Witch
 
-Si una Witch muere, el evento principal se interpreta como `WitchDead`.  
+Si una Witch muere sin crown, el evento principal se interpreta como `WitchDead`.  
+Si la muerte clasifica como crown, la skill real es `WitchCrown`.  
 Si además el blast final supera el baseline de crown, esa condición vive como contexto del evento y del announce, no como skill type aparte.
 
 Eso sigue siendo cierto aunque:
@@ -231,16 +232,19 @@ Eso sigue siendo cierto aunque:
 Entonces:
 
 - el hecho principal es que la `Witch` murió;
-- si hubo un blast de crown suficiente, eso debe marcarse como propiedad del evento;
+- si el kill final fue un blast de shotgun del killer, eso debe marcarse como contexto `crown`;
 - el startled o el chip se conservan como metadata;
 - no se debe crear una skill principal aparte solo para ese caso.
 
 Regla de daño:
 
 - el resumen de boss de `Witch` usa daño efectivo acumulado sobre su vida real;
-- `WitchDead` expone daño efectivo del blast/shot final en `damage`;
-- el `raw` del blast final puede conservarse internamente para decidir `crown`,
-  pero no debe filtrarse como daño visible del evento.
+- `WitchCrown` expone daño efectivo del killer en `damage`;
+- `shots` en `WitchCrown` representa los tiros totales del killer sobre esa `Witch`;
+- los contributors previos de otros survivors se exponen como assists con
+  `damage/shots` acumulado;
+- el `raw` del blast final puede conservarse internamente, pero no debe filtrarse
+  como daño visible del evento.
 
 ---
 

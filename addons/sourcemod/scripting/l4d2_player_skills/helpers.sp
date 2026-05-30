@@ -919,6 +919,7 @@ stock void Skills_GetSkillTypeName(L4D2SkillType type, char[] buffer, int maxlen
 		case L4D2Skill_ChargerKill: strcopy(buffer, maxlen, "ChargerKill");
 		case L4D2Skill_JockeyJumpStop: strcopy(buffer, maxlen, "JockeyJumpStop");
 		case L4D2Skill_JockeySkeetMelee: strcopy(buffer, maxlen, "JockeySkeetMelee");
+		case L4D2Skill_WitchCrown: strcopy(buffer, maxlen, "WitchCrown");
 		default: strcopy(buffer, maxlen, "None");
 	}
 }
@@ -989,7 +990,7 @@ stock void Skills_FormatEventPlayerRoleName(int eventIndex, int slot, char[] buf
 			{
 				zombieClass = L4D2ZombieClass_Charger;
 			}
-			case L4D2Skill_TankRockSkeet, L4D2Skill_TankRockHit, L4D2Skill_TankDead:
+			case L4D2Skill_TankRockSkeet, L4D2Skill_TankDead:
 			{
 				zombieClass = L4D2ZombieClass_Tank;
 			}
@@ -1329,9 +1330,9 @@ stock int Skills_GetEventRating(int eventIndex)
 		{
 			return g_SkillEvents[eventIndex].amount >= 3 ? 3 : 2;
 		}
-		case L4D2Skill_WitchDead:
+		case L4D2Skill_WitchCrown:
 		{
-			return g_SkillEvents[eventIndex].crown ? 2 : 0;
+			return g_SkillEvents[eventIndex].perfect ? 3 : 2;
 		}
 		case L4D2Skill_TankRockSkeet:
 		{

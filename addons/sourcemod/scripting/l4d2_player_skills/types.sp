@@ -60,6 +60,7 @@ enum L4D2SkillType
 	L4D2Skill_ChargerKill,
 	L4D2Skill_JockeyJumpStop,
 	L4D2Skill_JockeySkeetMelee,
+	L4D2Skill_WitchCrown,
 
 	L4D2Skill_Size
 }
@@ -532,6 +533,7 @@ enum struct L4D2BossSessionData
 	bool		  printed;
 	bool		  startled;
 	L4D2PlayerRef harasser;
+	L4D2PlayerRef incapVictim;
 	bool		  crownDetected;
 	L4D2PlayerRef crowner;
 	int			  lastHealthBeforeDamage;
@@ -546,6 +548,10 @@ enum struct L4D2BossSessionData
 	bool		  lastShotIsShotgun;
 	bool		  inStasis;
 	L4D2PlayerRef pendingOwner;
+	int			  pendingKillerUserid;
+	bool		  pendingWitchOneShot;
+	bool		  pendingWitchMeleeOnly;
+	bool		  damageHooksAttached;
 
 	/**
 	 * @brief Clears the runtime state for a boss damage session.
@@ -572,6 +578,7 @@ enum struct L4D2BossSessionData
 		this.printed	  			= false;
 		this.startled	  			= false;
 		this.harasser.Reset();
+		this.incapVictim.Reset();
 		this.crownDetected 			= false;
 		this.crowner.Reset();
 		this.lastHealthBeforeDamage = 0;
@@ -586,6 +593,10 @@ enum struct L4D2BossSessionData
 		this.lastShotIsShotgun		 = false;
 		this.inStasis				 = false;
 		this.pendingOwner.Reset();
+		this.pendingKillerUserid     = 0;
+		this.pendingWitchOneShot     = false;
+		this.pendingWitchMeleeOnly   = false;
+		this.damageHooksAttached     = false;
 	}
 }
 

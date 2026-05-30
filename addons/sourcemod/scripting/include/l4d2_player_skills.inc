@@ -38,6 +38,7 @@ enum L4D2SkillType
 	L4D2Skill_ChargerKill,
 	L4D2Skill_JockeyJumpStop,
 	L4D2Skill_JockeySkeetMelee,
+	L4D2Skill_WitchCrown,
 
 	L4D2Skill_Size
 }
@@ -77,7 +78,8 @@ stock char g_sL4D2SkillType[L4D2Skill_Size][] =
 	"JockeyKill",
 	"ChargerKill",
 	"JockeyJumpStop",
-	"JockeySkeetMelee"
+	"JockeySkeetMelee",
+	"WitchCrown"
 };
 
 /**

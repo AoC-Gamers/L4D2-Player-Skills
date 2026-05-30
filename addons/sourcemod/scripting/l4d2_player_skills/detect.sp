@@ -798,9 +798,9 @@ Action Detect_TimerEvaluateHunterDeath(Handle timer, any userid)
 				g_SkillEvents[eventIndex].damageScope = L4D2SkillDamageScope_SkillWindow;
 				g_SkillEvents[eventIndex].damage = hunterHealthBeforeDamage;
 				g_SkillEvents[eventIndex].actorDamage = hunterHealthBeforeDamage;
-				g_SkillEvents[eventIndex].chipDamage = chipDamage;
 				g_SkillEvents[eventIndex].shots = 1;
-				g_SkillEvents[eventIndex].perfect = (chipDamage == 0);
+				int meleeAssistsFound = Detect_FillHunterSkeetPriorDamage(eventIndex, hunter, attacker, hunterHealthBeforeDamage, 1);
+				g_SkillEvents[eventIndex].perfect = (g_SkillEvents[eventIndex].chipDamage == 0) && meleeAssistsFound == 0;
 				g_SkillEvents[eventIndex].headshot = headshot;
 
 				Action meleeResult = API_FireSkillDetected(eventId, L4D2Skill_HunterSkeetMelee);
@@ -2818,6 +2818,16 @@ void Detect_EventWeaponFire(Event event)
 		g_bDetectShotCounted[victim][attacker] = false;
 		g_bDetectHunterShotCounted[victim][attacker] = false;
 	}
+}
+
+int Detect_GetLastWeaponId(int client)
+{
+	return (client > 0 && client <= MaxClients) ? g_iDetectLastWeaponId[client] : WEPID_NONE;
+}
+
+float Detect_GetLastWeaponFireTime(int client)
+{
+	return (client > 0 && client <= MaxClients) ? g_fDetectLastWeaponFireTime[client] : 0.0;
 }
 
 // Client damage snapshots used by Hunter/Charger classification flows.

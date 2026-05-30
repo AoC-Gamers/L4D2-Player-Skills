@@ -244,23 +244,19 @@ bool Announce_ShouldAnnounceSkill(int eventIndex)
 		}
 		case L4D2Skill_SmokerLedgeHang:
 		{
-			shouldAnnounce = Announce_HasMask(g_cvAnnounceSmoker, view_as<int>(PlayerSkillsAnnounceSmoker_LedgeHang))
-				|| (g_cvAnnounceSmoker != null && g_cvAnnounceSmoker.IntValue == 15);
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceSmoker, view_as<int>(PlayerSkillsAnnounceSmoker_LedgeHang));
 		}
 		case L4D2Skill_JockeyLedgeHang:
 		{
-			shouldAnnounce = Announce_HasMask(g_cvAnnounceJockey, view_as<int>(PlayerSkillsAnnounceJockey_LedgeHang))
-				|| (g_cvAnnounceJockey != null && g_cvAnnounceJockey.IntValue == 31);
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceJockey, view_as<int>(PlayerSkillsAnnounceJockey_LedgeHang));
 		}
 		case L4D2Skill_JockeyJumpStop:
 		{
-			shouldAnnounce = Announce_HasMask(g_cvAnnounceJockey, view_as<int>(PlayerSkillsAnnounceJockey_JumpStop))
-				|| (g_cvAnnounceJockey != null && g_cvAnnounceJockey.IntValue == 7);
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceJockey, view_as<int>(PlayerSkillsAnnounceJockey_JumpStop));
 		}
 		case L4D2Skill_JockeySkeetMelee:
 		{
-			shouldAnnounce = Announce_HasMask(g_cvAnnounceJockey, view_as<int>(PlayerSkillsAnnounceJockey_SkeetMelee))
-				|| (g_cvAnnounceJockey != null && g_cvAnnounceJockey.IntValue == 7);
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceJockey, view_as<int>(PlayerSkillsAnnounceJockey_SkeetMelee));
 		}
 		case L4D2Skill_JockeyKill:
 		{
@@ -292,8 +288,7 @@ bool Announce_ShouldAnnounceSkill(int eventIndex)
 		}
 		case L4D2Skill_ChargerBowl:
 		{
-			shouldAnnounce = Announce_HasMask(g_cvAnnounceCharger, view_as<int>(PlayerSkillsAnnounceCharger_Bowl))
-				|| (g_cvAnnounceCharger != null && g_cvAnnounceCharger.IntValue == 31);
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceCharger, view_as<int>(PlayerSkillsAnnounceCharger_Bowl));
 		}
 		case L4D2Skill_SpecialPinClear:
 		{
@@ -319,21 +314,23 @@ bool Announce_ShouldAnnounceSkill(int eventIndex)
 		}
 		case L4D2Skill_WitchDead:
 		{
-			shouldAnnounce = g_SkillEvents[eventIndex].crown
-				&& Announce_HasMask(g_cvAnnounceWitch, view_as<int>(PlayerSkillsAnnounceBoss_Crown));
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceWitch, view_as<int>(PlayerSkillsAnnounceBoss_Damage));
+		}
+		case L4D2Skill_WitchCrown:
+		{
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceWitch, view_as<int>(PlayerSkillsAnnounceBoss_Crown));
 		}
 		case L4D2Skill_TankRockSkeet:
 		{
-			shouldAnnounce = Announce_HasMask(g_cvAnnounceTank, view_as<int>(PlayerSkillsAnnounceBoss_RockSkeet));
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceTank, 2);
 		}
 		case L4D2Skill_TankRockHit:
 		{
-			shouldAnnounce = Announce_HasMask(g_cvAnnounceTank, view_as<int>(PlayerSkillsAnnounceBoss_RockHit));
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceTank, 4);
 		}
 		case L4D2Skill_TankLedgeHang:
 		{
-			shouldAnnounce = Announce_HasMask(g_cvAnnounceTank, view_as<int>(PlayerSkillsAnnounceBoss_LedgeHang))
-				|| (g_cvAnnounceTank != null && g_cvAnnounceTank.IntValue == 7);
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceTank, 8);
 		}
 		case L4D2Skill_BunnyHopStreak:
 		{
@@ -483,11 +480,6 @@ int Announce_CountSkillTypeForClient(int client, L4D2SkillType type)
 			|| g_SkillEvents[index].type != type
 			|| !g_SkillEvents[index].actor.IsSamePersistentPlayer(client)
 			|| !Skills_IsSkillEventEnabledInCurrentMode(index))
-		{
-			continue;
-		}
-
-		if (type == L4D2Skill_WitchDead && !g_SkillEvents[index].crown)
 		{
 			continue;
 		}
@@ -665,7 +657,7 @@ int Announce_MapSurvivorTableFamily(L4D2SkillType type)
 		case L4D2Skill_ChargerLevel: return 8;
 		case L4D2Skill_CarAlarmTriggered: return 10;
 		case L4D2Skill_BunnyHopStreak: return 11;
-		case L4D2Skill_WitchDead: return 12;
+		case L4D2Skill_WitchCrown: return 12;
 		case L4D2Skill_TankRockSkeet: return 13;
 		case L4D2Skill_SmokerKill, L4D2Skill_BoomerKill, L4D2Skill_HunterKill, L4D2Skill_SpitterKill, L4D2Skill_JockeyKill, L4D2Skill_ChargerKill: return 14;
 		case L4D2Skill_JockeyJumpStop: return 15;
@@ -762,7 +754,7 @@ bool Announce_IsSurvivorTableFamilyVisible(int family)
 		case 9: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_ChargerLevel);
 		case 10: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_CarAlarmTriggered);
 		case 11: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_BunnyHopStreak);
-		case 12: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_WitchDead);
+		case 12: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_WitchCrown);
 		case 13: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_TankRockSkeet);
 		case 14:
 		{
@@ -818,7 +810,7 @@ int Announce_CountSurvivorTableFamilyForClient(int client, int family)
 		case 9: return Announce_CountPerfectSkillTypeForClient(client, L4D2Skill_ChargerLevel);
 		case 10: return Announce_CountSkillTypeForClient(client, L4D2Skill_CarAlarmTriggered);
 		case 11: return Announce_CountSkillTypeForClient(client, L4D2Skill_BunnyHopStreak);
-		case 12: return Announce_CountSkillTypeForClient(client, L4D2Skill_WitchDead);
+		case 12: return Announce_CountSkillTypeForClient(client, L4D2Skill_WitchCrown);
 		case 13: return Announce_CountSkillTypeForClient(client, L4D2Skill_TankRockSkeet);
 		case 14:
 		{
@@ -871,11 +863,6 @@ int Announce_CountTableFamilyForBots(L4DTeam team, int family)
 		if (g_SkillEvents[index].id <= 0
 			|| !g_SkillEvents[index].actor.bot
 			|| !Skills_IsSkillEventEnabledInCurrentMode(index))
-		{
-			continue;
-		}
-
-		if (g_SkillEvents[index].type == L4D2Skill_WitchDead && !g_SkillEvents[index].crown)
 		{
 			continue;
 		}
@@ -1343,10 +1330,64 @@ void Announce_Skill(int eventId)
 
 		case L4D2Skill_HunterSkeetMelee:
 		{
-			CPrintToChatAll("%s %t", tag,
-				g_SkillEvents[eventIndex].perfect ? "SkeetMeleePerfect" : "SkeetMelee",
-				actorName,
-				victimName);
+			char assistList[256];
+			Announce_FormatAssistList(eventIndex, assistList, sizeof(assistList));
+			int assistDamageTotal = 0;
+			for (int i = 0; i < g_SkillEvents[eventIndex].assistsCount && i < L4D2_SKILLS_MAX_EVENT_ASSISTS; i++)
+			{
+				assistDamageTotal += g_SkillEvents[eventIndex].assistDamage[i];
+			}
+
+			int actorMeleeDamage = Skills_GetSpecialMaxHealth(L4D2ZombieClass_Hunter) - assistDamageTotal;
+			if (actorMeleeDamage < 0)
+			{
+				actorMeleeDamage = 0;
+			}
+
+			int actorMeleeShots = g_SkillEvents[eventIndex].actorChipShots + 1;
+			char meleeStat[64];
+			Announce_FormatSimpleKillStat(actorMeleeDamage, actorMeleeShots, meleeStat, sizeof(meleeStat));
+
+			if (g_SkillEvents[eventIndex].perfect)
+			{
+				CPrintToChatAll("%s %t", tag,
+					"SkeetMeleePerfect",
+					actorName,
+					victimName);
+			}
+			else if (g_SkillEvents[eventIndex].actorChipDamage > 0 && g_SkillEvents[eventIndex].assistsCount > 0)
+			{
+				CPrintToChatAll("%s %t", tag,
+					"SkeetMeleeStatAssist",
+					actorName,
+					victimName,
+					meleeStat,
+					assistList);
+			}
+			else if (g_SkillEvents[eventIndex].actorChipDamage > 0)
+			{
+				CPrintToChatAll("%s %t", tag,
+					"SkeetMeleeStat",
+					actorName,
+					victimName,
+					meleeStat);
+			}
+			else if (g_SkillEvents[eventIndex].assistsCount > 0)
+			{
+				CPrintToChatAll("%s %t", tag,
+					"SkeetMeleeStatAssist",
+					actorName,
+					victimName,
+					meleeStat,
+					assistList);
+			}
+			else
+			{
+				CPrintToChatAll("%s %t", tag,
+					"SkeetMelee",
+					actorName,
+					victimName);
+			}
 		}
 
 		case L4D2Skill_HunterDeadstop:
@@ -1751,11 +1792,45 @@ void Announce_Skill(int eventId)
 
 		case L4D2Skill_WitchDead:
 		{
-			if (g_SkillEvents[eventIndex].crown)
+			if (g_SkillEvents[eventIndex].actor2 > 0)
+			{
+				int sessionIndex = API_GetBossSessionIndexById(g_SkillEvents[eventIndex].actor2);
+				if (sessionIndex != -1)
+				{
+					Announce_WitchDamage(sessionIndex, false, "Tag1");
+				}
+			}
+		}
+
+		case L4D2Skill_WitchCrown:
+		{
+			char crownStat[64];
+			char assistList[256];
+			Announce_FormatSimpleKillStat(
+				g_SkillEvents[eventIndex].actorDamage,
+				g_SkillEvents[eventIndex].shots,
+				crownStat,
+				sizeof(crownStat));
+			Announce_FormatAssistList(eventIndex, assistList, sizeof(assistList));
+
+			if (g_SkillEvents[eventIndex].perfect)
+			{
+				CPrintToChatAll("%s %t", tag, "WitchCrownPerfect",
+					actorName,
+					crownStat);
+			}
+			else if (g_SkillEvents[eventIndex].assistsCount > 0)
+			{
+				CPrintToChatAll("%s %t", tag, "WitchCrownAssist",
+					actorName,
+					crownStat,
+					assistList);
+			}
+			else
 			{
 				CPrintToChatAll("%s %t", tag, "WitchCrown",
 					actorName,
-					g_SkillEvents[eventIndex].damage);
+					crownStat);
 			}
 		}
 
@@ -1783,6 +1858,7 @@ void Announce_Skill(int eventId)
 
 		case L4D2Skill_SmokerKill, L4D2Skill_BoomerKill, L4D2Skill_HunterKill, L4D2Skill_SpitterKill, L4D2Skill_JockeyKill, L4D2Skill_ChargerKill:
 		{
+			FormatEx(tag, sizeof(tag), "%T", "Tag1", LANG_SERVER);
 			char line[1024];
 			char actorStat[64];
 			Announce_FormatSimpleKillStat(
@@ -1966,7 +2042,7 @@ void Announce_TankDamage(int sessionIndex, bool tankAlive)
 	API_FireBossDamageAnnounced(g_BossSessions[sessionIndex].id, g_BossSessions[sessionIndex].type);
 }
 
-void Announce_WitchDamage(int sessionIndex, bool witchAlive)
+void Announce_WitchDamage(int sessionIndex, bool witchAlive, const char[] tagPhrase = "Tag")
 {
 	if (sessionIndex < 0 || sessionIndex >= L4D2_SKILLS_MAX_BOSSES || g_BossSessions[sessionIndex].id == 0)
 	{
@@ -1977,15 +2053,29 @@ void Announce_WitchDamage(int sessionIndex, bool witchAlive)
 	{
 		if (Announce_HasMask(g_cvAnnounceWitch, view_as<int>(PlayerSkillsAnnounceBoss_Damage)))
 		{
-			CPrintToChatAll("%t %t", "Tag", "BossWitchHealthRemaining",
-				g_BossSessions[sessionIndex].lastHealth);
+			if (g_BossSessions[sessionIndex].incapVictim.userid > 0)
+			{
+				CPrintToChatAll("%t %t", tagPhrase, "BossWitchHealthRemainingIncap",
+					g_BossSessions[sessionIndex].incapVictim.name,
+					g_BossSessions[sessionIndex].lastHealth);
+			}
+			else
+			{
+				CPrintToChatAll("%t %t", tagPhrase, "BossWitchHealthRemaining",
+					g_BossSessions[sessionIndex].lastHealth);
+			}
 		}
+
+		g_BossSessions[sessionIndex].printed = true;
+		g_BossSessions[sessionIndex].state = L4D2BossState_Printed;
+		API_FireBossDamageAnnounced(g_BossSessions[sessionIndex].id, g_BossSessions[sessionIndex].type);
+		return;
 	}
 	else
 	{
 		if (Announce_HasMask(g_cvAnnounceWitch, view_as<int>(PlayerSkillsAnnounceBoss_Damage)))
 		{
-			CPrintToChatAll("%t %t", "Tag", "BossWitchDamageTitle");
+			CPrintToChatAll("%t %t", tagPhrase, "BossWitchDamageTitle");
 		}
 	}
 

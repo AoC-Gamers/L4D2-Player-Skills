@@ -6,6 +6,12 @@
 		"es"		"[{olive}Skill{default}]"
 	}
 
+	"Tag1"
+	{
+		"en"		"[{olive}★{default}]"
+		"es"		"[{olive}★{default}]"
+	}
+
 	"SkillsSummaryHeader"
 	{
 		"#format"	"{1:s}"
@@ -200,6 +206,27 @@
 		"es"		"{olive}{1} {blue}hizo {green}Skeet-Melee Perfecto {blue}a {olive}{2}{blue}."
 	}
 
+	"SkeetMeleeAssist"
+	{
+		"#format"	"{1:s},{2:s},{3:s}"
+		"en"		"{olive}{1} {blue}landed a {green}Skeet-Melee {blue}on {olive}{2}{blue}, assisted by {olive}{3}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet-Melee {blue}a {olive}{2}{blue}, asistido por {olive}{3}{blue}."
+	}
+
+	"SkeetMeleeStat"
+	{
+		"#format"	"{1:s},{2:s},{3:s}"
+		"en"		"{olive}{1} {blue}landed a {green}Skeet-Melee {blue}on {olive}{2} {blue}({green}{3}{blue})."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet-Melee {blue}a {olive}{2} {blue}({green}{3}{blue})."
+	}
+
+	"SkeetMeleeStatAssist"
+	{
+		"#format"	"{1:s},{2:s},{3:s},{4:s}"
+		"en"		"{olive}{1} {blue}landed a {green}Skeet-Melee {blue}on {olive}{2} {blue}({green}{3}{blue}), assisted by {olive}{4}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet-Melee {blue}a {olive}{2} {blue}({green}{3}{blue}), asistido por {olive}{4}{blue}."
+	}
+
 	"HunterSkeetSniper"
 	{
 		"#format"	"{1:s},{2:s},{3:s}"
@@ -357,29 +384,29 @@
 	"BoomerPopBot"
 	{
 		"#format"	"{1:s},{2:s}"
-		"en"		"{olive}{1} {blue}popped {olive}Boomer (IA) {blue}in {green}{2}{blue}s."
-		"es"		"{olive}{1} {blue}revento a {olive}Boomer (IA) {blue}en {green}{2}{blue}s."
+		"en"		"{olive}{1} {blue}popped {olive}Boomer (IA) {blue}in {green}{2}s{blue}."
+		"es"		"{olive}{1} {blue}revento a {olive}Boomer (IA) {blue}en {green}{2}s{blue}."
 	}
 
 	"BoomerPopBotAssist"
 	{
 		"#format"	"{1:s},{2:s},{3:s}"
-		"en"		"{olive}{1} {blue}popped {olive}Boomer (IA) {blue}in {green}{2}{blue}s, assisted by {olive}{3}{blue}."
-		"es"		"{olive}{1} {blue}revento a {olive}Boomer (IA) {blue}en {green}{2}{blue}s, asistido por {olive}{3}{blue}."
+		"en"		"{olive}{1} {blue}popped {olive}Boomer (IA) {blue}in {green}{2}s{blue}, assisted by {olive}{3}{blue}."
+		"es"		"{olive}{1} {blue}revento a {olive}Boomer (IA) {blue}en {green}{2}s{blue}, asistido por {olive}{3}{blue}."
 	}
 
 	"BoomerPopPlayer"
 	{
 		"#format"	"{1:s},{2:s},{3:s}"
-		"en"		"{olive}{1} {blue}popped {olive}Boomer ({2}) {blue}in {green}{3}{blue}s."
-		"es"		"{olive}{1} {blue}revento a {olive}Boomer ({2}) {blue}en {green}{3}{blue}s."
+		"en"		"{olive}{1} {blue}popped {olive}{2} {blue}in {green}{3}s{blue}."
+		"es"		"{olive}{1} {blue}revento a {olive}{2} {blue}en {green}{3}s{blue}."
 	}
 
 	"BoomerPopPlayerAssist"
 	{
 		"#format"	"{1:s},{2:s},{3:s},{4:s}"
-		"en"		"{olive}{1} {blue}popped {olive}Boomer ({2}) {blue}in {green}{3}{blue}s, assisted by {olive}{4}{blue}."
-		"es"		"{olive}{1} {blue}revento a {olive}Boomer ({2}) {blue}en {green}{3}{blue}s, asistido por {olive}{4}{blue}."
+		"en"		"{olive}{1} {blue}popped {olive}{2} {blue}in {green}{3}s{blue}, assisted by {olive}{4}{blue}."
+		"es"		"{olive}{1} {blue}revento a {olive}{2} {blue}en {green}{3}s{blue}, asistido por {olive}{4}{blue}."
 	}
 
 	"BoomerVomitLandedSingle"
@@ -671,16 +698,30 @@
 
 	"WitchCrown"
 	{
-		"#format"	"{1:s},{2:d}"
-		"en"		"{olive}{1} {blue}crowned the {olive}Witch {blue}for {green}{2} {blue}damage."
-		"es"		"{olive}{1} {blue}hizo {green}Crown {blue}a la {olive}Witch {blue}con {green}{2} {blue}de daño."
+		"#format"	"{1:s},{2:s}"
+		"en"		"{olive}{1} {blue}landed a {green}Crown {blue}on the {olive}Witch {blue}({green}{2}{blue})."
+		"es"		"{olive}{1} {blue}hizo {green}Crown {blue}a la {olive}Witch {blue}({green}{2}{blue})."
+	}
+
+	"WitchCrownPerfect"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"{olive}{1} {blue}landed a {green}Crown Perfect {blue}on the {olive}Witch {blue}({green}{2}{blue})."
+		"es"		"{olive}{1} {blue}hizo {green}Crown Perfecta {blue}a la {olive}Witch {blue}({green}{2}{blue})."
+	}
+
+	"WitchCrownAssist"
+	{
+		"#format"	"{1:s},{2:s},{3:s}"
+		"en"		"{olive}{1} {blue}landed a {green}Crown {blue}on the {olive}Witch {blue}({green}{2}{blue}), assisted by {olive}{3}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Crown {blue}a la {olive}Witch {blue}({green}{2}{blue}), asistido por {olive}{3}{blue}."
 	}
 
 	"TankRockSkeet"
 	{
 		"#format"	"{1:s}"
-		"en"		"{olive}{1} {blue}landed a {green}Skeet-Rock {blue}on a {olive}Tank rock{blue}."
-		"es"		"{olive}{1} {blue}hizo {green}Skeet-Rock {blue}a una {olive}Tank rock{blue}."
+		"en"		"{olive}{1} {blue}landed a {green}Skeet-Rock{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet-Rock{blue}."
 	}
 
 	"TankRockHit"
@@ -751,6 +792,13 @@
 		"#format"	"{1:d}"
 		"en"		"{blue}Witch {default}had {olive}{1}{default} health remaining."
 		"es"		"{blue}Witch {default}quedo con {olive}{1}{default} de vida restante."
+	}
+
+	"BossWitchHealthRemainingIncap"
+	{
+		"#format"	"{1:s},{2:d}"
+		"en"		"{blue}Witch {default}incapped {olive}{1}{default} and had {olive}{2}{default} health remaining."
+		"es"		"{blue}Witch {default}dejo a {olive}{1}{default} incapacitado y quedo con {olive}{2}{default} de vida restante."
 	}
 
 	"BossWitchDamageTitle"

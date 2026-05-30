@@ -183,7 +183,7 @@ methodmap L4D2BossSession
 	 *
 	 * @noreturn
 	 */
-	public 	void AddDamage(int attacker, int damage)
+	public 	void AddDamage(int attacker, int damage, bool countShot = false)
 	{
 		if (!this.IsValid() || !IsValidSurvivor(attacker) || damage <= 0)
 		{
@@ -204,6 +204,10 @@ methodmap L4D2BossSession
 		}
 
 		g_BossDamage[index][entry].damage += damage;
+		if (countShot)
+		{
+			g_BossDamage[index][entry].shots++;
+		}
 		g_BossSessions[index].totalDamage += damage;
 	}
 }
@@ -453,6 +457,16 @@ public void OnEntityDestroyed(int entity)
 public void L4D_OnWitchSetHarasser(int witch, int victim)
 {
 	Boss_OnWitchSetHarasser(witch, victim);
+}
+
+public void L4D_OnSpawnWitch_Post(int entity, const float vecPos[3], const float vecAng[3])
+{
+	Boss_OnSpawnWitchPost(entity);
+}
+
+public void L4D2_OnSpawnWitchBride_Post(int entity, const float vecPos[3], const float vecAng[3])
+{
+	Boss_OnSpawnWitchPost(entity);
 }
 
 public void L4D_OnGrabWithTongue_Post(int victim, int attacker)
@@ -1074,15 +1088,7 @@ Action Command_Skills(int client, int args)
 
 			switch (g_SkillEvents[index].type)
 			{
-				case L4D2Skill_WitchDead:
-				{
-					if (!g_SkillEvents[index].crown)
-					{
-						continue;
-					}
-				}
-
-				case L4D2Skill_TankDead, L4D2Skill_WitchIncap, L4D2Skill_TankRockHit:
+				case L4D2Skill_TankDead, L4D2Skill_WitchDead, L4D2Skill_WitchIncap, L4D2Skill_TankRockHit:
 				{
 					continue;
 				}
@@ -1106,7 +1112,7 @@ Action Command_Skills(int client, int args)
 				L4D2Skill_HunterDeadstop, "SkillsLabelDeadstop",
 				L4D2Skill_BoomerPop, "SkillsLabelPop",
 				L4D2Skill_ChargerLevel, "SkillsLabelLevel",
-				L4D2Skill_WitchDead, "SkillsLabelCrown");
+				L4D2Skill_WitchCrown, "SkillsLabelCrown");
 
 			Announce_PrintSkillsSummaryLine(client, counts,
 				L4D2Skill_SmokerTongueCut, "SkillsLabelTongueCut",
