@@ -427,24 +427,22 @@ mezclar vida total con ventana técnica.
 
 ## 12. Impacto en API
 
-El diseño de `skill assists` no alcanza con la API nativa actual si un consumidor
-quiere inspeccionar assists sin parsear `KeyValues`.
+El contrato público actual ya resolvió esa tensión moviendo el consumo a `KeyValues`
+por familia.
 
-Dirección recomendada:
+Dirección vigente:
 
-- mantener `FillEventKeyValues(...)` compatible;
-- agregar natives específicos para:
-  - `assists_count`
-  - lista de assists por índice
-  - `assist_scope`
+- `PlayerSkills_FillSkillEventKeyValues(...)`
+- `PlayerSkills_FillKillEventKeyValues(...)`
+- `PlayerSkills_FillBossEventKeyValues(...)`
 
-Donde `assist_scope` debe distinguir:
+Cada payload expone:
 
-- `LifeKill`
-- `SkillWindow`
+- `assists_count`
+- bloque `assists`
+- `assist_scope`
 
-Así, el contrato público refleja la misma separación semántica que el diseño
-interno del plugin.
+Sin volver a introducir getters escalares legacy.
 
 ---
 

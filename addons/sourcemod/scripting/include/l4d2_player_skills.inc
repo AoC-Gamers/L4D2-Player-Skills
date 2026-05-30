@@ -3,89 +3,80 @@
 #endif
 #define _l4d2_player_skills_included
 
-/**
- * The type of skill event detected by l4d2_player_skills.
- */
-enum L4D2SkillType
-{
-	L4D2Skill_None = 0,
-	L4D2Skill_HunterSkeet,
-	L4D2Skill_HunterSkeetMelee,
-	L4D2Skill_HunterDeadstop,
-	L4D2Skill_BoomerPop,
-	L4D2Skill_ChargerLevel,
-	L4D2Skill_TankDead,
-	L4D2Skill_WitchDead,
-	L4D2Skill_WitchIncap,
-	L4D2Skill_SmokerTongueCut,
-	L4D2Skill_SmokerSelfClear,
-	L4D2Skill_TankRockSkeet,
-	L4D2Skill_TankRockHit,
-	L4D2Skill_HunterHighPounce,
-	L4D2Skill_JockeyHighPounce,
-	L4D2Skill_ChargerInstaKill,
-	L4D2Skill_ChargerDeathSetup,
-	L4D2Skill_ChargerBowl,
-	L4D2Skill_SpecialPinClear,
-	L4D2Skill_BoomerVomitLanded,
-	L4D2Skill_BunnyHopStreak,
-	L4D2Skill_CarAlarmTriggered,
-	L4D2Skill_SmokerKill,
-	L4D2Skill_BoomerKill,
-	L4D2Skill_HunterKill,
-	L4D2Skill_SpitterKill,
-	L4D2Skill_JockeyKill,
-	L4D2Skill_ChargerKill,
-	L4D2Skill_JockeyJumpStop,
-	L4D2Skill_JockeySkeetMelee,
-	L4D2Skill_JockeySkeet,
-	L4D2Skill_WitchCrown,
+#define LIBRARY_L4D2_PLAYER_SKILLS "l4d2_player_skills"
 
-	L4D2Skill_Size
+/**
+ * Public skill event types emitted by the immediate `skills` pipeline.
+ * These represent semantic competitive plays and exclude default SI kills
+ * and boss-specific events.
+ */
+enum L4D2ApiSkillType
+{
+	L4D2ApiSkill_None = 0,
+	L4D2ApiSkill_HunterSkeet,
+	L4D2ApiSkill_HunterSkeetMelee,
+	L4D2ApiSkill_HunterDeadstop,
+	L4D2ApiSkill_BoomerPop,
+	L4D2ApiSkill_ChargerLevel,
+	L4D2ApiSkill_SmokerTongueCut,
+	L4D2ApiSkill_SmokerSelfClear,
+	L4D2ApiSkill_HunterHighPounce,
+	L4D2ApiSkill_JockeyHighPounce,
+	L4D2ApiSkill_SmokerLedgeHang,
+	L4D2ApiSkill_JockeyLedgeHang,
+	L4D2ApiSkill_ChargerInstaKill,
+	L4D2ApiSkill_ChargerDeathSetup,
+	L4D2ApiSkill_ChargerLedgeHang,
+	L4D2ApiSkill_ChargerBowl,
+	L4D2ApiSkill_SpecialPinClear,
+	L4D2ApiSkill_BoomerVomitLanded,
+	L4D2ApiSkill_BunnyHopStreak,
+	L4D2ApiSkill_CarAlarmTriggered,
+	L4D2ApiSkill_JockeyJumpStop,
+	L4D2ApiSkill_JockeySkeetMelee,
+	L4D2ApiSkill_JockeySkeet,
+
+	L4D2ApiSkill_Size
 }
 
 /**
- * String names for L4D2SkillType values.
- * The array index matches the numeric enum value.
+ * Public kill event types emitted by the immediate `kills` pipeline.
+ * These represent default Special Infected deaths that were not absorbed
+ * by a higher-priority skill.
  */
-stock char g_sL4D2SkillType[L4D2Skill_Size][] =
+enum L4D2ApiKillType
 {
-	"None",
-	"HunterSkeet",
-	"HunterSkeetMelee",
-	"HunterDeadstop",
-	"BoomerPop",
-	"ChargerLevel",
-	"TankDead",
-	"WitchDead",
-	"WitchIncap",
-	"SmokerTongueCut",
-	"SmokerSelfClear",
-	"TankRockSkeet",
-	"TankRockHit",
-	"HunterHighPounce",
-	"JockeyHighPounce",
-	"ChargerInstaKill",
-	"ChargerDeathSetup",
-	"ChargerBowl",
-	"SpecialPinClear",
-	"BoomerVomitLanded",
-	"BunnyHopStreak",
-	"CarAlarmTriggered",
-	"SmokerKill",
-	"BoomerKill",
-	"HunterKill",
-	"SpitterKill",
-	"JockeyKill",
-	"ChargerKill",
-	"JockeyJumpStop",
-	"JockeySkeetMelee",
-	"JockeySkeet",
-	"WitchCrown"
-};
+	L4D2ApiKill_None = 0,
+	L4D2ApiKill_SmokerKill,
+	L4D2ApiKill_BoomerKill,
+	L4D2ApiKill_HunterKill,
+	L4D2ApiKill_SpitterKill,
+	L4D2ApiKill_JockeyKill,
+	L4D2ApiKill_ChargerKill,
+
+	L4D2ApiKill_Size
+}
 
 /**
- * The type of boss damage session tracked by l4d2_player_skills.
+ * Public boss event types emitted by the immediate `boss events` pipeline.
+ * These represent boss-related plays and default boss death outcomes.
+ */
+enum L4D2ApiBossEventType
+{
+	L4D2ApiBossEvent_None = 0,
+	L4D2ApiBossEvent_TankDead,
+	L4D2ApiBossEvent_WitchDead,
+	L4D2ApiBossEvent_WitchIncap,
+	L4D2ApiBossEvent_TankRockSkeet,
+	L4D2ApiBossEvent_TankRockHit,
+	L4D2ApiBossEvent_TankLedgeHang,
+	L4D2ApiBossEvent_WitchCrown,
+
+	L4D2ApiBossEvent_Size
+}
+
+/**
+ * Boss session types tracked by the boss session API.
  */
 enum L4D2BossType
 {
@@ -94,6 +85,9 @@ enum L4D2BossType
 	L4D2Boss_Witch
 }
 
+/**
+ * Terminal close reasons for a Tank boss session.
+ */
 enum L4D2TankSessionEndReason
 {
 	L4D2TankSessionEnd_None = 0,
@@ -103,661 +97,210 @@ enum L4D2TankSessionEndReason
 }
 
 /**
- * Player reference slot inside a boss session payload.
- */
-enum L4D2BossPlayerSlot
-{
-	L4D2BossPlayer_Owner = 0,
-	L4D2BossPlayer_PendingOwner
-}
-
-/**
- * Player reference slot inside a skill event payload.
- */
-enum L4D2SkillPlayerSlot
-{
-	L4D2SkillPlayer_Actor = 0,
-	L4D2SkillPlayer_Victim,
-	L4D2SkillPlayer_Assister,
-	L4D2SkillPlayer_PinVictim
-}
-
-/**
- * Semantic origin of assist data inside a skill event payload.
- */
-enum L4D2SkillAssistScope
-{
-	L4D2SkillAssistScope_None = 0,
-	L4D2SkillAssistScope_LifeKill,
-	L4D2SkillAssistScope_SkillWindow
-}
-
-/**
- * Semantic origin of damage data inside a skill event payload.
- */
-enum L4D2SkillDamageScope
-{
-	L4D2SkillDamageScope_None = 0,
-	L4D2SkillDamageScope_LifeKill,
-	L4D2SkillDamageScope_SkillWindow
-}
-
-/**
- * Integer fields available through PlayerSkills_GetEventInt().
- */
-enum L4D2SkillIntField
-{
-	L4D2SkillInt_Damage = 0,
-	L4D2SkillInt_ChipDamage,
-	L4D2SkillInt_Shots,
-	L4D2SkillInt_ShoveCount,
-	L4D2SkillInt_Amount,
-	L4D2SkillInt_Streak,
-	L4D2SkillInt_ZombieClass,
-	L4D2SkillInt_Reason,
-	L4D2SkillInt_Actor2,
-	L4D2SkillInt_Victim2,
-	L4D2SkillInt_Rating
-}
-
-/**
- * Float fields available through PlayerSkills_GetEventFloat().
- */
-enum L4D2SkillFloatField
-{
-	L4D2SkillFloat_TimeA = 0,
-	L4D2SkillFloat_TimeB,
-	L4D2SkillFloat_CalculatedDamage,
-	L4D2SkillFloat_Height,
-	L4D2SkillFloat_Distance,
-	L4D2SkillFloat_MaxVelocity,
-	L4D2SkillFloat_CreatedAt
-}
-
-/**
- * Boolean fields available through PlayerSkills_GetEventBool().
- */
-enum L4D2SkillBoolField
-{
-	L4D2SkillBool_WithShove = 0,
-	L4D2SkillBool_Indirect,
-	L4D2SkillBool_Forced,
-	L4D2SkillBool_WasCarried,
-	L4D2SkillBool_ReportedHigh,
-	L4D2SkillBool_Incapped,
-	L4D2SkillBool_LedgeHang,
-	L4D2SkillBool_FatalFall,
-	L4D2SkillBool_DeadlySlam,
-	L4D2SkillBool_WouldQualifyAtBaseline, // deprecated, always false
-	L4D2SkillBool_Crown,
-	L4D2SkillBool_Startled,
-	L4D2SkillBool_Perfect,
-	L4D2SkillBool_Headshot,
-	L4D2SkillBool_Sniper,
-	L4D2SkillBool_GrenadeLauncher
-}
-
-/**
- * Reason used when a car alarm is triggered.
- */
-enum L4D2CarAlarmReason
-{
-	L4D2CarAlarm_Unknown = 0,
-	L4D2CarAlarm_Hit,
-	L4D2CarAlarm_Touched,
-	L4D2CarAlarm_Explosion,
-	L4D2CarAlarm_Boomer
-}
-
-/**
- * @brief Called whenever a skill event is detected.
- * @remarks This is the main modern forward exposed by l4d2_player_skills.
- * @remarks Consumers should use the provided natives to inspect the event payload.
+ * Called whenever a public `skills` event is detected.
  *
- * @param eventId        Unique runtime identifier for the detected skill event.
- * @param type           The detected skill type.
- *
- * @return               Plugin_Continue to allow normal processing and announcing.
- *                       Plugin_Handled or higher to suppress built-in announce flow.
+ * @param eventId        Runtime identifier for the detected skill event.
+ * @param type           Public skill event type.
+ * @return               Plugin_Continue to allow the builtin announce flow.
+ *                       Plugin_Handled or higher to suppress it.
  */
-forward Action PlayerSkills_OnSkillDetected(int eventId, L4D2SkillType type);
+forward Action PlayerSkills_OnSkillDetected(int eventId, L4D2ApiSkillType type);
 
 /**
- * @brief Called after a skill event has been announced by l4d2_player_skills.
+ * Called after a public `skills` event has been announced.
  *
- * @param eventId        Unique runtime identifier for the detected skill event.
- * @param type           The announced skill type.
- *
- * @noreturn
+ * @param eventId        Runtime identifier for the announced skill event.
+ * @param type           Public skill event type.
  */
-forward void PlayerSkills_OnSkillAnnounced(int eventId, L4D2SkillType type);
+forward void PlayerSkills_OnSkillAnnounced(int eventId, L4D2ApiSkillType type);
 
 /**
- * @brief Called whenever a boss damage session is finalized.
- * @remarks Fires for Tank and Witch summaries before the built-in announcer prints.
+ * Called whenever a public `kills` event is detected.
  *
- * @param sessionId      Unique runtime identifier for the boss session.
- * @param type           The finalized boss type.
- *
- * @return               Plugin_Continue to allow normal announce flow.
- *                       Plugin_Handled or higher to suppress built-in announce flow.
+ * @param eventId        Runtime identifier for the detected kill event.
+ * @param type           Public kill event type.
+ * @return               Plugin_Continue to allow the builtin announce flow.
+ *                       Plugin_Handled or higher to suppress it.
  */
-forward Action PlayerSkills_OnBossDamageFinalized(int sessionId, L4D2BossType type);
+forward Action PlayerSkills_OnKillDetected(int eventId, L4D2ApiKillType type);
 
 /**
- * @brief Called after a boss damage summary has been announced by l4d2_player_skills.
+ * Called after a public `kills` event has been announced.
  *
- * @param sessionId      Unique runtime identifier for the boss session.
- * @param type           The announced boss type.
- *
- * @noreturn
+ * @param eventId        Runtime identifier for the announced kill event.
+ * @param type           Public kill event type.
  */
-forward void PlayerSkills_OnBossDamageAnnounced(int sessionId, L4D2BossType type);
+forward void PlayerSkills_OnKillAnnounced(int eventId, L4D2ApiKillType type);
 
 /**
- * @brief Called when a Tank session reaches its terminal close reason.
- * @remarks Fires once per Tank session before the boss summary announce path.
- * @remarks This is notification-only and does not suppress built-in flow.
+ * Called whenever a public `boss events` event is detected.
  *
- * @param sessionId      Unique runtime identifier for the Tank session.
- * @param reason         Semantic close reason for the Tank session.
+ * @param eventId        Runtime identifier for the detected boss event.
+ * @param type           Public boss event type.
+ * @return               Plugin_Continue to allow the builtin announce flow.
+ *                       Plugin_Handled or higher to suppress it.
+ */
+forward Action PlayerSkills_OnBossEventDetected(int eventId, L4D2ApiBossEventType type);
+
+/**
+ * Called after a public `boss events` event has been announced.
  *
- * @noreturn
+ * @param eventId        Runtime identifier for the announced boss event.
+ * @param type           Public boss event type.
+ */
+forward void PlayerSkills_OnBossEventAnnounced(int eventId, L4D2ApiBossEventType type);
+
+/**
+ * Called whenever a boss session is finalized before the builtin summary announce.
+ *
+ * @param sessionId      Runtime identifier for the finalized boss session.
+ * @param type           Boss session type.
+ * @return               Plugin_Continue to allow the builtin announce flow.
+ *                       Plugin_Handled or higher to suppress it.
+ */
+forward Action PlayerSkills_OnBossSessionFinalized(int sessionId, L4D2BossType type);
+
+/**
+ * Called after a boss session summary has been announced.
+ *
+ * @param sessionId      Runtime identifier for the announced boss session.
+ * @param type           Boss session type.
+ */
+forward void PlayerSkills_OnBossSessionAnnounced(int sessionId, L4D2BossType type);
+
+/**
+ * Called once when a Tank session reaches its terminal close reason.
+ *
+ * @param sessionId      Runtime identifier for the Tank session.
+ * @param reason         Terminal close reason.
  */
 forward void PlayerSkills_OnTankSessionClosed(int sessionId, L4D2TankSessionEndReason reason);
 
 /**
- * @brief Called whenever a round or half summary is finalized.
- * @remarks Fires after the runtime skill/boss state has been frozen into a compact
- *          summary snapshot and before the next round start resets runtime state.
- * @remarks This forward is notification-only; use the summary natives to inspect payload.
+ * Called whenever a skill summary snapshot is finalized for the current round/half.
  *
- * @param summaryId      Unique runtime identifier for the finalized summary.
- *
- * @noreturn
+ * @param summaryId      Runtime identifier for the finalized skill summary.
  */
-forward void PlayerSkills_OnSummaryFinalized(int summaryId);
+forward void PlayerSkills_OnSkillSummaryFinalized(int summaryId);
 
 /**
- * @brief Returns whether a skill event identifier currently resolves to a valid event.
+ * Called whenever a kill summary snapshot is finalized for the current round/half.
  *
- * @param eventId        Runtime skill event identifier.
- *
- * @return               True if the event is still available for inspection, false otherwise.
+ * @param summaryId      Runtime identifier for the finalized kill summary.
  */
-native bool PlayerSkills_IsEventValid(int eventId);
+forward void PlayerSkills_OnKillSummaryFinalized(int summaryId);
 
 /**
- * @brief Fills a KeyValues handle with the structured payload of a skill event.
- * @remarks The native rewinds the handle and writes an "event" section.
- * @remarks The payload includes event metadata, actor data, assists and
- *          a "skill_properties" subsection for context-specific fields.
- *          It includes `assist_scope` and `damage_scope` when applicable.
- *          It does not include boss damage tables.
+ * Returns whether a runtime identifier resolves to a valid `skills` event.
  *
- * @param eventId        Runtime skill event identifier.
+ * @param eventId        Runtime `skills` event identifier.
+ * @return               True on success, false otherwise.
+ */
+native bool PlayerSkills_IsSkillEventValid(int eventId);
+
+/**
+ * Fills a KeyValues handle with the structured payload of a `skills` event.
+ * The native rewinds the handle and writes a `skill_event` root.
+ *
+ * @param eventId        Runtime `skills` event identifier.
  * @param kv             KeyValues handle to populate.
- *
- * @return               True on success, false if the event or handle is invalid.
+ * @return               True on success, false otherwise.
  */
-native bool PlayerSkills_FillEventKeyValues(int eventId, Handle kv);
+native bool PlayerSkills_FillSkillEventKeyValues(int eventId, Handle kv);
 
 /**
- * @brief Fills a KeyValues handle with the structured payload of a boss session.
- * @remarks The native rewinds the handle and writes a "boss_session" section.
- * @remarks The payload includes common session data, relevant Tank/Witch substate
- *          and the stored damage entries for the session.
+ * Returns whether a runtime identifier resolves to a valid `kills` event.
+ *
+ * @param eventId        Runtime `kills` event identifier.
+ * @return               True on success, false otherwise.
+ */
+native bool PlayerSkills_IsKillEventValid(int eventId);
+
+/**
+ * Fills a KeyValues handle with the structured payload of a `kills` event.
+ * The native rewinds the handle and writes a `kill_event` root.
+ *
+ * @param eventId        Runtime `kills` event identifier.
+ * @param kv             KeyValues handle to populate.
+ * @return               True on success, false otherwise.
+ */
+native bool PlayerSkills_FillKillEventKeyValues(int eventId, Handle kv);
+
+/**
+ * Returns whether a runtime identifier resolves to a valid `boss events` event.
+ *
+ * @param eventId        Runtime `boss events` event identifier.
+ * @return               True on success, false otherwise.
+ */
+native bool PlayerSkills_IsBossEventValid(int eventId);
+
+/**
+ * Fills a KeyValues handle with the structured payload of a `boss events` event.
+ * The native rewinds the handle and writes a `boss_event` root.
+ *
+ * @param eventId        Runtime `boss events` event identifier.
+ * @param kv             KeyValues handle to populate.
+ * @return               True on success, false otherwise.
+ */
+native bool PlayerSkills_FillBossEventKeyValues(int eventId, Handle kv);
+
+/**
+ * Returns whether a runtime identifier resolves to a valid boss session.
+ *
+ * @param sessionId      Runtime boss session identifier.
+ * @return               True on success, false otherwise.
+ */
+native bool PlayerSkills_IsBossSessionValid(int sessionId);
+
+/**
+ * Fills a KeyValues handle with the structured payload of a boss session.
+ * The native rewinds the handle and writes a `boss_session` root.
  *
  * @param sessionId      Runtime boss session identifier.
  * @param kv             KeyValues handle to populate.
- *
- * @return               True on success, false if the session or handle is invalid.
+ * @return               True on success, false otherwise.
  */
 native bool PlayerSkills_FillBossSessionKeyValues(int sessionId, Handle kv);
 
 /**
- * @brief Returns the type of a skill event.
+ * Returns whether a runtime identifier resolves to a valid `skills` summary.
  *
- * @param eventId        Runtime skill event identifier.
- *
- * @return               A value from L4D2SkillType.
+ * @param summaryId      Runtime `skills` summary identifier.
+ * @return               True on success, false otherwise.
  */
-native int PlayerSkills_GetEventType(int eventId);
+native bool PlayerSkills_IsSkillSummaryValid(int summaryId);
 
 /**
- * @brief Reads a generic integer field from a skill event.
+ * Fills a KeyValues handle with the structured payload of a `skills` summary.
+ * The native rewinds the handle and writes a `skill_summary` root.
  *
- * @param eventId        Runtime skill event identifier.
- * @param field          Integer field to retrieve.
- *
- * @return               The field value, or 0 when unavailable.
- */
-native int PlayerSkills_GetEventInt(int eventId, L4D2SkillIntField field);
-
-/**
- * @brief Reads a generic float field from a skill event.
- *
- * @param eventId        Runtime skill event identifier.
- * @param field          Float field to retrieve.
- *
- * @return               The field value, or 0.0 when unavailable.
- */
-native float PlayerSkills_GetEventFloat(int eventId, L4D2SkillFloatField field);
-
-/**
- * @brief Reads a generic boolean field from a skill event.
- *
- * @param eventId        Runtime skill event identifier.
- * @param field          Boolean field to retrieve.
- *
- * @return               The field value, or false when unavailable.
- */
-native bool PlayerSkills_GetEventBool(int eventId, L4D2SkillBoolField field);
-
-/**
- * @brief Returns the current client index for a player slot in an event.
- * @remarks This is a live runtime lookup and may return 0 if the player is no longer online.
- *
- * @param eventId        Runtime skill event identifier.
- * @param slot           Player slot to inspect.
- *
- * @return               Current client index, or 0 when unavailable.
- */
-native int PlayerSkills_GetEventClient(int eventId, L4D2SkillPlayerSlot slot);
-
-/**
- * @brief Returns the captured userid for a player slot in an event.
- *
- * @param eventId        Runtime skill event identifier.
- * @param slot           Player slot to inspect.
- *
- * @return               Captured userid, or 0 when unavailable.
- */
-native int PlayerSkills_GetEventUserId(int eventId, L4D2SkillPlayerSlot slot);
-
-/**
- * @brief Returns the captured Steam account id for a player slot in an event.
- * @remarks Bots generally return 0.
- *
- * @param eventId        Runtime skill event identifier.
- * @param slot           Player slot to inspect.
- *
- * @return               Captured account id, or 0 when unavailable.
- */
-native int PlayerSkills_GetEventAccountId(int eventId, L4D2SkillPlayerSlot slot);
-
-/**
- * @brief Returns whether the captured player slot belongs to a bot.
- *
- * @param eventId        Runtime skill event identifier.
- * @param slot           Player slot to inspect.
- *
- * @return               True if the captured player is a bot.
- */
-native bool PlayerSkills_IsEventPlayerBot(int eventId, L4D2SkillPlayerSlot slot);
-
-/**
- * @brief Copies the captured player name for a slot in an event.
- *
- * @param eventId        Runtime skill event identifier.
- * @param slot           Player slot to inspect.
- * @param buffer         Output buffer.
- * @param maxlen         Maximum size of the output buffer.
- *
- * @noreturn
- */
-native void PlayerSkills_GetEventPlayerName(int eventId, L4D2SkillPlayerSlot slot, char[] buffer, int maxlen);
-
-/**
- * @brief Copies the captured auth string for a slot in an event.
- * @remarks Bots typically resolve to "BOT".
- *
- * @param eventId        Runtime skill event identifier.
- * @param slot           Player slot to inspect.
- * @param buffer         Output buffer.
- * @param maxlen         Maximum size of the output buffer.
- *
- * @noreturn
- */
-native void PlayerSkills_GetEventPlayerAuth(int eventId, L4D2SkillPlayerSlot slot, char[] buffer, int maxlen);
-
-/**
- * @brief Returns how many assists are captured in a skill event.
- *
- * @param eventId        Runtime skill event identifier.
- *
- * @return               Assist count, or 0 when unavailable.
- */
-native int PlayerSkills_GetEventAssistsCount(int eventId);
-
-/**
- * @brief Returns the semantic source of assist data in a skill event.
- *
- * @param eventId        Runtime skill event identifier.
- *
- * @return               A value from L4D2SkillAssistScope.
- */
-native int PlayerSkills_GetEventAssistScope(int eventId);
-
-/**
- * @brief Returns the semantic source of damage data in a skill event.
- *
- * @param eventId        Runtime skill event identifier.
- *
- * @return               A value from L4D2SkillDamageScope.
- */
-native int PlayerSkills_GetEventDamageScope(int eventId);
-
-/**
- * @brief Returns the captured userid for one assist entry.
- *
- * @param eventId        Runtime skill event identifier.
- * @param assistIndex    Zero-based assist index.
- *
- * @return               Captured userid, or 0 when unavailable.
- */
-native int PlayerSkills_GetEventAssistUserId(int eventId, int assistIndex);
-
-/**
- * @brief Returns the captured Steam account id for one assist entry.
- * @remarks Bots generally return 0.
- *
- * @param eventId        Runtime skill event identifier.
- * @param assistIndex    Zero-based assist index.
- *
- * @return               Captured account id, or 0 when unavailable.
- */
-native int PlayerSkills_GetEventAssistAccountId(int eventId, int assistIndex);
-
-/**
- * @brief Returns whether one assist entry belongs to a bot.
- *
- * @param eventId        Runtime skill event identifier.
- * @param assistIndex    Zero-based assist index.
- *
- * @return               True if the captured assist player is a bot.
- */
-native bool PlayerSkills_IsEventAssistBot(int eventId, int assistIndex);
-
-/**
- * @brief Copies the captured player name for one assist entry.
- *
- * @param eventId        Runtime skill event identifier.
- * @param assistIndex    Zero-based assist index.
- * @param buffer         Output buffer.
- * @param maxlen         Maximum size of the output buffer.
- *
- * @noreturn
- */
-native void PlayerSkills_GetEventAssistName(int eventId, int assistIndex, char[] buffer, int maxlen);
-
-/**
- * @brief Returns the captured damage for one assist entry.
- *
- * @param eventId        Runtime skill event identifier.
- * @param assistIndex    Zero-based assist index.
- *
- * @return               Assist damage, or 0 when unavailable.
- */
-native int PlayerSkills_GetEventAssistDamage(int eventId, int assistIndex);
-
-/**
- * @brief Returns the captured shots for one assist entry.
- *
- * @param eventId        Runtime skill event identifier.
- * @param assistIndex    Zero-based assist index.
- *
- * @return               Assist shots, or 0 when unavailable.
- */
-native int PlayerSkills_GetEventAssistShots(int eventId, int assistIndex);
-
-/**
- * @brief Returns the captured weapon id for one assist entry.
- *
- * @param eventId        Runtime skill event identifier.
- * @param assistIndex    Zero-based assist index.
- *
- * @return               Weapon id, or WEPID_NONE/0 when unavailable.
- */
-native int PlayerSkills_GetEventAssistWeaponId(int eventId, int assistIndex);
-
-/**
- * @brief Returns the type of a boss session.
- *
- * @param sessionId      Runtime boss session identifier.
- *
- * @return               A value from L4D2BossType.
- */
-native int PlayerSkills_GetBossType(int sessionId);
-
-/**
- * @brief Returns the current client index for a player slot in a boss session.
- * @remarks This is a live runtime lookup and may return 0 if the player is no longer online.
- * @remarks The pending owner slot is primarily meaningful for Tanks during director offer/transfer flow.
- *
- * @param sessionId      Runtime boss session identifier.
- * @param slot           Boss player slot to inspect.
- *
- * @return               Current client index, or 0 when unavailable.
- */
-native int PlayerSkills_GetBossClient(int sessionId, L4D2BossPlayerSlot slot);
-
-/**
- * @brief Returns the captured userid for a player slot in a boss session.
- *
- * @param sessionId      Runtime boss session identifier.
- * @param slot           Boss player slot to inspect.
- *
- * @return               Captured userid, or 0 when unavailable.
- */
-native int PlayerSkills_GetBossUserId(int sessionId, L4D2BossPlayerSlot slot);
-
-/**
- * @brief Returns the captured Steam account id for a player slot in a boss session.
- * @remarks Bots generally return 0.
- *
- * @param sessionId      Runtime boss session identifier.
- * @param slot           Boss player slot to inspect.
- *
- * @return               Captured account id, or 0 when unavailable.
- */
-native int PlayerSkills_GetBossAccountId(int sessionId, L4D2BossPlayerSlot slot);
-
-/**
- * @brief Returns whether the captured boss player slot belongs to a bot.
- *
- * @param sessionId      Runtime boss session identifier.
- * @param slot           Boss player slot to inspect.
- *
- * @return               True if the captured player is a bot.
- */
-native bool PlayerSkills_IsBossPlayerBot(int sessionId, L4D2BossPlayerSlot slot);
-
-/**
- * @brief Copies the captured player name for a boss session slot.
- *
- * @param sessionId      Runtime boss session identifier.
- * @param slot           Boss player slot to inspect.
- * @param buffer         Output buffer.
- * @param maxlen         Maximum size of the output buffer.
- *
- * @noreturn
- */
-native void PlayerSkills_GetBossPlayerName(int sessionId, L4D2BossPlayerSlot slot, char[] buffer, int maxlen);
-
-/**
- * @brief Copies the captured auth string for a boss session slot.
- * @remarks Bots typically resolve to "BOT".
- *
- * @param sessionId      Runtime boss session identifier.
- * @param slot           Boss player slot to inspect.
- * @param buffer         Output buffer.
- * @param maxlen         Maximum size of the output buffer.
- *
- * @noreturn
- */
-native void PlayerSkills_GetBossPlayerAuth(int sessionId, L4D2BossPlayerSlot slot, char[] buffer, int maxlen);
-
-/**
- * @brief Returns the configured maximum health for a boss session.
- *
- * @param sessionId      Runtime boss session identifier.
- *
- * @return               Maximum health, or 0 when unavailable.
- */
-native int PlayerSkills_GetBossMaxHealth(int sessionId);
-
-/**
- * @brief Returns the last tracked health for a boss session.
- * @remarks For escaped or in-progress bosses this is the most recent remaining health snapshot.
- *
- * @param sessionId      Runtime boss session identifier.
- *
- * @return               Last tracked health, or 0 when unavailable.
- */
-native int PlayerSkills_GetBossLastHealth(int sessionId);
-
-/**
- * @brief Returns total accumulated survivor damage in a boss session.
- *
- * @param sessionId      Runtime boss session identifier.
- *
- * @return               Total tracked damage, or 0 when unavailable.
- */
-native int PlayerSkills_GetBossTotalDamage(int sessionId);
-
-/**
- * @brief Returns whether a boss session is currently in stasis.
- * @remarks This is primarily meaningful for Tanks during control transfer flow.
- *
- * @param sessionId      Runtime boss session identifier.
- *
- * @return               True if the boss is currently marked as in stasis.
- */
-native bool PlayerSkills_IsBossInStasis(int sessionId);
-
-/**
- * @brief Returns the amount of active damage entries in a boss session.
- *
- * @param sessionId      Runtime boss session identifier.
- *
- * @return               Number of active damage entries, or 0 when unavailable.
- */
-native int PlayerSkills_GetBossDamageEntryCount(int sessionId);
-
-/**
- * @brief Returns the current client index for a boss damage entry.
- * @remarks This is a live runtime lookup and may return 0 if the player is no longer online.
- *
- * @param sessionId      Runtime boss session identifier.
- * @param entry          Zero-based damage entry index.
- *
- * @return               Current client index, or 0 when unavailable.
- */
-native int PlayerSkills_GetBossDamageEntryClient(int sessionId, int entry);
-
-/**
- * @brief Returns the captured userid for a boss damage entry.
- *
- * @param sessionId      Runtime boss session identifier.
- * @param entry          Zero-based damage entry index.
- *
- * @return               Captured userid, or 0 when unavailable.
- */
-native int PlayerSkills_GetBossDamageEntryUserId(int sessionId, int entry);
-
-/**
- * @brief Returns the captured Steam account id for a boss damage entry.
- * @remarks Bots generally return 0.
- *
- * @param sessionId      Runtime boss session identifier.
- * @param entry          Zero-based damage entry index.
- *
- * @return               Captured account id, or 0 when unavailable.
- */
-native int PlayerSkills_GetBossDamageEntryAccountId(int sessionId, int entry);
-
-/**
- * @brief Returns the accumulated damage for a boss damage entry.
- *
- * @param sessionId      Runtime boss session identifier.
- * @param entry          Zero-based damage entry index.
- *
- * @return               Accumulated damage, or 0 when unavailable.
- */
-native int PlayerSkills_GetBossDamageEntryDamage(int sessionId, int entry);
-
-/**
- * @brief Returns the accumulated shot count for a boss damage entry.
- *
- * @param sessionId      Runtime boss session identifier.
- * @param entry          Zero-based damage entry index.
- *
- * @return               Accumulated shot count, or 0 when unavailable.
- */
-native int PlayerSkills_GetBossDamageEntryShots(int sessionId, int entry);
-
-/**
- * @brief Returns whether a boss damage entry belongs to a bot.
- *
- * @param sessionId      Runtime boss session identifier.
- * @param entry          Zero-based damage entry index.
- *
- * @return               True if the captured player is a bot.
- */
-native bool PlayerSkills_IsBossDamageEntryBot(int sessionId, int entry);
-
-/**
- * @brief Copies the captured player name for a boss damage entry.
- *
- * @param sessionId      Runtime boss session identifier.
- * @param entry          Zero-based damage entry index.
- * @param buffer         Output buffer.
- * @param maxlen         Maximum size of the output buffer.
- *
- * @noreturn
- */
-native void PlayerSkills_GetBossDamageEntryName(int sessionId, int entry, char[] buffer, int maxlen);
-
-/**
- * @brief Copies the captured auth string for a boss damage entry.
- * @remarks Bots typically resolve to "BOT".
- *
- * @param sessionId      Runtime boss session identifier.
- * @param entry          Zero-based damage entry index.
- * @param buffer         Output buffer.
- * @param maxlen         Maximum size of the output buffer.
- *
- * @noreturn
- */
-native void PlayerSkills_GetBossDamageEntryAuth(int sessionId, int entry, char[] buffer, int maxlen);
-
-/**
- * @brief Returns whether a summary identifier currently resolves to a valid snapshot.
- *
- * @param summaryId      Runtime summary identifier.
- *
- * @return               True if the summary is still available, false otherwise.
- */
-native bool PlayerSkills_IsSummaryValid(int summaryId);
-
-/**
- * @brief Fills a KeyValues handle with the structured payload of a finalized summary.
- * @remarks The native rewinds the handle and writes a "summary" section.
- * @remarks The payload includes mode context, map name, total event count and
- *          aggregated per-actor skill counts. Infected bots are compacted into
- *          a single IA entry per team.
- *
- * @param summaryId      Runtime summary identifier.
+ * @param summaryId      Runtime `skills` summary identifier.
  * @param kv             KeyValues handle to populate.
- *
- * @return               True on success, false if the summary or handle is invalid.
+ * @return               True on success, false otherwise.
  */
-native bool PlayerSkills_FillSummaryKeyValues(int summaryId, Handle kv);
+native bool PlayerSkills_FillSkillSummaryKeyValues(int summaryId, Handle kv);
+
+/**
+ * Returns whether a runtime identifier resolves to a valid `kills` summary.
+ *
+ * @param summaryId      Runtime `kills` summary identifier.
+ * @return               True on success, false otherwise.
+ */
+native bool PlayerSkills_IsKillSummaryValid(int summaryId);
+
+/**
+ * Fills a KeyValues handle with the structured payload of a `kills` summary.
+ * The native rewinds the handle and writes a `kill_summary` root.
+ *
+ * @param summaryId      Runtime `kills` summary identifier.
+ * @param kv             KeyValues handle to populate.
+ * @return               True on success, false otherwise.
+ */
+native bool PlayerSkills_FillKillSummaryKeyValues(int summaryId, Handle kv);
 
 public SharedPlugin __pl_l4d2_player_skills =
 {
-	name = "l4d2_player_skills",
+	name = "LIBRARY_L4D2_PLAYER_SKILLS",
 	file = "l4d2_player_skills.smx",
 #if defined REQUIRE_PLUGIN
 	required = 1,
@@ -769,40 +312,17 @@ public SharedPlugin __pl_l4d2_player_skills =
 #if !defined REQUIRE_PLUGIN
 public void __pl_l4d2_player_skills_SetNTVOptional()
 {
-	MarkNativeAsOptional("PlayerSkills_IsEventValid");
-	MarkNativeAsOptional("PlayerSkills_FillEventKeyValues");
+	MarkNativeAsOptional("PlayerSkills_IsSkillEventValid");
+	MarkNativeAsOptional("PlayerSkills_FillSkillEventKeyValues");
+	MarkNativeAsOptional("PlayerSkills_IsKillEventValid");
+	MarkNativeAsOptional("PlayerSkills_FillKillEventKeyValues");
+	MarkNativeAsOptional("PlayerSkills_IsBossEventValid");
+	MarkNativeAsOptional("PlayerSkills_FillBossEventKeyValues");
+	MarkNativeAsOptional("PlayerSkills_IsBossSessionValid");
 	MarkNativeAsOptional("PlayerSkills_FillBossSessionKeyValues");
-	MarkNativeAsOptional("PlayerSkills_GetEventType");
-	MarkNativeAsOptional("PlayerSkills_GetEventInt");
-	MarkNativeAsOptional("PlayerSkills_GetEventFloat");
-	MarkNativeAsOptional("PlayerSkills_GetEventBool");
-	MarkNativeAsOptional("PlayerSkills_GetEventClient");
-	MarkNativeAsOptional("PlayerSkills_GetEventUserId");
-	MarkNativeAsOptional("PlayerSkills_GetEventAccountId");
-	MarkNativeAsOptional("PlayerSkills_IsEventPlayerBot");
-	MarkNativeAsOptional("PlayerSkills_GetEventPlayerName");
-	MarkNativeAsOptional("PlayerSkills_GetEventPlayerAuth");
-	MarkNativeAsOptional("PlayerSkills_GetBossType");
-	MarkNativeAsOptional("PlayerSkills_GetBossClient");
-	MarkNativeAsOptional("PlayerSkills_GetBossUserId");
-	MarkNativeAsOptional("PlayerSkills_GetBossAccountId");
-	MarkNativeAsOptional("PlayerSkills_IsBossPlayerBot");
-	MarkNativeAsOptional("PlayerSkills_GetBossPlayerName");
-	MarkNativeAsOptional("PlayerSkills_GetBossPlayerAuth");
-	MarkNativeAsOptional("PlayerSkills_GetBossMaxHealth");
-	MarkNativeAsOptional("PlayerSkills_GetBossLastHealth");
-	MarkNativeAsOptional("PlayerSkills_GetBossTotalDamage");
-	MarkNativeAsOptional("PlayerSkills_IsBossInStasis");
-	MarkNativeAsOptional("PlayerSkills_GetBossDamageEntryCount");
-	MarkNativeAsOptional("PlayerSkills_GetBossDamageEntryClient");
-	MarkNativeAsOptional("PlayerSkills_GetBossDamageEntryUserId");
-	MarkNativeAsOptional("PlayerSkills_GetBossDamageEntryAccountId");
-	MarkNativeAsOptional("PlayerSkills_GetBossDamageEntryDamage");
-	MarkNativeAsOptional("PlayerSkills_GetBossDamageEntryShots");
-	MarkNativeAsOptional("PlayerSkills_IsBossDamageEntryBot");
-	MarkNativeAsOptional("PlayerSkills_GetBossDamageEntryName");
-	MarkNativeAsOptional("PlayerSkills_GetBossDamageEntryAuth");
-	MarkNativeAsOptional("PlayerSkills_IsSummaryValid");
-	MarkNativeAsOptional("PlayerSkills_FillSummaryKeyValues");
+	MarkNativeAsOptional("PlayerSkills_IsSkillSummaryValid");
+	MarkNativeAsOptional("PlayerSkills_FillSkillSummaryKeyValues");
+	MarkNativeAsOptional("PlayerSkills_IsKillSummaryValid");
+	MarkNativeAsOptional("PlayerSkills_FillKillSummaryKeyValues");
 }
 #endif

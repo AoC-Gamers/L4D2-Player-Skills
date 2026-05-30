@@ -7,6 +7,7 @@
 #include <console_table>
 #include <left4dhooks>
 #include <l4d2util>
+#include <l4d2_player_skills>
 
 #define MAX_MESSAGE_LENGTH 512
 #include <colors>
@@ -20,14 +21,17 @@
 L4D2BossSessionData g_BossSessions[L4D2_SKILLS_MAX_BOSSES];
 L4D2DamageEntry		g_BossDamage[L4D2_SKILLS_MAX_BOSSES][L4D2_SKILLS_MAX_DAMAGE_ENTRIES];
 L4D2SkillEventData	g_SkillEvents[L4D2_SKILLS_MAX_EVENTS];
-L4D2SkillSummaryData g_SkillSummaries[L4D2_SKILLS_MAX_SUMMARIES];
+L4D2ApiSkillSummaryData g_SkillSummaries[L4D2_SKILLS_MAX_SUMMARIES];
+L4D2ApiKillSummaryData g_KillSummaries[L4D2_SKILLS_MAX_SUMMARIES];
 PlayerSkillsRuntimeState g_Runtime;
 
 int	g_iBossSerial		= 0;
 int	g_iEventSerial		= 0;
 int	g_iNextEventSlot	= 0;
-int g_iSummarySerial	= 0;
-int g_iNextSummarySlot	= 0;
+int g_iSkillSummarySerial	= 0;
+int g_iNextSkillSummarySlot	= 0;
+int g_iKillSummarySerial	= 0;
+int g_iNextKillSummarySlot	= 0;
 
 ConVar	g_cvEnable				 = null;
 ConVar	g_cvDebug				 = null;
@@ -225,7 +229,7 @@ public Plugin myinfo =
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
 	g_Runtime.isLate = late;
-	RegPluginLibrary("l4d2_player_skills");
+	RegPluginLibrary(LIBRARY_L4D2_PLAYER_SKILLS);
 	API_CreateForwards();
 	API_CreateNatives();
 	return APLRes_Success;
@@ -256,28 +260,32 @@ public void OnPluginStart()
 	g_smDetectCarPendingInfected = new StringMap();
 	g_smDetectCarPendingFlags = new StringMap();
 
-	g_cvDebug			   		= CreateConVar("l4d2_player_skills_debug", "255", "Debug bitmask for l4d2_player_skills. 0=None 1=Core 2=Event 4=Detect 8=Boss 16=Pin 32=Physics 64=Api 128=Announce 255=all.");
-	g_cvEnable			   		= CreateConVar("l4d2_player_skills_enable", "1", "Enable the l4d2_player_skills plugin.");
-	g_cvAnnounceWitch			= CreateConVar("l4d2_player_skills_announce_wich", "7", "Bitmask for Witch announcements. 1=damage 2=misc 4=crown 7=all.");
-	g_cvAnnounceTank			= CreateConVar("l4d2_player_skills_announce_tank", "15", "Bitmask for Tank announcements. 1=damage 2=rock_skeet 4=rock_hit 8=ledge_hang 15=all.");
-	g_cvAnnounceHunter			= CreateConVar("l4d2_player_skills_announce_hunter", "63", "Bitmask for Hunter announcements. 1=skeet 2=skeet_melee 4=deadstop 8=high_pounce 16=special_clear 32=kill 63=all.");
-	g_cvAnnounceSmoker			= CreateConVar("l4d2_player_skills_announce_smoker", "31", "Bitmask for Smoker announcements. 1=tongue_cut 2=self_clear 4=special_clear 8=kill 16=ledge_hang 31=all.");
-	g_cvAnnounceBoomer			= CreateConVar("l4d2_player_skills_announce_boomer", "7", "Bitmask for Boomer announcements. 1=pop 2=vomit 4=kill 7=all.");
-	g_cvAnnounceSpitter			= CreateConVar("l4d2_player_skills_announce_spitter", "1", "Bitmask for Spitter announcements. 1=kill 1=all.");
-	g_cvAnnounceJockey			= CreateConVar("l4d2_player_skills_announce_jockey", "63", "Bitmask for Jockey announcements. 1=high_pounce 2=special_clear 4=kill 8=jump_stop 16=skeet_melee 32=ledge_hang 63=all.");
-	g_cvAnnounceCharger			= CreateConVar("l4d2_player_skills_announce_charger", "63", "Bitmask for Charger announcements. 1=level 2=insta_kill 4=death_setup 8=special_clear 16=kill 32=bowl 63=all.");
-	g_cvAnnounceOther			= CreateConVar("l4d2_player_skills_announce_other", "3", "Bitmask for other announcements. 1=bunnyhop 2=car_alarm 3=all.");
-	g_cvShoveAttempt			= CreateConVar("l4d2_player_skills_shove_attempt", "7", "Bitmask for shove-attempt announcements. 1=charger 2=tank 4=witch 7=all.");
-	g_cvBoomerVomitMinTargets	= CreateConVar("l4d2_player_skills_boomer_vomit_min_targets", "3", "Minimum number of vomited survivors required to announce BoomerVomitLanded. 0=disabled.");
-	g_cvWitchPrintMaxEntries	= CreateConVar("l4d2_player_skills_witch_print_max_entries", "4", "Maximum number of Witch damage entries to print before combining the rest as others.");
-	g_cvHunterHighPounceHeight	= CreateConVar("l4d2_player_skills_hunter_high_pounce_height", "400", "Minimum vertical height for HunterHighPounce.");
-	g_cvJockeyHighPounceHeight	= CreateConVar("l4d2_player_skills_jockey_high_pounce_height", "300", "Minimum vertical height for JockeyHighPounce.");
-	g_cvDetectInstaKillHeight	= CreateConVar("l4d2_player_skills_charger_instakill_height", "400", "Minimum vertical drop for ChargerInstaKill.");
-	g_cvDetectDeathSetupHeight	= CreateConVar("l4d2_player_skills_charger_death_setup_height", "100", "Minimum vertical drop for ChargerDeathSetup incap classification.");
-	g_cvChargerClawPrintMinHits = CreateConVar("l4d2_player_skills_charger_claw_hits", "4", "Minimum Charger claw hits required before printing the post-death claw summary. 0=disabled.");
-	g_cvDetectBHopMinStreak		= CreateConVar("l4d2_player_skills_bhop_streak_min", "3", "Minimum amount of successful hops for BunnyHopStreak.");
-	g_cvDetectBHopMinInitSpeed	= CreateConVar("l4d2_player_skills_bhop_init_speed", "150", "Minimum initial jump speed to start tracking BunnyHopStreak.");
-	g_cvDetectBHopContSpeed		= CreateConVar("l4d2_player_skills_bhop_keep_speed", "300", "Minimum speed that keeps a hop streak even without acceleration.");
+	g_cvDebug			   		= CreateConVar("sm_skills_debug", "255", "Debug bitmask for l4d2_player_skills. 0=None 1=Core 2=Event 4=Detect 8=Boss 16=Pin 32=Physics 64=Api 128=Announce 255=all.");
+	g_cvEnable			   		= CreateConVar("sm_skills_enable", "1", "Enable the l4d2_player_skills plugin.");
+	g_cvAnnounceWitch			= CreateConVar("sm_skills_announce_witch", "7", "Bitmask for Witch announcements. 1=damage 2=misc 4=crown 7=all.");
+	g_cvAnnounceTank			= CreateConVar("sm_skills_announce_tank", "15", "Bitmask for Tank announcements. 1=damage 2=rock_skeet 4=rock_hit 8=ledge_hang 15=all.");
+	g_cvAnnounceHunter			= CreateConVar("sm_skills_announce_hunter", "63", "Bitmask for Hunter announcements. 1=skeet 2=skeet_melee 4=deadstop 8=high_pounce 16=special_clear 32=kill 63=all.");
+	g_cvAnnounceSmoker			= CreateConVar("sm_skills_announce_smoker", "31", "Bitmask for Smoker announcements. 1=tongue_cut 2=self_clear 4=special_clear 8=kill 16=ledge_hang 31=all.");
+	g_cvAnnounceBoomer			= CreateConVar("sm_skills_announce_boomer", "7", "Bitmask for Boomer announcements. 1=pop 2=vomit 4=kill 7=all.");
+	g_cvAnnounceSpitter			= CreateConVar("sm_skills_announce_spitter", "1", "Bitmask for Spitter announcements. 1=kill 1=all.");
+	g_cvAnnounceJockey			= CreateConVar("sm_skills_announce_jockey", "63", "Bitmask for Jockey announcements. 1=high_pounce 2=special_clear 4=kill 8=jump_stop 16=skeet_melee 32=ledge_hang 63=all.");
+	g_cvAnnounceCharger			= CreateConVar("sm_skills_announce_charger", "63", "Bitmask for Charger announcements. 1=level 2=insta_kill 4=death_setup 8=special_clear 16=kill 32=bowl 63=all.");
+	g_cvAnnounceOther			= CreateConVar("sm_skills_announce_other", "3", "Bitmask for other announcements. 1=bunnyhop 2=car_alarm 3=all.");
+
+	g_cvShoveAttempt			= CreateConVar("sm_skills_shove_attempt", "7", "Bitmask for shove-attempt announcements. 1=charger 2=tank 4=witch 7=all.");
+	g_cvBoomerVomitMinTargets	= CreateConVar("sm_skills_boomer_vomit_min_targets", "3", "Minimum number of vomited survivors required to announce BoomerVomitLanded. 0=disabled.");
+	g_cvWitchPrintMaxEntries	= CreateConVar("sm_skills_witch_print_max_entries", "4", "Maximum number of Witch damage entries to print before combining the rest as others.");
+	
+	g_cvHunterHighPounceHeight	= CreateConVar("sm_skills_hunter_high_pounce_height", "400", "Minimum vertical height for HunterHighPounce.");
+	g_cvJockeyHighPounceHeight	= CreateConVar("sm_skills_jockey_high_pounce_height", "300", "Minimum vertical height for JockeyHighPounce.");
+
+	g_cvDetectInstaKillHeight	= CreateConVar("sm_skills_charger_instakill_height", "400", "Minimum vertical drop for ChargerInstaKill.");
+	g_cvDetectDeathSetupHeight	= CreateConVar("sm_skills_charger_death_setup_height", "100", "Minimum vertical drop for ChargerDeathSetup incap classification.");
+	g_cvChargerClawPrintMinHits = CreateConVar("sm_skills_charger_claw_hits", "4", "Minimum Charger claw hits required before printing the post-death claw summary. 0=disabled.");
+
+	g_cvDetectBHopMinStreak		= CreateConVar("sm_skills_bhop_streak_min", "3", "Minimum amount of successful hops for BunnyHopStreak.");
+	g_cvDetectBHopMinInitSpeed	= CreateConVar("sm_skills_bhop_init_speed", "150", "Minimum initial jump speed to start tracking BunnyHopStreak.");
+	g_cvDetectBHopContSpeed		= CreateConVar("sm_skills_bhop_keep_speed", "300", "Minimum speed that keeps a hop streak even without acceleration.");
 
 	g_cvHunterMaxPounceBonusDamage = FindConVar("z_hunter_max_pounce_bonus_damage");
 
@@ -343,7 +351,7 @@ public void OnPluginStart()
 	RegConsoleCmd("sm_skills", Command_Skills, "Print the detected skills summary in chat and the comparative skills table in console.");
 	RegConsoleCmd("sm_skills_stats", Command_SkillsStats, "Print team skill stats to console. Usage: sm_skills_stats <surv|infect|all>.");
 
-	AutoExecConfig(false, "l4d2_player_skills");
+	AutoExecConfig(false, LIBRARY_L4D2_PLAYER_SKILLS);
 	Boss_Init();
 
 	if (!g_Runtime.isLate)

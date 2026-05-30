@@ -66,11 +66,12 @@ enum L4D2SkillType
 	L4D2Skill_Size
 }
 
-enum L4D2BossType
+enum L4D2ApiEventFamily
 {
-	L4D2Boss_None = 0,
-	L4D2Boss_Tank,
-	L4D2Boss_Witch
+	L4D2ApiEventFamily_None = 0,
+	L4D2ApiEventFamily_Skill,
+	L4D2ApiEventFamily_Kill,
+	L4D2ApiEventFamily_BossEvent
 }
 
 enum L4D2SkillAssistScope
@@ -94,14 +95,6 @@ enum L4D2BossState
 	L4D2BossState_Dead,
 	L4D2BossState_Escaped,
 	L4D2BossState_Printed
-}
-
-enum L4D2TankSessionEndReason
-{
-	L4D2TankSessionEnd_None = 0,
-	L4D2TankSessionEnd_Dead,
-	L4D2TankSessionEnd_Escaped,
-	L4D2TankSessionEnd_Wipe
 }
 
 enum L4D2CarAlarmReason
@@ -775,12 +768,12 @@ enum struct L4D2SkillEventData
 	}
 }
 
-enum struct L4D2SkillSummaryEntryData
+enum struct L4D2ApiSkillSummaryEntryData
 {
 	bool active;
 	L4DTeam team;
 	L4D2PlayerRef player;
-	int counts[L4D2Skill_Size];
+	int counts[L4D2ApiSkill_Size];
 
 	void Reset()
 	{
@@ -788,14 +781,14 @@ enum struct L4D2SkillSummaryEntryData
 		this.team = L4DTeam_Unassigned;
 		this.player.Reset();
 
-		for (int i = 0; i < view_as<int>(L4D2Skill_Size); i++)
+		for (int i = 0; i < view_as<int>(L4D2ApiSkill_Size); i++)
 		{
 			this.counts[i] = 0;
 		}
 	}
 }
 
-enum struct L4D2SkillSummaryData
+enum struct L4D2ApiSkillSummaryData
 {
 	int id;
 	char map[64];
@@ -811,7 +804,69 @@ enum struct L4D2SkillSummaryData
 	PlayerSkillsRoundLiveSignalType roundLiveSignal;
 	int totalEvents;
 	float createdAt;
-	L4D2SkillSummaryEntryData entries[L4D2_SKILLS_MAX_SUMMARY_ENTRIES];
+	L4D2ApiSkillSummaryEntryData entries[L4D2_SKILLS_MAX_SUMMARY_ENTRIES];
+
+	void Reset()
+	{
+		this.id = 0;
+		this.map[0] = '\0';
+		this.baseMode = PlayerSkillsGameMode_Unknown;
+		this.configuredSurvivorLimit = 0;
+		this.configuredPlayerZombieLimit = 0;
+		this.siPoolMask = view_as<int>(PlayerSkillsSiPool_None);
+		this.enabledSiClassCount = 0;
+		this.versusTeamSize = 0;
+		this.versusContext = PlayerSkillsVersusContext_None;
+		this.roundStartSignal = PlayerSkillsRoundStartSignal_None;
+		this.roundEndSignal = PlayerSkillsRoundEndSignal_None;
+		this.roundLiveSignal = PlayerSkillsRoundLiveSignal_None;
+		this.totalEvents = 0;
+		this.createdAt = 0.0;
+
+		for (int i = 0; i < L4D2_SKILLS_MAX_SUMMARY_ENTRIES; i++)
+		{
+			this.entries[i].Reset();
+		}
+	}
+}
+
+enum struct L4D2ApiKillSummaryEntryData
+{
+	bool active;
+	L4DTeam team;
+	L4D2PlayerRef player;
+	int counts[L4D2ApiKill_Size];
+
+	void Reset()
+	{
+		this.active = false;
+		this.team = L4DTeam_Unassigned;
+		this.player.Reset();
+
+		for (int i = 0; i < view_as<int>(L4D2ApiKill_Size); i++)
+		{
+			this.counts[i] = 0;
+		}
+	}
+}
+
+enum struct L4D2ApiKillSummaryData
+{
+	int id;
+	char map[64];
+	PlayerSkillsGameMode baseMode;
+	int configuredSurvivorLimit;
+	int configuredPlayerZombieLimit;
+	int siPoolMask;
+	int enabledSiClassCount;
+	int versusTeamSize;
+	PlayerSkillsVersusContextType versusContext;
+	PlayerSkillsRoundStartSignalType roundStartSignal;
+	PlayerSkillsRoundEndSignalType roundEndSignal;
+	PlayerSkillsRoundLiveSignalType roundLiveSignal;
+	int totalEvents;
+	float createdAt;
+	L4D2ApiKillSummaryEntryData entries[L4D2_SKILLS_MAX_SUMMARY_ENTRIES];
 
 	void Reset()
 	{

@@ -5,88 +5,240 @@
 
 Handle g_hForwardSkillDetected = INVALID_HANDLE;
 Handle g_hForwardSkillAnnounced = INVALID_HANDLE;
-Handle g_hForwardBossDamageFinalized = INVALID_HANDLE;
-Handle g_hForwardBossDamageAnnounced = INVALID_HANDLE;
+Handle g_hForwardKillDetected = INVALID_HANDLE;
+Handle g_hForwardKillAnnounced = INVALID_HANDLE;
+Handle g_hForwardBossEventDetected = INVALID_HANDLE;
+Handle g_hForwardBossEventAnnounced = INVALID_HANDLE;
+Handle g_hForwardBossSessionFinalized = INVALID_HANDLE;
+Handle g_hForwardBossSessionAnnounced = INVALID_HANDLE;
 Handle g_hForwardTankSessionClosed = INVALID_HANDLE;
-Handle g_hForwardSummaryFinalized = INVALID_HANDLE;
+Handle g_hForwardSkillSummaryFinalized = INVALID_HANDLE;
+Handle g_hForwardKillSummaryFinalized = INVALID_HANDLE;
 
 void API_CreateForwards()
 {
 	g_hForwardSkillDetected = CreateGlobalForward("PlayerSkills_OnSkillDetected", ET_Event, Param_Cell, Param_Cell);
 	g_hForwardSkillAnnounced = CreateGlobalForward("PlayerSkills_OnSkillAnnounced", ET_Ignore, Param_Cell, Param_Cell);
-	g_hForwardBossDamageFinalized = CreateGlobalForward("PlayerSkills_OnBossDamageFinalized", ET_Event, Param_Cell, Param_Cell);
-	g_hForwardBossDamageAnnounced = CreateGlobalForward("PlayerSkills_OnBossDamageAnnounced", ET_Ignore, Param_Cell, Param_Cell);
+	g_hForwardKillDetected = CreateGlobalForward("PlayerSkills_OnKillDetected", ET_Event, Param_Cell, Param_Cell);
+	g_hForwardKillAnnounced = CreateGlobalForward("PlayerSkills_OnKillAnnounced", ET_Ignore, Param_Cell, Param_Cell);
+	g_hForwardBossEventDetected = CreateGlobalForward("PlayerSkills_OnBossEventDetected", ET_Event, Param_Cell, Param_Cell);
+	g_hForwardBossEventAnnounced = CreateGlobalForward("PlayerSkills_OnBossEventAnnounced", ET_Ignore, Param_Cell, Param_Cell);
+	g_hForwardBossSessionFinalized = CreateGlobalForward("PlayerSkills_OnBossSessionFinalized", ET_Event, Param_Cell, Param_Cell);
+	g_hForwardBossSessionAnnounced = CreateGlobalForward("PlayerSkills_OnBossSessionAnnounced", ET_Ignore, Param_Cell, Param_Cell);
 	g_hForwardTankSessionClosed = CreateGlobalForward("PlayerSkills_OnTankSessionClosed", ET_Ignore, Param_Cell, Param_Cell);
-	g_hForwardSummaryFinalized = CreateGlobalForward("PlayerSkills_OnSummaryFinalized", ET_Ignore, Param_Cell);
+	g_hForwardSkillSummaryFinalized = CreateGlobalForward("PlayerSkills_OnSkillSummaryFinalized", ET_Ignore, Param_Cell);
+	g_hForwardKillSummaryFinalized = CreateGlobalForward("PlayerSkills_OnKillSummaryFinalized", ET_Ignore, Param_Cell);
 }
 
 void API_CreateNatives()
 {
-	CreateNative("PlayerSkills_IsEventValid", Native_PlayerSkills_IsEventValid);
-	CreateNative("PlayerSkills_FillEventKeyValues", Native_PlayerSkills_FillEventKeyValues);
+	CreateNative("PlayerSkills_IsSkillEventValid", Native_PlayerSkills_IsSkillEventValid);
+	CreateNative("PlayerSkills_FillSkillEventKeyValues", Native_PlayerSkills_FillSkillEventKeyValues);
+	CreateNative("PlayerSkills_IsKillEventValid", Native_PlayerSkills_IsKillEventValid);
+	CreateNative("PlayerSkills_FillKillEventKeyValues", Native_PlayerSkills_FillKillEventKeyValues);
+	CreateNative("PlayerSkills_IsBossEventValid", Native_PlayerSkills_IsBossEventValid);
+	CreateNative("PlayerSkills_FillBossEventKeyValues", Native_PlayerSkills_FillBossEventKeyValues);
+	CreateNative("PlayerSkills_IsBossSessionValid", Native_PlayerSkills_IsBossSessionValid);
 	CreateNative("PlayerSkills_FillBossSessionKeyValues", Native_PlayerSkills_FillBossSessionKeyValues);
-	CreateNative("PlayerSkills_GetEventType", Native_PlayerSkills_GetEventType);
-	CreateNative("PlayerSkills_GetEventInt", Native_PlayerSkills_GetEventInt);
-	CreateNative("PlayerSkills_GetEventFloat", Native_PlayerSkills_GetEventFloat);
-	CreateNative("PlayerSkills_GetEventBool", Native_PlayerSkills_GetEventBool);
-	CreateNative("PlayerSkills_GetEventClient", Native_PlayerSkills_GetEventClient);
-	CreateNative("PlayerSkills_GetEventUserId", Native_PlayerSkills_GetEventUserId);
-	CreateNative("PlayerSkills_GetEventAccountId", Native_PlayerSkills_GetEventAccountId);
-	CreateNative("PlayerSkills_IsEventPlayerBot", Native_PlayerSkills_IsEventPlayerBot);
-	CreateNative("PlayerSkills_GetEventPlayerName", Native_PlayerSkills_GetEventPlayerName);
-	CreateNative("PlayerSkills_GetEventPlayerAuth", Native_PlayerSkills_GetEventPlayerAuth);
-	CreateNative("PlayerSkills_GetEventAssistsCount", Native_PlayerSkills_GetEventAssistsCount);
-	CreateNative("PlayerSkills_GetEventAssistScope", Native_PlayerSkills_GetEventAssistScope);
-	CreateNative("PlayerSkills_GetEventDamageScope", Native_PlayerSkills_GetEventDamageScope);
-	CreateNative("PlayerSkills_GetEventAssistUserId", Native_PlayerSkills_GetEventAssistUserId);
-	CreateNative("PlayerSkills_GetEventAssistAccountId", Native_PlayerSkills_GetEventAssistAccountId);
-	CreateNative("PlayerSkills_IsEventAssistBot", Native_PlayerSkills_IsEventAssistBot);
-	CreateNative("PlayerSkills_GetEventAssistName", Native_PlayerSkills_GetEventAssistName);
-	CreateNative("PlayerSkills_GetEventAssistDamage", Native_PlayerSkills_GetEventAssistDamage);
-	CreateNative("PlayerSkills_GetEventAssistShots", Native_PlayerSkills_GetEventAssistShots);
-	CreateNative("PlayerSkills_GetEventAssistWeaponId", Native_PlayerSkills_GetEventAssistWeaponId);
-	CreateNative("PlayerSkills_GetBossType", Native_PlayerSkills_GetBossType);
-	CreateNative("PlayerSkills_GetBossClient", Native_PlayerSkills_GetBossClient);
-	CreateNative("PlayerSkills_GetBossUserId", Native_PlayerSkills_GetBossUserId);
-	CreateNative("PlayerSkills_GetBossAccountId", Native_PlayerSkills_GetBossAccountId);
-	CreateNative("PlayerSkills_IsBossPlayerBot", Native_PlayerSkills_IsBossPlayerBot);
-	CreateNative("PlayerSkills_GetBossPlayerName", Native_PlayerSkills_GetBossPlayerName);
-	CreateNative("PlayerSkills_GetBossPlayerAuth", Native_PlayerSkills_GetBossPlayerAuth);
-	CreateNative("PlayerSkills_GetBossMaxHealth", Native_PlayerSkills_GetBossMaxHealth);
-	CreateNative("PlayerSkills_GetBossLastHealth", Native_PlayerSkills_GetBossLastHealth);
-	CreateNative("PlayerSkills_GetBossTotalDamage", Native_PlayerSkills_GetBossTotalDamage);
-	CreateNative("PlayerSkills_IsBossInStasis", Native_PlayerSkills_IsBossInStasis);
-	CreateNative("PlayerSkills_GetBossDamageEntryCount", Native_PlayerSkills_GetBossDamageEntryCount);
-	CreateNative("PlayerSkills_GetBossDamageEntryClient", Native_PlayerSkills_GetBossDamageEntryClient);
-	CreateNative("PlayerSkills_GetBossDamageEntryUserId", Native_PlayerSkills_GetBossDamageEntryUserId);
-	CreateNative("PlayerSkills_GetBossDamageEntryAccountId", Native_PlayerSkills_GetBossDamageEntryAccountId);
-	CreateNative("PlayerSkills_GetBossDamageEntryDamage", Native_PlayerSkills_GetBossDamageEntryDamage);
-	CreateNative("PlayerSkills_GetBossDamageEntryShots", Native_PlayerSkills_GetBossDamageEntryShots);
-	CreateNative("PlayerSkills_IsBossDamageEntryBot", Native_PlayerSkills_IsBossDamageEntryBot);
-	CreateNative("PlayerSkills_GetBossDamageEntryName", Native_PlayerSkills_GetBossDamageEntryName);
-	CreateNative("PlayerSkills_GetBossDamageEntryAuth", Native_PlayerSkills_GetBossDamageEntryAuth);
-	CreateNative("PlayerSkills_IsSummaryValid", Native_PlayerSkills_IsSummaryValid);
-	CreateNative("PlayerSkills_FillSummaryKeyValues", Native_PlayerSkills_FillSummaryKeyValues);
+	CreateNative("PlayerSkills_IsSkillSummaryValid", Native_PlayerSkills_IsSkillSummaryValid);
+	CreateNative("PlayerSkills_FillSkillSummaryKeyValues", Native_PlayerSkills_FillSkillSummaryKeyValues);
+	CreateNative("PlayerSkills_IsKillSummaryValid", Native_PlayerSkills_IsKillSummaryValid);
+	CreateNative("PlayerSkills_FillKillSummaryKeyValues", Native_PlayerSkills_FillKillSummaryKeyValues);
 }
 
-Action API_FireSkillDetected(int eventId, L4D2SkillType type)
+L4D2ApiEventFamily API_GetEventFamily(L4D2SkillType type)
+{
+	switch (type)
+	{
+		case L4D2Skill_HunterSkeet,
+			L4D2Skill_HunterSkeetMelee,
+			L4D2Skill_HunterDeadstop,
+			L4D2Skill_BoomerPop,
+			L4D2Skill_ChargerLevel,
+			L4D2Skill_SmokerTongueCut,
+			L4D2Skill_SmokerSelfClear,
+			L4D2Skill_HunterHighPounce,
+			L4D2Skill_JockeyHighPounce,
+			L4D2Skill_SmokerLedgeHang,
+			L4D2Skill_JockeyLedgeHang,
+			L4D2Skill_ChargerInstaKill,
+			L4D2Skill_ChargerDeathSetup,
+			L4D2Skill_ChargerLedgeHang,
+			L4D2Skill_ChargerBowl,
+			L4D2Skill_SpecialPinClear,
+			L4D2Skill_BoomerVomitLanded,
+			L4D2Skill_BunnyHopStreak,
+			L4D2Skill_CarAlarmTriggered,
+			L4D2Skill_JockeyJumpStop,
+			L4D2Skill_JockeySkeetMelee,
+			L4D2Skill_JockeySkeet:
+		{
+			return L4D2ApiEventFamily_Skill;
+		}
+
+		case L4D2Skill_SmokerKill,
+			L4D2Skill_BoomerKill,
+			L4D2Skill_HunterKill,
+			L4D2Skill_SpitterKill,
+			L4D2Skill_JockeyKill,
+			L4D2Skill_ChargerKill:
+		{
+			return L4D2ApiEventFamily_Kill;
+		}
+
+		case L4D2Skill_TankDead,
+			L4D2Skill_WitchDead,
+			L4D2Skill_WitchIncap,
+			L4D2Skill_TankRockSkeet,
+			L4D2Skill_TankRockHit,
+			L4D2Skill_TankLedgeHang,
+			L4D2Skill_WitchCrown:
+		{
+			return L4D2ApiEventFamily_BossEvent;
+		}
+	}
+
+	return L4D2ApiEventFamily_None;
+}
+
+L4D2ApiSkillType API_MapSkillType(L4D2SkillType type)
+{
+	switch (type)
+	{
+		case L4D2Skill_HunterSkeet: return L4D2ApiSkill_HunterSkeet;
+		case L4D2Skill_HunterSkeetMelee: return L4D2ApiSkill_HunterSkeetMelee;
+		case L4D2Skill_HunterDeadstop: return L4D2ApiSkill_HunterDeadstop;
+		case L4D2Skill_BoomerPop: return L4D2ApiSkill_BoomerPop;
+		case L4D2Skill_ChargerLevel: return L4D2ApiSkill_ChargerLevel;
+		case L4D2Skill_SmokerTongueCut: return L4D2ApiSkill_SmokerTongueCut;
+		case L4D2Skill_SmokerSelfClear: return L4D2ApiSkill_SmokerSelfClear;
+		case L4D2Skill_HunterHighPounce: return L4D2ApiSkill_HunterHighPounce;
+		case L4D2Skill_JockeyHighPounce: return L4D2ApiSkill_JockeyHighPounce;
+		case L4D2Skill_SmokerLedgeHang: return L4D2ApiSkill_SmokerLedgeHang;
+		case L4D2Skill_JockeyLedgeHang: return L4D2ApiSkill_JockeyLedgeHang;
+		case L4D2Skill_ChargerInstaKill: return L4D2ApiSkill_ChargerInstaKill;
+		case L4D2Skill_ChargerDeathSetup: return L4D2ApiSkill_ChargerDeathSetup;
+		case L4D2Skill_ChargerLedgeHang: return L4D2ApiSkill_ChargerLedgeHang;
+		case L4D2Skill_ChargerBowl: return L4D2ApiSkill_ChargerBowl;
+		case L4D2Skill_SpecialPinClear: return L4D2ApiSkill_SpecialPinClear;
+		case L4D2Skill_BoomerVomitLanded: return L4D2ApiSkill_BoomerVomitLanded;
+		case L4D2Skill_BunnyHopStreak: return L4D2ApiSkill_BunnyHopStreak;
+		case L4D2Skill_CarAlarmTriggered: return L4D2ApiSkill_CarAlarmTriggered;
+		case L4D2Skill_JockeyJumpStop: return L4D2ApiSkill_JockeyJumpStop;
+		case L4D2Skill_JockeySkeetMelee: return L4D2ApiSkill_JockeySkeetMelee;
+		case L4D2Skill_JockeySkeet: return L4D2ApiSkill_JockeySkeet;
+	}
+
+	return L4D2ApiSkill_None;
+}
+
+L4D2ApiKillType API_MapKillType(L4D2SkillType type)
+{
+	switch (type)
+	{
+		case L4D2Skill_SmokerKill: return L4D2ApiKill_SmokerKill;
+		case L4D2Skill_BoomerKill: return L4D2ApiKill_BoomerKill;
+		case L4D2Skill_HunterKill: return L4D2ApiKill_HunterKill;
+		case L4D2Skill_SpitterKill: return L4D2ApiKill_SpitterKill;
+		case L4D2Skill_JockeyKill: return L4D2ApiKill_JockeyKill;
+		case L4D2Skill_ChargerKill: return L4D2ApiKill_ChargerKill;
+	}
+
+	return L4D2ApiKill_None;
+}
+
+L4D2ApiBossEventType API_MapBossEventType(L4D2SkillType type)
+{
+	switch (type)
+	{
+		case L4D2Skill_TankDead: return L4D2ApiBossEvent_TankDead;
+		case L4D2Skill_WitchDead: return L4D2ApiBossEvent_WitchDead;
+		case L4D2Skill_WitchIncap: return L4D2ApiBossEvent_WitchIncap;
+		case L4D2Skill_TankRockSkeet: return L4D2ApiBossEvent_TankRockSkeet;
+		case L4D2Skill_TankRockHit: return L4D2ApiBossEvent_TankRockHit;
+		case L4D2Skill_TankLedgeHang: return L4D2ApiBossEvent_TankLedgeHang;
+		case L4D2Skill_WitchCrown: return L4D2ApiBossEvent_WitchCrown;
+	}
+
+	return L4D2ApiBossEvent_None;
+}
+
+void API_GetSkillTypeName(L4D2ApiSkillType type, char[] buffer, int maxlen)
+{
+	switch (type)
+	{
+		case L4D2ApiSkill_HunterSkeet: strcopy(buffer, maxlen, "HunterSkeet");
+		case L4D2ApiSkill_HunterSkeetMelee: strcopy(buffer, maxlen, "HunterSkeetMelee");
+		case L4D2ApiSkill_HunterDeadstop: strcopy(buffer, maxlen, "HunterDeadstop");
+		case L4D2ApiSkill_BoomerPop: strcopy(buffer, maxlen, "BoomerPop");
+		case L4D2ApiSkill_ChargerLevel: strcopy(buffer, maxlen, "ChargerLevel");
+		case L4D2ApiSkill_SmokerTongueCut: strcopy(buffer, maxlen, "SmokerTongueCut");
+		case L4D2ApiSkill_SmokerSelfClear: strcopy(buffer, maxlen, "SmokerSelfClear");
+		case L4D2ApiSkill_HunterHighPounce: strcopy(buffer, maxlen, "HunterHighPounce");
+		case L4D2ApiSkill_JockeyHighPounce: strcopy(buffer, maxlen, "JockeyHighPounce");
+		case L4D2ApiSkill_SmokerLedgeHang: strcopy(buffer, maxlen, "SmokerLedgeHang");
+		case L4D2ApiSkill_JockeyLedgeHang: strcopy(buffer, maxlen, "JockeyLedgeHang");
+		case L4D2ApiSkill_ChargerInstaKill: strcopy(buffer, maxlen, "ChargerInstaKill");
+		case L4D2ApiSkill_ChargerDeathSetup: strcopy(buffer, maxlen, "ChargerDeathSetup");
+		case L4D2ApiSkill_ChargerLedgeHang: strcopy(buffer, maxlen, "ChargerLedgeHang");
+		case L4D2ApiSkill_ChargerBowl: strcopy(buffer, maxlen, "ChargerBowl");
+		case L4D2ApiSkill_SpecialPinClear: strcopy(buffer, maxlen, "SpecialPinClear");
+		case L4D2ApiSkill_BoomerVomitLanded: strcopy(buffer, maxlen, "BoomerVomitLanded");
+		case L4D2ApiSkill_BunnyHopStreak: strcopy(buffer, maxlen, "BunnyHopStreak");
+		case L4D2ApiSkill_CarAlarmTriggered: strcopy(buffer, maxlen, "CarAlarmTriggered");
+		case L4D2ApiSkill_JockeyJumpStop: strcopy(buffer, maxlen, "JockeyJumpStop");
+		case L4D2ApiSkill_JockeySkeetMelee: strcopy(buffer, maxlen, "JockeySkeetMelee");
+		case L4D2ApiSkill_JockeySkeet: strcopy(buffer, maxlen, "JockeySkeet");
+		default: strcopy(buffer, maxlen, "None");
+	}
+}
+
+void API_GetKillTypeName(L4D2ApiKillType type, char[] buffer, int maxlen)
+{
+	switch (type)
+	{
+		case L4D2ApiKill_SmokerKill: strcopy(buffer, maxlen, "SmokerKill");
+		case L4D2ApiKill_BoomerKill: strcopy(buffer, maxlen, "BoomerKill");
+		case L4D2ApiKill_HunterKill: strcopy(buffer, maxlen, "HunterKill");
+		case L4D2ApiKill_SpitterKill: strcopy(buffer, maxlen, "SpitterKill");
+		case L4D2ApiKill_JockeyKill: strcopy(buffer, maxlen, "JockeyKill");
+		case L4D2ApiKill_ChargerKill: strcopy(buffer, maxlen, "ChargerKill");
+		default: strcopy(buffer, maxlen, "None");
+	}
+}
+
+void API_GetBossEventTypeName(L4D2ApiBossEventType type, char[] buffer, int maxlen)
+{
+	switch (type)
+	{
+		case L4D2ApiBossEvent_TankDead: strcopy(buffer, maxlen, "TankDead");
+		case L4D2ApiBossEvent_WitchDead: strcopy(buffer, maxlen, "WitchDead");
+		case L4D2ApiBossEvent_WitchIncap: strcopy(buffer, maxlen, "WitchIncap");
+		case L4D2ApiBossEvent_TankRockSkeet: strcopy(buffer, maxlen, "TankRockSkeet");
+		case L4D2ApiBossEvent_TankRockHit: strcopy(buffer, maxlen, "TankRockHit");
+		case L4D2ApiBossEvent_TankLedgeHang: strcopy(buffer, maxlen, "TankLedgeHang");
+		case L4D2ApiBossEvent_WitchCrown: strcopy(buffer, maxlen, "WitchCrown");
+		default: strcopy(buffer, maxlen, "None");
+	}
+}
+
+Action API_FireFamilyDetected(Handle forwardHandle, int eventId, int publicTypeId, const char[] typeName, const char[] debugLabel)
 {
 	int eventIndex = Skills_GetEventIndex(eventId);
 	if (eventIndex != -1)
 	{
-		char typeName[48];
 		char actorName[64];
 		char victimName[64];
 		char assisterName[64];
 		char pinVictimName[64];
-		Skills_GetSkillTypeName(type, typeName, sizeof(typeName));
 		Skills_FormatEventPlayerRoleName(eventIndex, 0, actorName, sizeof(actorName));
 		Skills_FormatEventPlayerRoleName(eventIndex, 1, victimName, sizeof(victimName));
 		Skills_FormatEventPlayerRoleName(eventIndex, 2, assisterName, sizeof(assisterName));
 		Skills_FormatEventPlayerRoleName(eventIndex, 3, pinVictimName, sizeof(pinVictimName));
 
 		Skills_Debug(PlayerSkillsDebug_Core,
-			"Skill detected. id=%d type=%s actor=%s victim=%s assister=%s pin=%s damage=%d shots=%d amount=%d reason=%d",
+			"%s detected. id=%d type=%s actor=%s victim=%s assister=%s pin=%s damage=%d shots=%d amount=%d reason=%d",
+			debugLabel,
 			eventId,
 			typeName,
 			actorName,
@@ -99,78 +251,129 @@ Action API_FireSkillDetected(int eventId, L4D2SkillType type)
 			g_SkillEvents[eventIndex].reason);
 	}
 
-	if (g_hForwardSkillDetected == INVALID_HANDLE)
+	if (forwardHandle == INVALID_HANDLE)
 	{
 		return Plugin_Continue;
 	}
 
 	Action result = Plugin_Continue;
-
-	Call_StartForward(g_hForwardSkillDetected);
+	Call_StartForward(forwardHandle);
 	Call_PushCell(eventId);
-	Call_PushCell(type);
+	Call_PushCell(publicTypeId);
 	Call_Finish(result);
 
-	if (eventIndex != -1)
-	{
-		char typeName[48];
-		Skills_GetSkillTypeName(type, typeName, sizeof(typeName));
-		Skills_Debug(PlayerSkillsDebug_Api, "Skill forward finished. id=%d type=%s result=%d", eventId, typeName, result);
-	}
-
+	Skills_Debug(PlayerSkillsDebug_Api, "%s forward finished. id=%d type=%s result=%d", debugLabel, eventId, typeName, result);
 	return result;
 }
 
-void API_FireSkillAnnounced(int eventId, L4D2SkillType type)
+void API_FireFamilyAnnounced(Handle forwardHandle, int eventId, int publicTypeId, const char[] typeName, const char[] debugLabel)
 {
 	int eventIndex = Skills_GetEventIndex(eventId);
 	if (eventIndex != -1)
 	{
-		char typeName[48];
 		char actorName[64];
 		char victimName[64];
-		Skills_GetSkillTypeName(type, typeName, sizeof(typeName));
 		Skills_FormatEventPlayerRoleName(eventIndex, 0, actorName, sizeof(actorName));
 		Skills_FormatEventPlayerRoleName(eventIndex, 1, victimName, sizeof(victimName));
-		Skills_Debug(PlayerSkillsDebug_Announce, "Skill announced. id=%d type=%s actor=%s victim=%s", eventId, typeName, actorName, victimName);
+		Skills_Debug(PlayerSkillsDebug_Announce, "%s announced. id=%d type=%s actor=%s victim=%s", debugLabel, eventId, typeName, actorName, victimName);
 	}
 
-	if (g_hForwardSkillAnnounced == INVALID_HANDLE)
+	if (forwardHandle == INVALID_HANDLE)
 	{
 		return;
 	}
 
-	Call_StartForward(g_hForwardSkillAnnounced);
+	Call_StartForward(forwardHandle);
 	Call_PushCell(eventId);
-	Call_PushCell(type);
+	Call_PushCell(publicTypeId);
 	Call_Finish();
+}
+
+Action API_FireSkillDetected(int eventId, L4D2SkillType type)
+{
+	switch (API_GetEventFamily(type))
+	{
+		case L4D2ApiEventFamily_Skill:
+		{
+			L4D2ApiSkillType publicType = API_MapSkillType(type);
+			char typeName[48];
+			API_GetSkillTypeName(publicType, typeName, sizeof(typeName));
+			return API_FireFamilyDetected(g_hForwardSkillDetected, eventId, view_as<int>(publicType), typeName, "Skill");
+		}
+
+		case L4D2ApiEventFamily_Kill:
+		{
+			L4D2ApiKillType publicType = API_MapKillType(type);
+			char typeName[48];
+			API_GetKillTypeName(publicType, typeName, sizeof(typeName));
+			return API_FireFamilyDetected(g_hForwardKillDetected, eventId, view_as<int>(publicType), typeName, "Kill");
+		}
+
+		case L4D2ApiEventFamily_BossEvent:
+		{
+			L4D2ApiBossEventType publicType = API_MapBossEventType(type);
+			char typeName[48];
+			API_GetBossEventTypeName(publicType, typeName, sizeof(typeName));
+			return API_FireFamilyDetected(g_hForwardBossEventDetected, eventId, view_as<int>(publicType), typeName, "Boss event");
+		}
+	}
+
+	return Plugin_Continue;
+}
+
+void API_FireSkillAnnounced(int eventId, L4D2SkillType type)
+{
+	switch (API_GetEventFamily(type))
+	{
+		case L4D2ApiEventFamily_Skill:
+		{
+			L4D2ApiSkillType publicType = API_MapSkillType(type);
+			char typeName[48];
+			API_GetSkillTypeName(publicType, typeName, sizeof(typeName));
+			API_FireFamilyAnnounced(g_hForwardSkillAnnounced, eventId, view_as<int>(publicType), typeName, "Skill");
+		}
+
+		case L4D2ApiEventFamily_Kill:
+		{
+			L4D2ApiKillType publicType = API_MapKillType(type);
+			char typeName[48];
+			API_GetKillTypeName(publicType, typeName, sizeof(typeName));
+			API_FireFamilyAnnounced(g_hForwardKillAnnounced, eventId, view_as<int>(publicType), typeName, "Kill");
+		}
+
+		case L4D2ApiEventFamily_BossEvent:
+		{
+			L4D2ApiBossEventType publicType = API_MapBossEventType(type);
+			char typeName[48];
+			API_GetBossEventTypeName(publicType, typeName, sizeof(typeName));
+			API_FireFamilyAnnounced(g_hForwardBossEventAnnounced, eventId, view_as<int>(publicType), typeName, "Boss event");
+		}
+	}
 }
 
 Action API_FireBossDamageFinalized(int sessionId, L4D2BossType type)
 {
-	if (g_hForwardBossDamageFinalized == INVALID_HANDLE)
+	if (g_hForwardBossSessionFinalized == INVALID_HANDLE)
 	{
 		return Plugin_Continue;
 	}
 
 	Action result = Plugin_Continue;
-
-	Call_StartForward(g_hForwardBossDamageFinalized);
+	Call_StartForward(g_hForwardBossSessionFinalized);
 	Call_PushCell(sessionId);
 	Call_PushCell(type);
 	Call_Finish(result);
-
 	return result;
 }
 
 void API_FireBossDamageAnnounced(int sessionId, L4D2BossType type)
 {
-	if (g_hForwardBossDamageAnnounced == INVALID_HANDLE)
+	if (g_hForwardBossSessionAnnounced == INVALID_HANDLE)
 	{
 		return;
 	}
 
-	Call_StartForward(g_hForwardBossDamageAnnounced);
+	Call_StartForward(g_hForwardBossSessionAnnounced);
 	Call_PushCell(sessionId);
 	Call_PushCell(type);
 	Call_Finish();
@@ -186,18 +389,6 @@ void API_FireTankSessionClosed(int sessionId, L4D2TankSessionEndReason reason)
 	Call_StartForward(g_hForwardTankSessionClosed);
 	Call_PushCell(sessionId);
 	Call_PushCell(reason);
-	Call_Finish();
-}
-
-void API_FireSummaryFinalized(int summaryId)
-{
-	if (g_hForwardSummaryFinalized == INVALID_HANDLE)
-	{
-		return;
-	}
-
-	Call_StartForward(g_hForwardSummaryFinalized);
-	Call_PushCell(summaryId);
 	Call_Finish();
 }
 
@@ -219,6 +410,74 @@ int API_GetBossSessionIndexById(int sessionId)
 	return -1;
 }
 
+bool API_IsFamilyEventValid(int eventId, L4D2ApiEventFamily family)
+{
+	int eventIndex = API_GetEventIndexOrFail(eventId);
+	return eventIndex != -1 && API_GetEventFamily(g_SkillEvents[eventIndex].type) == family;
+}
+
+bool API_IsSkillSummaryValid(int summaryId)
+{
+	if (summaryId <= 0)
+	{
+		return false;
+	}
+
+	for (int index = 0; index < L4D2_SKILLS_MAX_SUMMARIES; index++)
+	{
+		if (g_SkillSummaries[index].id == summaryId)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool API_IsKillSummaryValid(int summaryId)
+{
+	if (summaryId <= 0)
+	{
+		return false;
+	}
+
+	for (int index = 0; index < L4D2_SKILLS_MAX_SUMMARIES; index++)
+	{
+		if (g_KillSummaries[index].id == summaryId)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+int API_GetSkillSummaryIndexById(int summaryId)
+{
+	for (int index = 0; index < L4D2_SKILLS_MAX_SUMMARIES; index++)
+	{
+		if (g_SkillSummaries[index].id == summaryId)
+		{
+			return index;
+		}
+	}
+
+	return -1;
+}
+
+int API_GetKillSummaryIndexById(int summaryId)
+{
+	for (int index = 0; index < L4D2_SKILLS_MAX_SUMMARIES; index++)
+	{
+		if (g_KillSummaries[index].id == summaryId)
+		{
+			return index;
+		}
+	}
+
+	return -1;
+}
+
 int API_GetBossDamageEntryCountByIndex(int sessionIndex)
 {
 	int count = 0;
@@ -232,43 +491,6 @@ int API_GetBossDamageEntryCountByIndex(int sessionIndex)
 	}
 
 	return count;
-}
-
-bool API_IsBossEntryValid(int sessionIndex, int entry)
-{
-	return sessionIndex >= 0
-		&& sessionIndex < L4D2_SKILLS_MAX_BOSSES
-		&& entry >= 0
-		&& entry < L4D2_SKILLS_MAX_DAMAGE_ENTRIES
-		&& g_BossDamage[sessionIndex][entry].active;
-}
-
-bool API_IsEventAssistIndexValid(int eventIndex, int assistIndex)
-{
-	return eventIndex >= 0
-		&& eventIndex < L4D2_SKILLS_MAX_EVENTS
-		&& assistIndex >= 0
-		&& assistIndex < g_SkillEvents[eventIndex].assistsCount
-		&& assistIndex < L4D2_SKILLS_MAX_EVENT_ASSISTS
-		&& g_SkillEvents[eventIndex].assists[assistIndex].userid > 0;
-}
-
-int API_GetSummaryIndexById(int summaryId)
-{
-	if (summaryId <= 0)
-	{
-		return -1;
-	}
-
-	for (int index = 0; index < L4D2_SKILLS_MAX_SUMMARIES; index++)
-	{
-		if (g_SkillSummaries[index].id == summaryId)
-		{
-			return index;
-		}
-	}
-
-	return -1;
 }
 
 L4DTeam API_GetSummaryActorTeam(int eventIndex)
@@ -293,7 +515,7 @@ L4DTeam API_GetSummaryActorTeam(int eventIndex)
 	return L4DTeam_Survivor;
 }
 
-bool API_ShouldIncludeEventInSummary(int eventIndex)
+bool API_ShouldIncludeEventInSummary(int eventIndex, L4D2ApiEventFamily family)
 {
 	if (eventIndex < 0 || eventIndex >= L4D2_SKILLS_MAX_EVENTS || g_SkillEvents[eventIndex].id <= 0)
 	{
@@ -305,8 +527,7 @@ bool API_ShouldIncludeEventInSummary(int eventIndex)
 		return false;
 	}
 
-	if (g_SkillEvents[eventIndex].type == L4D2Skill_WitchDead
-		|| g_SkillEvents[eventIndex].type == L4D2Skill_WitchIncap)
+	if (API_GetEventFamily(g_SkillEvents[eventIndex].type) != family)
 	{
 		return false;
 	}
@@ -316,7 +537,7 @@ bool API_ShouldIncludeEventInSummary(int eventIndex)
 		|| g_SkillEvents[eventIndex].actor.bot;
 }
 
-bool API_SummaryEntryMatchesPlayer(int summaryIndex, int entryIndex, L4DTeam team, L4D2PlayerRef player)
+bool API_SkillSummaryEntryMatchesPlayer(int summaryIndex, int entryIndex, L4DTeam team, L4D2PlayerRef player)
 {
 	if (!g_SkillSummaries[summaryIndex].entries[entryIndex].active
 		|| g_SkillSummaries[summaryIndex].entries[entryIndex].team != team)
@@ -344,11 +565,11 @@ bool API_SummaryEntryMatchesPlayer(int summaryIndex, int entryIndex, L4DTeam tea
 		&& strcmp(g_SkillSummaries[summaryIndex].entries[entryIndex].player.auth, player.auth) == 0;
 }
 
-int API_FindOrCreateSummaryEntry(int summaryIndex, L4DTeam team, L4D2PlayerRef player)
+int API_FindOrCreateSkillSummaryEntry(int summaryIndex, L4DTeam team, L4D2PlayerRef player)
 {
 	for (int entry = 0; entry < L4D2_SKILLS_MAX_SUMMARY_ENTRIES; entry++)
 	{
-		if (API_SummaryEntryMatchesPlayer(summaryIndex, entry, team, player))
+		if (API_SkillSummaryEntryMatchesPlayer(summaryIndex, entry, team, player))
 		{
 			return entry;
 		}
@@ -384,27 +605,78 @@ int API_FindOrCreateSummaryEntry(int summaryIndex, L4DTeam team, L4D2PlayerRef p
 	return -1;
 }
 
-int API_CreateSummaryFromCurrentState()
+bool API_KillSummaryEntryMatchesPlayer(int summaryIndex, int entryIndex, L4DTeam team, L4D2PlayerRef player)
 {
-	int totalEvents = 0;
-	for (int index = 0; index < L4D2_SKILLS_MAX_EVENTS; index++)
+	if (!g_KillSummaries[summaryIndex].entries[entryIndex].active
+		|| g_KillSummaries[summaryIndex].entries[entryIndex].team != team)
 	{
-		if (API_ShouldIncludeEventInSummary(index))
+		return false;
+	}
+
+	if (player.bot)
+	{
+		return g_KillSummaries[summaryIndex].entries[entryIndex].player.bot;
+	}
+
+	if (g_KillSummaries[summaryIndex].entries[entryIndex].player.bot)
+	{
+		return false;
+	}
+
+	if (g_KillSummaries[summaryIndex].entries[entryIndex].player.accountId > 0 && player.accountId > 0)
+	{
+		return g_KillSummaries[summaryIndex].entries[entryIndex].player.accountId == player.accountId;
+	}
+
+	return g_KillSummaries[summaryIndex].entries[entryIndex].player.auth[0] != '\0'
+		&& player.auth[0] != '\0'
+		&& strcmp(g_KillSummaries[summaryIndex].entries[entryIndex].player.auth, player.auth) == 0;
+}
+
+int API_FindOrCreateKillSummaryEntry(int summaryIndex, L4DTeam team, L4D2PlayerRef player)
+{
+	for (int entry = 0; entry < L4D2_SKILLS_MAX_SUMMARY_ENTRIES; entry++)
+	{
+		if (API_KillSummaryEntryMatchesPlayer(summaryIndex, entry, team, player))
 		{
-			totalEvents++;
+			return entry;
 		}
 	}
 
-	if (totalEvents <= 0)
+	for (int entry = 0; entry < L4D2_SKILLS_MAX_SUMMARY_ENTRIES; entry++)
 	{
-		return 0;
+		if (g_KillSummaries[summaryIndex].entries[entry].active)
+		{
+			continue;
+		}
+
+		g_KillSummaries[summaryIndex].entries[entry].Reset();
+		g_KillSummaries[summaryIndex].entries[entry].active = true;
+		g_KillSummaries[summaryIndex].entries[entry].team = team;
+
+		if (player.bot)
+		{
+			g_KillSummaries[summaryIndex].entries[entry].player.bot = true;
+			g_KillSummaries[summaryIndex].entries[entry].player.userid = 0;
+			g_KillSummaries[summaryIndex].entries[entry].player.accountId = 0;
+			strcopy(g_KillSummaries[summaryIndex].entries[entry].player.name, MAX_NAME_LENGTH, "IA");
+			strcopy(g_KillSummaries[summaryIndex].entries[entry].player.auth, 32, "BOT");
+		}
+		else
+		{
+			g_KillSummaries[summaryIndex].entries[entry].player = player;
+		}
+
+		return entry;
 	}
 
-	int slot = g_iNextSummarySlot;
-	g_iNextSummarySlot = (g_iNextSummarySlot + 1) % L4D2_SKILLS_MAX_SUMMARIES;
+	return -1;
+}
 
+void API_InitSkillSummaryMetadata(int slot, int totalEvents)
+{
 	g_SkillSummaries[slot].Reset();
-	g_SkillSummaries[slot].id = ++g_iSummarySerial;
+	g_SkillSummaries[slot].id = ++g_iSkillSummarySerial;
 	g_SkillSummaries[slot].createdAt = GetGameTime();
 	g_SkillSummaries[slot].baseMode = g_Runtime.baseMode;
 	g_SkillSummaries[slot].configuredSurvivorLimit = g_Runtime.configuredSurvivorLimit;
@@ -418,25 +690,69 @@ int API_CreateSummaryFromCurrentState()
 	g_SkillSummaries[slot].roundLiveSignal = g_Runtime.roundLiveSignal;
 	g_SkillSummaries[slot].totalEvents = totalEvents;
 	GetCurrentMap(g_SkillSummaries[slot].map, sizeof(g_SkillSummaries[slot].map));
+}
+
+void API_InitKillSummaryMetadata(int slot, int totalEvents)
+{
+	g_KillSummaries[slot].Reset();
+	g_KillSummaries[slot].id = ++g_iKillSummarySerial;
+	g_KillSummaries[slot].createdAt = GetGameTime();
+	g_KillSummaries[slot].baseMode = g_Runtime.baseMode;
+	g_KillSummaries[slot].configuredSurvivorLimit = g_Runtime.configuredSurvivorLimit;
+	g_KillSummaries[slot].configuredPlayerZombieLimit = g_Runtime.configuredPlayerZombieLimit;
+	g_KillSummaries[slot].siPoolMask = g_Runtime.siPoolMask;
+	g_KillSummaries[slot].enabledSiClassCount = g_Runtime.enabledSiClassCount;
+	g_KillSummaries[slot].versusTeamSize = g_Runtime.versusTeamSize;
+	g_KillSummaries[slot].versusContext = g_Runtime.versusContext;
+	g_KillSummaries[slot].roundStartSignal = g_Runtime.roundStartSignal;
+	g_KillSummaries[slot].roundEndSignal = g_Runtime.roundEndSignal;
+	g_KillSummaries[slot].roundLiveSignal = g_Runtime.roundLiveSignal;
+	g_KillSummaries[slot].totalEvents = totalEvents;
+	GetCurrentMap(g_KillSummaries[slot].map, sizeof(g_KillSummaries[slot].map));
+}
+
+int API_CreateSkillSummaryFromCurrentState()
+{
+	int totalEvents = 0;
+	for (int index = 0; index < L4D2_SKILLS_MAX_EVENTS; index++)
+	{
+		if (API_ShouldIncludeEventInSummary(index, L4D2ApiEventFamily_Skill))
+		{
+			totalEvents++;
+		}
+	}
+
+	if (totalEvents <= 0)
+	{
+		return 0;
+	}
+
+	int slot = g_iNextSkillSummarySlot;
+	g_iNextSkillSummarySlot = (g_iNextSkillSummarySlot + 1) % L4D2_SKILLS_MAX_SUMMARIES;
+	API_InitSkillSummaryMetadata(slot, totalEvents);
 
 	for (int index = 0; index < L4D2_SKILLS_MAX_EVENTS; index++)
 	{
-		if (!API_ShouldIncludeEventInSummary(index))
+		if (!API_ShouldIncludeEventInSummary(index, L4D2ApiEventFamily_Skill))
 		{
 			continue;
 		}
 
 		L4DTeam team = API_GetSummaryActorTeam(index);
-		int entry = API_FindOrCreateSummaryEntry(slot, team, g_SkillEvents[index].actor);
+		int entry = API_FindOrCreateSkillSummaryEntry(slot, team, g_SkillEvents[index].actor);
 		if (entry == -1)
 		{
 			continue;
 		}
 
-		g_SkillSummaries[slot].entries[entry].counts[g_SkillEvents[index].type]++;
+		L4D2ApiSkillType publicType = API_MapSkillType(g_SkillEvents[index].type);
+		if (publicType != L4D2ApiSkill_None)
+		{
+			g_SkillSummaries[slot].entries[entry].counts[publicType]++;
+		}
 	}
 
-	Skills_Debug(PlayerSkillsDebug_Api, "Summary finalized. id=%d map=%s total_events=%d",
+	Skills_Debug(PlayerSkillsDebug_Api, "Skill summary finalized. id=%d map=%s total_events=%d",
 		g_SkillSummaries[slot].id,
 		g_SkillSummaries[slot].map,
 		g_SkillSummaries[slot].totalEvents);
@@ -444,28 +760,71 @@ int API_CreateSummaryFromCurrentState()
 	return g_SkillSummaries[slot].id;
 }
 
-void API_FinalizeSummaryFromCurrentState()
+int API_CreateKillSummaryFromCurrentState()
 {
-	int summaryId = API_CreateSummaryFromCurrentState();
-	if (summaryId > 0)
+	int totalEvents = 0;
+	for (int index = 0; index < L4D2_SKILLS_MAX_EVENTS; index++)
 	{
-		API_FireSummaryFinalized(summaryId);
+		if (API_ShouldIncludeEventInSummary(index, L4D2ApiEventFamily_Kill))
+		{
+			totalEvents++;
+		}
 	}
+
+	if (totalEvents <= 0)
+	{
+		return 0;
+	}
+
+	int slot = g_iNextKillSummarySlot;
+	g_iNextKillSummarySlot = (g_iNextKillSummarySlot + 1) % L4D2_SKILLS_MAX_SUMMARIES;
+	API_InitKillSummaryMetadata(slot, totalEvents);
+
+	for (int index = 0; index < L4D2_SKILLS_MAX_EVENTS; index++)
+	{
+		if (!API_ShouldIncludeEventInSummary(index, L4D2ApiEventFamily_Kill))
+		{
+			continue;
+		}
+
+		L4DTeam team = API_GetSummaryActorTeam(index);
+		int entry = API_FindOrCreateKillSummaryEntry(slot, team, g_SkillEvents[index].actor);
+		if (entry == -1)
+		{
+			continue;
+		}
+
+		L4D2ApiKillType publicType = API_MapKillType(g_SkillEvents[index].type);
+		if (publicType != L4D2ApiKill_None)
+		{
+			g_KillSummaries[slot].entries[entry].counts[publicType]++;
+		}
+	}
+
+	Skills_Debug(PlayerSkillsDebug_Api, "Kill summary finalized. id=%d map=%s total_events=%d",
+		g_KillSummaries[slot].id,
+		g_KillSummaries[slot].map,
+		g_KillSummaries[slot].totalEvents);
+
+	return g_KillSummaries[slot].id;
 }
 
-void API_GetBossPlayerRefBySlot(int sessionIndex, int slot, L4D2PlayerRef player)
+void API_FinalizeSummaryFromCurrentState()
 {
-	player.Reset();
-
-	if (sessionIndex < 0 || sessionIndex >= L4D2_SKILLS_MAX_BOSSES)
+	int skillSummaryId = API_CreateSkillSummaryFromCurrentState();
+	if (skillSummaryId > 0 && g_hForwardSkillSummaryFinalized != INVALID_HANDLE)
 	{
-		return;
+		Call_StartForward(g_hForwardSkillSummaryFinalized);
+		Call_PushCell(skillSummaryId);
+		Call_Finish();
 	}
 
-	switch (slot)
+	int killSummaryId = API_CreateKillSummaryFromCurrentState();
+	if (killSummaryId > 0 && g_hForwardKillSummaryFinalized != INVALID_HANDLE)
 	{
-		case 0: player = g_BossSessions[sessionIndex].owner;
-		case 1: player = g_BossSessions[sessionIndex].tank.pendingOwner;
+		Call_StartForward(g_hForwardKillSummaryFinalized);
+		Call_PushCell(killSummaryId);
+		Call_Finish();
 	}
 }
 
@@ -537,7 +896,7 @@ void API_WriteEventSpecialRoles(Handle kv, int eventIndex)
 
 void API_WriteEventSkillProperties(Handle kv, int eventIndex)
 {
-	if (!KvJumpToKey(kv, "skill_properties", true))
+	if (!KvJumpToKey(kv, "properties", true))
 	{
 		return;
 	}
@@ -603,155 +962,31 @@ void API_WriteEventSkillProperties(Handle kv, int eventIndex)
 		KvSetNum(kv, "amount", g_SkillEvents[eventIndex].amount);
 	}
 
-	if (g_SkillEvents[eventIndex].reportedHigh)
-	{
-		KvSetNum(kv, "reported_high", 1);
-	}
-
-	if (g_SkillEvents[eventIndex].indirect)
-	{
-		KvSetNum(kv, "indirect", 1);
-	}
-
-	if (g_SkillEvents[eventIndex].forced)
-	{
-		KvSetNum(kv, "forced", 1);
-	}
-
-	if (g_SkillEvents[eventIndex].incapped)
-	{
-		KvSetNum(kv, "incapped", 1);
-	}
-
-	if (g_SkillEvents[eventIndex].ledgeHang)
-	{
-		KvSetNum(kv, "ledge_hang", 1);
-	}
-
-	if (g_SkillEvents[eventIndex].fatalFall)
-	{
-		KvSetNum(kv, "fatal_fall", 1);
-	}
-
-	if (g_SkillEvents[eventIndex].deadlySlam)
-	{
-		KvSetNum(kv, "deadly_slam", 1);
-	}
+	if (g_SkillEvents[eventIndex].reportedHigh) KvSetNum(kv, "reported_high", 1);
+	if (g_SkillEvents[eventIndex].indirect) KvSetNum(kv, "indirect", 1);
+	if (g_SkillEvents[eventIndex].forced) KvSetNum(kv, "forced", 1);
+	if (g_SkillEvents[eventIndex].incapped) KvSetNum(kv, "incapped", 1);
+	if (g_SkillEvents[eventIndex].ledgeHang) KvSetNum(kv, "ledge_hang", 1);
+	if (g_SkillEvents[eventIndex].fatalFall) KvSetNum(kv, "fatal_fall", 1);
+	if (g_SkillEvents[eventIndex].deadlySlam) KvSetNum(kv, "deadly_slam", 1);
+	if (g_SkillEvents[eventIndex].perfect) KvSetNum(kv, "perfect", 1);
+	if (g_SkillEvents[eventIndex].headshot) KvSetNum(kv, "headshot", 1);
+	if (g_SkillEvents[eventIndex].sniper) KvSetNum(kv, "sniper", 1);
+	if (g_SkillEvents[eventIndex].grenadeLauncher) KvSetNum(kv, "grenade_launcher", 1);
+	if (g_SkillEvents[eventIndex].crown) KvSetNum(kv, "crown", 1);
+	if (g_SkillEvents[eventIndex].startled) KvSetNum(kv, "startled", 1);
 
 	if (g_SkillEvents[eventIndex].streak > 0)
 	{
 		KvSetNum(kv, "streak", g_SkillEvents[eventIndex].streak);
 	}
 
-	if (g_SkillEvents[eventIndex].perfect)
-	{
-		KvSetNum(kv, "perfect", 1);
-	}
-
-	if (g_SkillEvents[eventIndex].headshot)
-	{
-		KvSetNum(kv, "headshot", 1);
-	}
-
-	if (g_SkillEvents[eventIndex].sniper)
-	{
-		KvSetNum(kv, "sniper", 1);
-	}
-
-	if (g_SkillEvents[eventIndex].grenadeLauncher)
-	{
-		KvSetNum(kv, "grenade_launcher", 1);
-	}
-
-	if (g_SkillEvents[eventIndex].crown)
-	{
-		KvSetNum(kv, "crown", 1);
-	}
-
-	if (g_SkillEvents[eventIndex].startled)
-	{
-		KvSetNum(kv, "startled", 1);
-	}
-
-	if (g_SkillEvents[eventIndex].timeA > 0.0)
-	{
-		KvSetFloat(kv, "time_a", g_SkillEvents[eventIndex].timeA);
-	}
-
-	if (g_SkillEvents[eventIndex].timeB > 0.0)
-	{
-		KvSetFloat(kv, "time_b", g_SkillEvents[eventIndex].timeB);
-	}
-
-	if (g_SkillEvents[eventIndex].calculatedDamage > 0.0)
-	{
-		KvSetFloat(kv, "calculated_damage", g_SkillEvents[eventIndex].calculatedDamage);
-	}
-
-	if (g_SkillEvents[eventIndex].height > 0.0)
-	{
-		KvSetFloat(kv, "height", g_SkillEvents[eventIndex].height);
-	}
-
-	if (g_SkillEvents[eventIndex].distance > 0.0)
-	{
-		KvSetFloat(kv, "distance", g_SkillEvents[eventIndex].distance);
-	}
-
-	if (g_SkillEvents[eventIndex].maxVelocity > 0.0)
-	{
-		KvSetFloat(kv, "max_velocity", g_SkillEvents[eventIndex].maxVelocity);
-	}
-
-	KvGoBack(kv);
-}
-
-void API_WriteTankSessionProperties(Handle kv, int eventIndex, int sessionIndex)
-{
-	if (sessionIndex < 0 || sessionIndex >= L4D2_SKILLS_MAX_BOSSES || g_BossSessions[sessionIndex].id == 0)
-	{
-		return;
-	}
-
-	if (!KvJumpToKey(kv, "tank_session", true))
-	{
-		return;
-	}
-
-	KvSetNum(kv, "rocks_thrown", g_BossSessions[sessionIndex].tank.rocksThrown);
-	KvSetNum(kv, "rocks_hit", g_BossSessions[sessionIndex].tank.rocksHit);
-
-	float aliveTime = 0.0;
-	if (g_BossSessions[sessionIndex].startedAt > 0.0)
-	{
-		aliveTime = g_SkillEvents[eventIndex].createdAt - g_BossSessions[sessionIndex].startedAt;
-	}
-	KvSetFloat(kv, "alive_time", aliveTime);
-
-	KvGoBack(kv);
-}
-
-void API_WriteWitchSessionProperties(Handle kv, int eventIndex, int sessionIndex)
-{
-	if (sessionIndex < 0 || sessionIndex >= L4D2_SKILLS_MAX_BOSSES || g_BossSessions[sessionIndex].id == 0)
-	{
-		return;
-	}
-
-	if (!KvJumpToKey(kv, "witch_session", true))
-	{
-		return;
-	}
-
-	float aliveTime = 0.0;
-	if (g_BossSessions[sessionIndex].startedAt > 0.0)
-	{
-		aliveTime = g_SkillEvents[eventIndex].createdAt - g_BossSessions[sessionIndex].startedAt;
-	}
-
-	KvSetFloat(kv, "alive_time", aliveTime);
-	KvSetNum(kv, "startled", g_BossSessions[sessionIndex].witch.startled ? 1 : 0);
-	KvSetNum(kv, "total_damage", g_BossSessions[sessionIndex].totalDamage);
+	if (g_SkillEvents[eventIndex].timeA > 0.0) KvSetFloat(kv, "time_a", g_SkillEvents[eventIndex].timeA);
+	if (g_SkillEvents[eventIndex].timeB > 0.0) KvSetFloat(kv, "time_b", g_SkillEvents[eventIndex].timeB);
+	if (g_SkillEvents[eventIndex].calculatedDamage > 0.0) KvSetFloat(kv, "calculated_damage", g_SkillEvents[eventIndex].calculatedDamage);
+	if (g_SkillEvents[eventIndex].height > 0.0) KvSetFloat(kv, "height", g_SkillEvents[eventIndex].height);
+	if (g_SkillEvents[eventIndex].distance > 0.0) KvSetFloat(kv, "distance", g_SkillEvents[eventIndex].distance);
+	if (g_SkillEvents[eventIndex].maxVelocity > 0.0) KvSetFloat(kv, "max_velocity", g_SkillEvents[eventIndex].maxVelocity);
 
 	KvGoBack(kv);
 }
@@ -882,6 +1117,34 @@ void API_WriteEventContextBlock(Handle kv)
 	KvGoBack(kv);
 }
 
+void API_WriteSummaryContextBlockCommon(Handle kv, PlayerSkillsGameMode baseMode, int survivorLimit, int infectedLimit, int siPoolMask, int enabledSiClasses, int teamSize, PlayerSkillsVersusContextType versusContext, PlayerSkillsRoundStartSignalType roundStartSignal, PlayerSkillsRoundEndSignalType roundEndSignal, PlayerSkillsRoundLiveSignalType roundLiveSignal)
+{
+	if (!KvJumpToKey(kv, "context", true))
+	{
+		return;
+	}
+
+	char baseModeName[24];
+	char versusContextName[32];
+	Skills_GetModeBaseName(baseMode, baseModeName, sizeof(baseModeName));
+	Skills_GetVersusContextName(versusContext, versusContextName, sizeof(versusContextName));
+
+	KvSetNum(kv, "base_mode", baseMode);
+	KvSetString(kv, "base_mode_name", baseModeName);
+	KvSetNum(kv, "survivor_limit", survivorLimit);
+	KvSetNum(kv, "infected_limit", infectedLimit);
+	KvSetNum(kv, "si_pool_mask", siPoolMask);
+	KvSetNum(kv, "enabled_si_classes", enabledSiClasses);
+	KvSetNum(kv, "team_size", teamSize);
+	KvSetNum(kv, "versus_context", versusContext);
+	KvSetString(kv, "versus_context_name", versusContextName);
+	KvSetNum(kv, "round_start_signal", roundStartSignal);
+	KvSetNum(kv, "round_end_signal", roundEndSignal);
+	KvSetNum(kv, "round_live_signal", roundLiveSignal);
+
+	KvGoBack(kv);
+}
+
 void API_GetSummaryTeamName(L4DTeam team, char[] buffer, int maxlen)
 {
 	switch (team)
@@ -901,35 +1164,7 @@ void API_GetSummaryTeamName(L4DTeam team, char[] buffer, int maxlen)
 	strcopy(buffer, maxlen, "unknown");
 }
 
-void API_WriteSummaryContextBlock(Handle kv, int summaryIndex)
-{
-	if (!KvJumpToKey(kv, "context", true))
-	{
-		return;
-	}
-
-	char baseModeName[24];
-	char versusContextName[32];
-	Skills_GetModeBaseName(g_SkillSummaries[summaryIndex].baseMode, baseModeName, sizeof(baseModeName));
-	Skills_GetVersusContextName(g_SkillSummaries[summaryIndex].versusContext, versusContextName, sizeof(versusContextName));
-
-	KvSetNum(kv, "base_mode", g_SkillSummaries[summaryIndex].baseMode);
-	KvSetString(kv, "base_mode_name", baseModeName);
-	KvSetNum(kv, "survivor_limit", g_SkillSummaries[summaryIndex].configuredSurvivorLimit);
-	KvSetNum(kv, "infected_limit", g_SkillSummaries[summaryIndex].configuredPlayerZombieLimit);
-	KvSetNum(kv, "si_pool_mask", g_SkillSummaries[summaryIndex].siPoolMask);
-	KvSetNum(kv, "enabled_si_classes", g_SkillSummaries[summaryIndex].enabledSiClassCount);
-	KvSetNum(kv, "team_size", g_SkillSummaries[summaryIndex].versusTeamSize);
-	KvSetNum(kv, "versus_context", g_SkillSummaries[summaryIndex].versusContext);
-	KvSetString(kv, "versus_context_name", versusContextName);
-	KvSetNum(kv, "round_start_signal", g_SkillSummaries[summaryIndex].roundStartSignal);
-	KvSetNum(kv, "round_end_signal", g_SkillSummaries[summaryIndex].roundEndSignal);
-	KvSetNum(kv, "round_live_signal", g_SkillSummaries[summaryIndex].roundLiveSignal);
-
-	KvGoBack(kv);
-}
-
-void API_WriteSummaryEntries(Handle kv, int summaryIndex)
+void API_WriteSkillSummaryEntries(Handle kv, int summaryIndex)
 {
 	int count = 0;
 	for (int entry = 0; entry < L4D2_SKILLS_MAX_SUMMARY_ENTRIES; entry++)
@@ -972,12 +1207,12 @@ void API_WriteSummaryEntries(Handle kv, int summaryIndex)
 
 		if (KvJumpToKey(kv, "counts", true))
 		{
-			for (int type = 1; type < view_as<int>(L4D2Skill_Size); type++)
+			for (int type = 1; type < view_as<int>(L4D2ApiSkill_Size); type++)
 			{
 				if (g_SkillSummaries[summaryIndex].entries[entry].counts[type] > 0)
 				{
 					char typeName[48];
-					Skills_GetSkillTypeName(view_as<L4D2SkillType>(type), typeName, sizeof(typeName));
+					API_GetSkillTypeName(view_as<L4D2ApiSkillType>(type), typeName, sizeof(typeName));
 					KvSetNum(kv, typeName, g_SkillSummaries[summaryIndex].entries[entry].counts[type]);
 				}
 			}
@@ -990,61 +1225,115 @@ void API_WriteSummaryEntries(Handle kv, int summaryIndex)
 	KvGoBack(kv);
 }
 
-public int Native_PlayerSkills_IsEventValid(Handle plugin, int numParams)
+void API_WriteKillSummaryEntries(Handle kv, int summaryIndex)
 {
-	return Skills_IsEventValid(GetNativeCell(1));
-}
-
-public int Native_PlayerSkills_IsSummaryValid(Handle plugin, int numParams)
-{
-	return API_GetSummaryIndexById(GetNativeCell(1)) != -1;
-}
-
-public int Native_PlayerSkills_FillSummaryKeyValues(Handle plugin, int numParams)
-{
-	int summaryIndex = API_GetSummaryIndexById(GetNativeCell(1));
-	Handle kv = GetNativeCell(2);
-	if (summaryIndex == -1 || kv == INVALID_HANDLE)
+	int count = 0;
+	for (int entry = 0; entry < L4D2_SKILLS_MAX_SUMMARY_ENTRIES; entry++)
 	{
-		return false;
+		if (g_KillSummaries[summaryIndex].entries[entry].active)
+		{
+			count++;
+		}
 	}
 
-	KvRewind(kv);
-	if (!KvJumpToKey(kv, "summary", true))
+	KvSetNum(kv, "entries_count", count);
+	if (!KvJumpToKey(kv, "entries", true))
 	{
-		return false;
+		return;
 	}
 
-	KvSetNum(kv, "id", g_SkillSummaries[summaryIndex].id);
-	KvSetString(kv, "map", g_SkillSummaries[summaryIndex].map);
-	KvSetNum(kv, "total_events", g_SkillSummaries[summaryIndex].totalEvents);
-	KvSetFloat(kv, "created_at", g_SkillSummaries[summaryIndex].createdAt);
-	API_WriteSummaryContextBlock(kv, summaryIndex);
-	API_WriteSummaryEntries(kv, summaryIndex);
+	int summaryEntryIndex = 0;
+	for (int entry = 0; entry < L4D2_SKILLS_MAX_SUMMARY_ENTRIES; entry++)
+	{
+		if (!g_KillSummaries[summaryIndex].entries[entry].active)
+		{
+			continue;
+		}
+
+		char entryKey[8];
+		IntToString(summaryEntryIndex++, entryKey, sizeof(entryKey));
+		if (!KvJumpToKey(kv, entryKey, true))
+		{
+			continue;
+		}
+
+		char teamName[16];
+		API_GetSummaryTeamName(g_KillSummaries[summaryIndex].entries[entry].team, teamName, sizeof(teamName));
+		KvSetNum(kv, "team", g_KillSummaries[summaryIndex].entries[entry].team);
+		KvSetString(kv, "team_name", teamName);
+		KvSetNum(kv, "userid", g_KillSummaries[summaryIndex].entries[entry].player.userid);
+		KvSetNum(kv, "accountid", g_KillSummaries[summaryIndex].entries[entry].player.accountId);
+		KvSetString(kv, "name", g_KillSummaries[summaryIndex].entries[entry].player.name);
+		KvSetNum(kv, "bot", g_KillSummaries[summaryIndex].entries[entry].player.bot ? 1 : 0);
+
+		if (KvJumpToKey(kv, "counts", true))
+		{
+			for (int type = 1; type < view_as<int>(L4D2ApiKill_Size); type++)
+			{
+				if (g_KillSummaries[summaryIndex].entries[entry].counts[type] > 0)
+				{
+					char typeName[48];
+					API_GetKillTypeName(view_as<L4D2ApiKillType>(type), typeName, sizeof(typeName));
+					KvSetNum(kv, typeName, g_KillSummaries[summaryIndex].entries[entry].counts[type]);
+				}
+			}
+			KvGoBack(kv);
+		}
+
+		KvGoBack(kv);
+	}
 
 	KvGoBack(kv);
-	KvRewind(kv);
-	return true;
 }
 
-public int Native_PlayerSkills_FillEventKeyValues(Handle plugin, int numParams)
+bool API_WriteEventKeyValuesForFamily(Handle kv, int eventIndex, L4D2ApiEventFamily family)
 {
-	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
-	Handle kv = GetNativeCell(2);
+	char rootKey[32];
+	rootKey[0] = '\0';
+	char typeName[48];
+	int publicTypeId = 0;
 
-	if (eventIndex == -1 || kv == INVALID_HANDLE)
+	switch (family)
 	{
-		return false;
+		case L4D2ApiEventFamily_Skill:
+		{
+			strcopy(rootKey, sizeof(rootKey), "skill_event");
+			L4D2ApiSkillType publicType = API_MapSkillType(g_SkillEvents[eventIndex].type);
+			publicTypeId = view_as<int>(publicType);
+			API_GetSkillTypeName(publicType, typeName, sizeof(typeName));
+		}
+
+		case L4D2ApiEventFamily_Kill:
+		{
+			strcopy(rootKey, sizeof(rootKey), "kill_event");
+			L4D2ApiKillType publicType = API_MapKillType(g_SkillEvents[eventIndex].type);
+			publicTypeId = view_as<int>(publicType);
+			API_GetKillTypeName(publicType, typeName, sizeof(typeName));
+		}
+
+		case L4D2ApiEventFamily_BossEvent:
+		{
+			strcopy(rootKey, sizeof(rootKey), "boss_event");
+			L4D2ApiBossEventType publicType = API_MapBossEventType(g_SkillEvents[eventIndex].type);
+			publicTypeId = view_as<int>(publicType);
+			API_GetBossEventTypeName(publicType, typeName, sizeof(typeName));
+		}
+
+		default:
+		{
+			return false;
+		}
 	}
 
 	KvRewind(kv);
-	if (!KvJumpToKey(kv, "event", true))
+	if (!KvJumpToKey(kv, rootKey, true))
 	{
 		return false;
 	}
 
 	KvSetNum(kv, "id", g_SkillEvents[eventIndex].id);
-	KvSetNum(kv, "type_id", g_SkillEvents[eventIndex].type);
+	KvSetNum(kv, "type_id", publicTypeId);
+	KvSetString(kv, "type_name", typeName);
 
 	API_WriteEventContextBlock(kv);
 	API_SetEventPlayerKeys(kv, "actor", g_SkillEvents[eventIndex].actor);
@@ -1052,20 +1341,84 @@ public int Native_PlayerSkills_FillEventKeyValues(Handle plugin, int numParams)
 	API_WriteEventSpecialRoles(kv, eventIndex);
 	API_WriteEventSkillProperties(kv, eventIndex);
 
-	if (g_SkillEvents[eventIndex].type == L4D2Skill_TankDead && g_SkillEvents[eventIndex].actor2 > 0)
+	if (family == L4D2ApiEventFamily_BossEvent)
 	{
-		API_WriteTankSessionProperties(kv, eventIndex, API_GetBossSessionIndexById(g_SkillEvents[eventIndex].actor2));
-	}
-
-	if ((g_SkillEvents[eventIndex].type == L4D2Skill_WitchDead || g_SkillEvents[eventIndex].type == L4D2Skill_WitchCrown || g_SkillEvents[eventIndex].type == L4D2Skill_WitchIncap)
-		&& g_SkillEvents[eventIndex].actor2 > 0)
-	{
-		API_WriteWitchSessionProperties(kv, eventIndex, API_GetBossSessionIndexById(g_SkillEvents[eventIndex].actor2));
+		if (g_SkillEvents[eventIndex].actor2 > 0)
+		{
+			int sessionIndex = API_GetBossSessionIndexById(g_SkillEvents[eventIndex].actor2);
+			if (sessionIndex != -1)
+			{
+				switch (g_SkillEvents[eventIndex].type)
+				{
+					case L4D2Skill_TankDead, L4D2Skill_TankRockSkeet, L4D2Skill_TankRockHit, L4D2Skill_TankLedgeHang,
+						L4D2Skill_WitchDead, L4D2Skill_WitchIncap, L4D2Skill_WitchCrown:
+					{
+						API_WriteBossSessionKeyValues(kv, sessionIndex);
+					}
+				}
+			}
+		}
 	}
 
 	KvGoBack(kv);
 	KvRewind(kv);
 	return true;
+}
+
+public int Native_PlayerSkills_IsSkillEventValid(Handle plugin, int numParams)
+{
+	return API_IsFamilyEventValid(GetNativeCell(1), L4D2ApiEventFamily_Skill);
+}
+
+public int Native_PlayerSkills_FillSkillEventKeyValues(Handle plugin, int numParams)
+{
+	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
+	Handle kv = GetNativeCell(2);
+	if (eventIndex == -1 || kv == INVALID_HANDLE || API_GetEventFamily(g_SkillEvents[eventIndex].type) != L4D2ApiEventFamily_Skill)
+	{
+		return false;
+	}
+
+	return API_WriteEventKeyValuesForFamily(kv, eventIndex, L4D2ApiEventFamily_Skill);
+}
+
+public int Native_PlayerSkills_IsKillEventValid(Handle plugin, int numParams)
+{
+	return API_IsFamilyEventValid(GetNativeCell(1), L4D2ApiEventFamily_Kill);
+}
+
+public int Native_PlayerSkills_FillKillEventKeyValues(Handle plugin, int numParams)
+{
+	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
+	Handle kv = GetNativeCell(2);
+	if (eventIndex == -1 || kv == INVALID_HANDLE || API_GetEventFamily(g_SkillEvents[eventIndex].type) != L4D2ApiEventFamily_Kill)
+	{
+		return false;
+	}
+
+	return API_WriteEventKeyValuesForFamily(kv, eventIndex, L4D2ApiEventFamily_Kill);
+}
+
+public int Native_PlayerSkills_IsBossEventValid(Handle plugin, int numParams)
+{
+	return API_IsFamilyEventValid(GetNativeCell(1), L4D2ApiEventFamily_BossEvent);
+}
+
+public int Native_PlayerSkills_FillBossEventKeyValues(Handle plugin, int numParams)
+{
+	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
+	Handle kv = GetNativeCell(2);
+	if (eventIndex == -1 || kv == INVALID_HANDLE || API_GetEventFamily(g_SkillEvents[eventIndex].type) != L4D2ApiEventFamily_BossEvent)
+	{
+		return false;
+	}
+
+	return API_WriteEventKeyValuesForFamily(kv, eventIndex, L4D2ApiEventFamily_BossEvent);
+}
+
+public int Native_PlayerSkills_IsBossSessionValid(Handle plugin, int numParams)
+{
+	return API_GetBossSessionIndexById(GetNativeCell(1)) != -1;
 }
 
 public int Native_PlayerSkills_FillBossSessionKeyValues(Handle plugin, int numParams)
@@ -1084,445 +1437,86 @@ public int Native_PlayerSkills_FillBossSessionKeyValues(Handle plugin, int numPa
 	return true;
 }
 
-public int Native_PlayerSkills_GetEventType(Handle plugin, int numParams)
+public int Native_PlayerSkills_IsSkillSummaryValid(Handle plugin, int numParams)
 {
-	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
-	return eventIndex != -1 ? g_SkillEvents[eventIndex].type : L4D2Skill_None;
+	return API_IsSkillSummaryValid(GetNativeCell(1));
 }
 
-public int Native_PlayerSkills_GetEventInt(Handle plugin, int numParams)
+public int Native_PlayerSkills_FillSkillSummaryKeyValues(Handle plugin, int numParams)
 {
-	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
-	if (eventIndex == -1)
-	{
-		return 0;
-	}
-
-	switch (GetNativeCell(2))
-	{
-		case 0: return g_SkillEvents[eventIndex].damage;
-		case 1: return g_SkillEvents[eventIndex].chipDamage;
-		case 2: return g_SkillEvents[eventIndex].shots;
-		case 3: return g_SkillEvents[eventIndex].shoveCount;
-		case 4: return g_SkillEvents[eventIndex].amount;
-		case 5: return g_SkillEvents[eventIndex].streak;
-		case 6: return g_SkillEvents[eventIndex].zombieClass;
-		case 7: return g_SkillEvents[eventIndex].reason;
-		case 8: return g_SkillEvents[eventIndex].actor2;
-		case 9: return g_SkillEvents[eventIndex].victim2;
-		case 10: return Skills_GetEventRating(eventIndex);
-	}
-
-	return 0;
-}
-
-public any Native_PlayerSkills_GetEventFloat(Handle plugin, int numParams)
-{
-	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
-	if (eventIndex == -1)
-	{
-		return 0.0;
-	}
-
-	switch (GetNativeCell(2))
-	{
-		case 0: return g_SkillEvents[eventIndex].timeA;
-		case 1: return g_SkillEvents[eventIndex].timeB;
-		case 2: return g_SkillEvents[eventIndex].calculatedDamage;
-		case 3: return g_SkillEvents[eventIndex].height;
-		case 4: return g_SkillEvents[eventIndex].distance;
-		case 5: return g_SkillEvents[eventIndex].maxVelocity;
-		case 6: return g_SkillEvents[eventIndex].createdAt;
-	}
-
-	return 0.0;
-}
-
-public int Native_PlayerSkills_GetEventBool(Handle plugin, int numParams)
-{
-	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
-	if (eventIndex == -1)
+	int summaryIndex = API_GetSkillSummaryIndexById(GetNativeCell(1));
+	Handle kv = GetNativeCell(2);
+	if (summaryIndex == -1 || kv == INVALID_HANDLE)
 	{
 		return false;
 	}
 
-	switch (GetNativeCell(2))
-	{
-		case 0: return g_SkillEvents[eventIndex].withShove;
-		case 1: return g_SkillEvents[eventIndex].indirect;
-		case 2: return g_SkillEvents[eventIndex].forced;
-		case 3: return g_SkillEvents[eventIndex].wasCarried;
-		case 4: return g_SkillEvents[eventIndex].reportedHigh;
-		case 5: return g_SkillEvents[eventIndex].incapped;
-		case 6: return g_SkillEvents[eventIndex].ledgeHang;
-		case 7: return g_SkillEvents[eventIndex].fatalFall;
-		case 8: return g_SkillEvents[eventIndex].deadlySlam;
-		case 9: return false;
-		case 10: return g_SkillEvents[eventIndex].crown;
-		case 11: return g_SkillEvents[eventIndex].startled;
-		case 12: return g_SkillEvents[eventIndex].perfect;
-		case 13: return g_SkillEvents[eventIndex].headshot;
-		case 14: return g_SkillEvents[eventIndex].sniper;
-		case 15: return g_SkillEvents[eventIndex].grenadeLauncher;
-	}
-
-	return false;
-}
-
-public int Native_PlayerSkills_GetEventClient(Handle plugin, int numParams)
-{
-	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
-	if (eventIndex == -1)
-	{
-		return 0;
-	}
-
-	L4D2PlayerRef player;
-	Skills_GetEventPlayerRefBySlot(eventIndex, GetNativeCell(2), player);
-	return player.ResolveClient();
-}
-
-public int Native_PlayerSkills_GetEventUserId(Handle plugin, int numParams)
-{
-	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
-	if (eventIndex == -1)
-	{
-		return 0;
-	}
-
-	L4D2PlayerRef player;
-	Skills_GetEventPlayerRefBySlot(eventIndex, GetNativeCell(2), player);
-	return player.userid;
-}
-
-public int Native_PlayerSkills_GetEventAccountId(Handle plugin, int numParams)
-{
-	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
-	if (eventIndex == -1)
-	{
-		return 0;
-	}
-
-	L4D2PlayerRef player;
-	Skills_GetEventPlayerRefBySlot(eventIndex, GetNativeCell(2), player);
-	return player.accountId;
-}
-
-public int Native_PlayerSkills_IsEventPlayerBot(Handle plugin, int numParams)
-{
-	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
-	if (eventIndex == -1)
+	KvRewind(kv);
+	if (!KvJumpToKey(kv, "skill_summary", true))
 	{
 		return false;
 	}
 
-	L4D2PlayerRef player;
-	Skills_GetEventPlayerRefBySlot(eventIndex, GetNativeCell(2), player);
-	return player.bot;
+	KvSetNum(kv, "id", g_SkillSummaries[summaryIndex].id);
+	KvSetString(kv, "map", g_SkillSummaries[summaryIndex].map);
+	KvSetNum(kv, "total_events", g_SkillSummaries[summaryIndex].totalEvents);
+	KvSetFloat(kv, "created_at", g_SkillSummaries[summaryIndex].createdAt);
+	API_WriteSummaryContextBlockCommon(kv,
+		g_SkillSummaries[summaryIndex].baseMode,
+		g_SkillSummaries[summaryIndex].configuredSurvivorLimit,
+		g_SkillSummaries[summaryIndex].configuredPlayerZombieLimit,
+		g_SkillSummaries[summaryIndex].siPoolMask,
+		g_SkillSummaries[summaryIndex].enabledSiClassCount,
+		g_SkillSummaries[summaryIndex].versusTeamSize,
+		g_SkillSummaries[summaryIndex].versusContext,
+		g_SkillSummaries[summaryIndex].roundStartSignal,
+		g_SkillSummaries[summaryIndex].roundEndSignal,
+		g_SkillSummaries[summaryIndex].roundLiveSignal);
+	API_WriteSkillSummaryEntries(kv, summaryIndex);
+
+	KvGoBack(kv);
+	KvRewind(kv);
+	return true;
 }
 
-public int Native_PlayerSkills_GetEventPlayerName(Handle plugin, int numParams)
+public int Native_PlayerSkills_IsKillSummaryValid(Handle plugin, int numParams)
 {
-	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
-	char buffer[MAX_NAME_LENGTH];
-	buffer[0] = '\0';
-
-	if (eventIndex != -1)
-	{
-		L4D2PlayerRef player;
-		Skills_GetEventPlayerRefBySlot(eventIndex, GetNativeCell(2), player);
-		strcopy(buffer, sizeof(buffer), player.name);
-	}
-
-	SetNativeString(3, buffer, GetNativeCell(4), true);
-	return 0;
+	return API_IsKillSummaryValid(GetNativeCell(1));
 }
 
-public int Native_PlayerSkills_GetEventPlayerAuth(Handle plugin, int numParams)
+public int Native_PlayerSkills_FillKillSummaryKeyValues(Handle plugin, int numParams)
 {
-	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
-	char buffer[32];
-	buffer[0] = '\0';
-
-	if (eventIndex != -1)
-	{
-		L4D2PlayerRef player;
-		Skills_GetEventPlayerRefBySlot(eventIndex, GetNativeCell(2), player);
-		strcopy(buffer, sizeof(buffer), player.auth);
-	}
-
-	SetNativeString(3, buffer, GetNativeCell(4), true);
-	return 0;
-}
-
-public int Native_PlayerSkills_GetEventAssistsCount(Handle plugin, int numParams)
-{
-	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
-	return eventIndex != -1 ? g_SkillEvents[eventIndex].assistsCount : 0;
-}
-
-public int Native_PlayerSkills_GetEventAssistScope(Handle plugin, int numParams)
-{
-	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
-	return eventIndex != -1 ? g_SkillEvents[eventIndex].assistScope : L4D2SkillAssistScope_None;
-}
-
-public int Native_PlayerSkills_GetEventDamageScope(Handle plugin, int numParams)
-{
-	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
-	return eventIndex != -1 ? g_SkillEvents[eventIndex].damageScope : L4D2SkillDamageScope_None;
-}
-
-public int Native_PlayerSkills_GetEventAssistUserId(Handle plugin, int numParams)
-{
-	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
-	int assistIndex = GetNativeCell(2);
-	return API_IsEventAssistIndexValid(eventIndex, assistIndex) ? g_SkillEvents[eventIndex].assists[assistIndex].userid : 0;
-}
-
-public int Native_PlayerSkills_GetEventAssistAccountId(Handle plugin, int numParams)
-{
-	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
-	int assistIndex = GetNativeCell(2);
-	return API_IsEventAssistIndexValid(eventIndex, assistIndex) ? g_SkillEvents[eventIndex].assists[assistIndex].accountId : 0;
-}
-
-public int Native_PlayerSkills_IsEventAssistBot(Handle plugin, int numParams)
-{
-	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
-	int assistIndex = GetNativeCell(2);
-	return API_IsEventAssistIndexValid(eventIndex, assistIndex) ? g_SkillEvents[eventIndex].assists[assistIndex].bot : false;
-}
-
-public int Native_PlayerSkills_GetEventAssistName(Handle plugin, int numParams)
-{
-	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
-	int assistIndex = GetNativeCell(2);
-	char buffer[MAX_NAME_LENGTH];
-	buffer[0] = '\0';
-
-	if (API_IsEventAssistIndexValid(eventIndex, assistIndex))
-	{
-		strcopy(buffer, sizeof(buffer), g_SkillEvents[eventIndex].assists[assistIndex].name);
-	}
-
-	SetNativeString(3, buffer, GetNativeCell(4), true);
-	return 0;
-}
-
-public int Native_PlayerSkills_GetEventAssistDamage(Handle plugin, int numParams)
-{
-	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
-	int assistIndex = GetNativeCell(2);
-	return API_IsEventAssistIndexValid(eventIndex, assistIndex) ? g_SkillEvents[eventIndex].assistDamage[assistIndex] : 0;
-}
-
-public int Native_PlayerSkills_GetEventAssistShots(Handle plugin, int numParams)
-{
-	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
-	int assistIndex = GetNativeCell(2);
-	return API_IsEventAssistIndexValid(eventIndex, assistIndex) ? g_SkillEvents[eventIndex].assistShots[assistIndex] : 0;
-}
-
-public int Native_PlayerSkills_GetEventAssistWeaponId(Handle plugin, int numParams)
-{
-	int eventIndex = API_GetEventIndexOrFail(GetNativeCell(1));
-	int assistIndex = GetNativeCell(2);
-	return API_IsEventAssistIndexValid(eventIndex, assistIndex) ? g_SkillEvents[eventIndex].assistWeaponId[assistIndex] : WEPID_NONE;
-}
-
-public int Native_PlayerSkills_GetBossType(Handle plugin, int numParams)
-{
-	int sessionIndex = API_GetBossSessionIndexById(GetNativeCell(1));
-	return sessionIndex != -1 ? g_BossSessions[sessionIndex].type : L4D2Boss_None;
-}
-
-public int Native_PlayerSkills_GetBossClient(Handle plugin, int numParams)
-{
-	int sessionIndex = API_GetBossSessionIndexById(GetNativeCell(1));
-	if (sessionIndex == -1)
-	{
-		return 0;
-	}
-
-	L4D2PlayerRef player;
-	API_GetBossPlayerRefBySlot(sessionIndex, GetNativeCell(2), player);
-	return player.ResolveClient();
-}
-
-public int Native_PlayerSkills_GetBossUserId(Handle plugin, int numParams)
-{
-	int sessionIndex = API_GetBossSessionIndexById(GetNativeCell(1));
-	if (sessionIndex == -1)
-	{
-		return 0;
-	}
-
-	L4D2PlayerRef player;
-	API_GetBossPlayerRefBySlot(sessionIndex, GetNativeCell(2), player);
-	return player.userid;
-}
-
-public int Native_PlayerSkills_GetBossAccountId(Handle plugin, int numParams)
-{
-	int sessionIndex = API_GetBossSessionIndexById(GetNativeCell(1));
-	if (sessionIndex == -1)
-	{
-		return 0;
-	}
-
-	L4D2PlayerRef player;
-	API_GetBossPlayerRefBySlot(sessionIndex, GetNativeCell(2), player);
-	return player.accountId;
-}
-
-public int Native_PlayerSkills_IsBossPlayerBot(Handle plugin, int numParams)
-{
-	int sessionIndex = API_GetBossSessionIndexById(GetNativeCell(1));
-	if (sessionIndex == -1)
+	int summaryIndex = API_GetKillSummaryIndexById(GetNativeCell(1));
+	Handle kv = GetNativeCell(2);
+	if (summaryIndex == -1 || kv == INVALID_HANDLE)
 	{
 		return false;
 	}
 
-	L4D2PlayerRef player;
-	API_GetBossPlayerRefBySlot(sessionIndex, GetNativeCell(2), player);
-	return player.bot;
-}
-
-public int Native_PlayerSkills_GetBossPlayerName(Handle plugin, int numParams)
-{
-	int sessionIndex = API_GetBossSessionIndexById(GetNativeCell(1));
-	char buffer[MAX_NAME_LENGTH];
-	buffer[0] = '\0';
-
-	if (sessionIndex != -1)
+	KvRewind(kv);
+	if (!KvJumpToKey(kv, "kill_summary", true))
 	{
-		L4D2PlayerRef player;
-		API_GetBossPlayerRefBySlot(sessionIndex, GetNativeCell(2), player);
-		strcopy(buffer, sizeof(buffer), player.name);
+		return false;
 	}
 
-	SetNativeString(3, buffer, GetNativeCell(4), true);
-	return 0;
-}
+	KvSetNum(kv, "id", g_KillSummaries[summaryIndex].id);
+	KvSetString(kv, "map", g_KillSummaries[summaryIndex].map);
+	KvSetNum(kv, "total_events", g_KillSummaries[summaryIndex].totalEvents);
+	KvSetFloat(kv, "created_at", g_KillSummaries[summaryIndex].createdAt);
+	API_WriteSummaryContextBlockCommon(kv,
+		g_KillSummaries[summaryIndex].baseMode,
+		g_KillSummaries[summaryIndex].configuredSurvivorLimit,
+		g_KillSummaries[summaryIndex].configuredPlayerZombieLimit,
+		g_KillSummaries[summaryIndex].siPoolMask,
+		g_KillSummaries[summaryIndex].enabledSiClassCount,
+		g_KillSummaries[summaryIndex].versusTeamSize,
+		g_KillSummaries[summaryIndex].versusContext,
+		g_KillSummaries[summaryIndex].roundStartSignal,
+		g_KillSummaries[summaryIndex].roundEndSignal,
+		g_KillSummaries[summaryIndex].roundLiveSignal);
+	API_WriteKillSummaryEntries(kv, summaryIndex);
 
-public int Native_PlayerSkills_GetBossPlayerAuth(Handle plugin, int numParams)
-{
-	int sessionIndex = API_GetBossSessionIndexById(GetNativeCell(1));
-	char buffer[32];
-	buffer[0] = '\0';
-
-	if (sessionIndex != -1)
-	{
-		L4D2PlayerRef player;
-		API_GetBossPlayerRefBySlot(sessionIndex, GetNativeCell(2), player);
-		strcopy(buffer, sizeof(buffer), player.auth);
-	}
-
-	SetNativeString(3, buffer, GetNativeCell(4), true);
-	return 0;
-}
-
-public int Native_PlayerSkills_GetBossMaxHealth(Handle plugin, int numParams)
-{
-	int sessionIndex = API_GetBossSessionIndexById(GetNativeCell(1));
-	return sessionIndex != -1 ? g_BossSessions[sessionIndex].maxHealth : 0;
-}
-
-public int Native_PlayerSkills_GetBossLastHealth(Handle plugin, int numParams)
-{
-	int sessionIndex = API_GetBossSessionIndexById(GetNativeCell(1));
-	return sessionIndex != -1 ? g_BossSessions[sessionIndex].lastHealth : 0;
-}
-
-public int Native_PlayerSkills_GetBossTotalDamage(Handle plugin, int numParams)
-{
-	int sessionIndex = API_GetBossSessionIndexById(GetNativeCell(1));
-	return sessionIndex != -1 ? g_BossSessions[sessionIndex].totalDamage : 0;
-}
-
-public int Native_PlayerSkills_IsBossInStasis(Handle plugin, int numParams)
-{
-	int sessionIndex = API_GetBossSessionIndexById(GetNativeCell(1));
-	return sessionIndex != -1 ? g_BossSessions[sessionIndex].tank.inStasis : false;
-}
-
-public int Native_PlayerSkills_GetBossDamageEntryCount(Handle plugin, int numParams)
-{
-	int sessionIndex = API_GetBossSessionIndexById(GetNativeCell(1));
-	return sessionIndex != -1 ? API_GetBossDamageEntryCountByIndex(sessionIndex) : 0;
-}
-
-public int Native_PlayerSkills_GetBossDamageEntryClient(Handle plugin, int numParams)
-{
-	int sessionIndex = API_GetBossSessionIndexById(GetNativeCell(1));
-	int entry = GetNativeCell(2);
-	return API_IsBossEntryValid(sessionIndex, entry) ? g_BossDamage[sessionIndex][entry].player.ResolveClient() : 0;
-}
-
-public int Native_PlayerSkills_GetBossDamageEntryUserId(Handle plugin, int numParams)
-{
-	int sessionIndex = API_GetBossSessionIndexById(GetNativeCell(1));
-	int entry = GetNativeCell(2);
-	return API_IsBossEntryValid(sessionIndex, entry) ? g_BossDamage[sessionIndex][entry].player.userid : 0;
-}
-
-public int Native_PlayerSkills_GetBossDamageEntryAccountId(Handle plugin, int numParams)
-{
-	int sessionIndex = API_GetBossSessionIndexById(GetNativeCell(1));
-	int entry = GetNativeCell(2);
-	return API_IsBossEntryValid(sessionIndex, entry) ? g_BossDamage[sessionIndex][entry].player.accountId : 0;
-}
-
-public int Native_PlayerSkills_GetBossDamageEntryDamage(Handle plugin, int numParams)
-{
-	int sessionIndex = API_GetBossSessionIndexById(GetNativeCell(1));
-	int entry = GetNativeCell(2);
-	return API_IsBossEntryValid(sessionIndex, entry) ? g_BossDamage[sessionIndex][entry].damage : 0;
-}
-
-public int Native_PlayerSkills_GetBossDamageEntryShots(Handle plugin, int numParams)
-{
-	int sessionIndex = API_GetBossSessionIndexById(GetNativeCell(1));
-	int entry = GetNativeCell(2);
-	return API_IsBossEntryValid(sessionIndex, entry) ? g_BossDamage[sessionIndex][entry].shots : 0;
-}
-
-public int Native_PlayerSkills_IsBossDamageEntryBot(Handle plugin, int numParams)
-{
-	int sessionIndex = API_GetBossSessionIndexById(GetNativeCell(1));
-	int entry = GetNativeCell(2);
-	return API_IsBossEntryValid(sessionIndex, entry) ? g_BossDamage[sessionIndex][entry].player.bot : false;
-}
-
-public int Native_PlayerSkills_GetBossDamageEntryName(Handle plugin, int numParams)
-{
-	int sessionIndex = API_GetBossSessionIndexById(GetNativeCell(1));
-	int entry = GetNativeCell(2);
-	char buffer[MAX_NAME_LENGTH];
-	buffer[0] = '\0';
-
-	if (API_IsBossEntryValid(sessionIndex, entry))
-	{
-		strcopy(buffer, sizeof(buffer), g_BossDamage[sessionIndex][entry].player.name);
-	}
-
-	SetNativeString(3, buffer, GetNativeCell(4), true);
-	return 0;
-}
-
-public int Native_PlayerSkills_GetBossDamageEntryAuth(Handle plugin, int numParams)
-{
-	int sessionIndex = API_GetBossSessionIndexById(GetNativeCell(1));
-	int entry = GetNativeCell(2);
-	char buffer[32];
-	buffer[0] = '\0';
-
-	if (API_IsBossEntryValid(sessionIndex, entry))
-	{
-		strcopy(buffer, sizeof(buffer), g_BossDamage[sessionIndex][entry].player.auth);
-	}
-
-	SetNativeString(3, buffer, GetNativeCell(4), true);
-	return 0;
+	KvGoBack(kv);
+	KvRewind(kv);
+	return true;
 }

@@ -7,7 +7,6 @@ El proyecto consolida lógica que antes estaba repartida entre varios plugins y 
 - detección basada en eventos del motor y hooks de `left4dhooks`
 - announcers de skills y bosses
 - API pública con `forward` y `KeyValues`
-- wrapper legacy para `l4d2_skill_detect`
 - documentación de flujos, interpretación y build
 
 ## Command Surface
@@ -65,7 +64,3 @@ El plugin se apoya principalmente en:
 - `left4dhooks_stocks.inc`
 - `left4dhooks_silver.inc`
 - `left4dhooks_lux_library.inc`
-
-También incluye un wrapper legacy:
-
-- `l4d2_skill_detect.sp`
