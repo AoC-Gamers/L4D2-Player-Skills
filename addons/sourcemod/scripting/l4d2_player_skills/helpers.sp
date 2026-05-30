@@ -262,42 +262,6 @@ stock bool IsValidZombieClass(int client, L4D2ZombieClassType zombieClass)
 }
 
 /**
- * @brief Checks whether a client is a valid survivor.
- *
- * @param client         Client index to inspect.
- *
- * @return               True if the client belongs to the survivor team.
- */
-stock bool IsValidSurvivor(int client)
-{
-	return IsClientOnTeam(client, L4DTeam_Survivor);
-}
-
-/**
- * @brief Checks whether a client is a valid special infected player.
- *
- * @param client         Client index to inspect.
- *
- * @return               True if the client belongs to the infected team.
- */
-stock bool IsValidInfected(int client)
-{
-	return IsClientOnTeam(client, L4DTeam_Infected);
-}
-
-/**
- * @brief Checks whether a client is a valid Tank player.
- *
- * @param client         Client index to inspect.
- *
- * @return               True if the client is infected and of Tank class.
- */
-stock bool IsValidTank(int client)
-{
-	return IsValidZombieClass(client, L4D2ZombieClass_Tank);
-}
-
-/**
  * @brief Checks whether an entity is a Witch.
  *
  * @param entity         Entity index to inspect.
@@ -924,6 +888,61 @@ stock void Skills_GetSkillTypeName(L4D2SkillType type, char[] buffer, int maxlen
 	}
 }
 
+stock void Skills_GetWeaponDisplayName(int weaponId, char[] buffer, int maxlen)
+{
+	switch (weaponId)
+	{
+		case WEPID_SNIPER_MILITARY:
+		{
+			strcopy(buffer, maxlen, "Military Sniper");
+		}
+		case WEPID_HUNTING_RIFLE:
+		{
+			strcopy(buffer, maxlen, "Hunting Rifle");
+		}
+		case WEPID_SNIPER_AWP:
+		{
+			strcopy(buffer, maxlen, "AWP");
+		}
+		case WEPID_SNIPER_SCOUT:
+		{
+			strcopy(buffer, maxlen, "Scout");
+		}
+		case WEPID_PISTOL_MAGNUM:
+		{
+			strcopy(buffer, maxlen, "Magnum");
+		}
+		case WEPID_GRENADE_LAUNCHER:
+		{
+			strcopy(buffer, maxlen, "Grenade Launcher");
+		}
+		default:
+		{
+			GetLongWeaponName(weaponId, buffer, maxlen);
+			if (buffer[0] == '\0')
+			{
+				strcopy(buffer, maxlen, "Weapon");
+			}
+		}
+	}
+}
+
+stock void Skills_GetHitgroupName(int hitgroup, char[] buffer, int maxlen)
+{
+	switch (hitgroup)
+	{
+		case HITGROUP_HEAD: strcopy(buffer, maxlen, "head");
+		case HITGROUP_CHEST: strcopy(buffer, maxlen, "chest");
+		case HITGROUP_STOMACH: strcopy(buffer, maxlen, "stomach");
+		case HITGROUP_LEFTARM: strcopy(buffer, maxlen, "left arm");
+		case HITGROUP_RIGHTARM: strcopy(buffer, maxlen, "right arm");
+		case HITGROUP_LEFTLEG: strcopy(buffer, maxlen, "left leg");
+		case HITGROUP_RIGHTLEG: strcopy(buffer, maxlen, "right leg");
+		case HITGROUP_GEAR: strcopy(buffer, maxlen, "gear");
+		default: strcopy(buffer, maxlen, "generic");
+	}
+}
+
 stock void Skills_FormatEventPlayerRoleName(int eventIndex, int slot, char[] buffer, int maxlen)
 {
 	buffer[0] = '\0';
@@ -1214,9 +1233,18 @@ stock int Skills_GetEventRating(int eventIndex)
 		{
 			return 2;
 		}
-		case L4D2Skill_SmokerSelfClear, L4D2Skill_SpecialPinClear, L4D2Skill_HunterDeadstop:
+		case L4D2Skill_SmokerSelfClear:
+		{
+			return (!g_SkillEvents[eventIndex].withShove && g_SkillEvents[eventIndex].headshot) ? 2 : 1;
+		}
+		case L4D2Skill_SpecialPinClear, L4D2Skill_HunterDeadstop:
 		{
 			return 1;
+		}
+		case L4D2Skill_SmokerKill, L4D2Skill_BoomerKill, L4D2Skill_HunterKill,
+			L4D2Skill_SpitterKill, L4D2Skill_JockeyKill, L4D2Skill_ChargerKill:
+		{
+			return g_SkillEvents[eventIndex].headshot ? 2 : 1;
 		}
 		case L4D2Skill_HunterSkeet:
 		{

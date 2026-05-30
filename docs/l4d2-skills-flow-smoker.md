@@ -86,6 +86,7 @@ Se emite `SmokerSelfClear` cuando:
 ### Properties
 
 - `with_shove`
+- `headshot` en la ruta kill
 
 ### Flow
 
@@ -98,6 +99,21 @@ flowchart TD
     E -->|no| F[Stop]
     E -->|yes| G[Emit SmokerSelfClear]
 ```
+
+Naming visual actual:
+
+- kill normal:
+  - `SelfClear`
+- kill por disparo en cabeza:
+  - `SelfClear Headshot`
+- liberación por shove:
+  - `SelfClear-Shove`
+
+Regla:
+
+- `Headshot` se trata como propiedad de ejecución;
+- `Shove` se trata como variante mecánica visible;
+- ambas siguen viviendo bajo el mismo evento base `SmokerSelfClear`.
 
 ## SpecialPinClear with Smoker
 

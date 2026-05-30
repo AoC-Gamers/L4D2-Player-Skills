@@ -82,7 +82,7 @@ Consecuencia practica:
 | Skill | Rating |
 |---|---:|
 | `SmokerTongueCut` | `2` |
-| `SmokerSelfClear` | `1` |
+| `SmokerSelfClear` | `1-2` |
 | `SpecialPinClear` | `1` |
 | `HunterDeadstop` | `1` |
 | `JockeyJumpStop` | `1` |
@@ -103,6 +103,7 @@ Consecuencia practica:
 | `CarAlarmTriggered` | `0-1` | depende de influencia de SI |
 | `HunterSkeet` | `2-3` | `2` estandar, `3` si es `headshot` o disparo perfecto |
 | `HunterSkeetMelee` | `2-3` | `2` estandar, `3` en contexto mas fuerte |
+| `SmokerSelfClear` | `1-2` | `1` estandar o shove, `2` si es `SelfClear Headshot` |
 | `JockeySkeetMelee` | `3` | skill de melee en ventana de leap, siempre de prestigio alto |
 | `ChargerLevel` | `2-3` | `2` si el Charger estaba chipeado, `3` si es `PerfectLevel` |
 | `HunterHighPounce` | `1-3` | depende del daño real del pounce |

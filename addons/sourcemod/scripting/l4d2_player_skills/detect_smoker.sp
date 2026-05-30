@@ -3,6 +3,45 @@
 #endif
 #define _l4d2_player_skills_detect_smoker_included
 
+int Detect_GetTrackedSmokerVictim(int smoker)
+{
+	if (!IsValidZombieClass(smoker, L4D2ZombieClass_Smoker))
+	{
+		return 0;
+	}
+
+	int victim = GetInfectedVictim(smoker);
+	if (IsValidSurvivor(victim))
+	{
+		return victim;
+	}
+
+	victim = g_DetectSmoker[smoker].victim;
+	return IsValidSurvivor(victim) ? victim : 0;
+}
+
+int Detect_GetTrackedSmokerByVictim(int victim)
+{
+	if (!IsValidSurvivor(victim))
+	{
+		return 0;
+	}
+
+	int smoker = g_iDetectSmokerOwnerByVictim[victim];
+	if (IsValidZombieClass(smoker, L4D2ZombieClass_Smoker) && Detect_GetTrackedSmokerVictim(smoker) == victim)
+	{
+		return smoker;
+	}
+
+	smoker = L4D_GetAttackerSmoker(victim);
+	if (IsValidZombieClass(smoker, L4D2ZombieClass_Smoker) && Detect_GetTrackedSmokerVictim(smoker) == victim)
+	{
+		return smoker;
+	}
+
+	return 0;
+}
+
 void Detect_EventChokeStart(Event event)
 {
 	if (!Skills_IsEnabled())
@@ -110,11 +149,7 @@ void Detect_EventTonguePullStopped(Event event)
 		return;
 	}
 
-	int smoker = g_iDetectSmokerOwnerByVictim[victim];
-	if (!IsValidZombieClass(smoker, L4D2ZombieClass_Smoker))
-	{
-		smoker = L4D_GetAttackerSmoker(victim);
-	}
+	int smoker = Detect_GetTrackedSmokerByVictim(victim);
 
 	bool hasReachedSmoker = false;
 	if (IsValidZombieClass(smoker, L4D2ZombieClass_Smoker))
@@ -212,7 +247,7 @@ void Detect_ResetSmoker(int smoker)
 		return;
 	}
 
-	int victim = g_DetectSmoker[smoker].victim;
+	int victim = Detect_GetTrackedSmokerVictim(smoker);
 	g_DetectSmoker[smoker].Reset();
 
 	if (victim > 0 && victim <= MaxClients && g_iDetectSmokerOwnerByVictim[victim] == smoker)

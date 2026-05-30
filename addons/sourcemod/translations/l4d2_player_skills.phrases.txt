@@ -227,46 +227,39 @@
 		"es"		"{olive}{1} {blue}hizo {green}Skeet-Melee {blue}a {olive}{2} {blue}({green}{3}{blue}), asistido por {olive}{4}{blue}."
 	}
 
-	"HunterSkeetSniper"
+	"HunterSkeetWeapon"
 	{
 		"#format"	"{1:s},{2:s},{3:s}"
-		"en"		"{olive}{1} {blue}skeeted {olive}{2} {blue}with a sniper {green}{3}{blue}."
-		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}con sniper de {green}{3}{blue}."
+		"en"		"{olive}{1} {blue}skeeted {olive}{2} {blue}with {green}{3}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}con {green}{3}{blue}."
 	}
 
-	"HunterSkeetSniperPerfect"
+	"HunterSkeetWeaponPerfect"
 	{
 		"#format"	"{1:s},{2:s},{3:s}"
-		"en"		"{olive}{1} {blue}landed a {green}Skeet Perfect {blue}on {olive}{2} {blue}with a sniper {green}{3}{blue}."
-		"es"		"{olive}{1} {blue}hizo {green}Skeet Perfecto {blue}a {olive}{2} {blue}con sniper de {green}{3}{blue}."
+		"en"		"{olive}{1} {blue}landed a {green}Skeet Perfect {blue}on {olive}{2} {blue}with {green}{3}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet Perfecto {blue}a {olive}{2} {blue}con {green}{3}{blue}."
 	}
 
-	"HunterSkeetSniperAssist"
+	"HunterSkeetWeaponHeadshot"
+	{
+		"#format"	"{1:s},{2:s},{3:s}"
+		"en"		"{olive}{1} {blue}landed a {green}Skeet Headshot {blue}on {olive}{2} {blue}with {green}{3}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet Headshot {blue}a {olive}{2} {blue}con {green}{3}{blue}."
+	}
+
+	"HunterSkeetWeaponAssist"
 	{
 		"#format"	"{1:s},{2:s},{3:s},{4:s}"
-		"en"		"{olive}{1} {blue}skeeted {olive}{2} {blue}with a sniper {green}{3}{blue}, assisted by {olive}{4}{blue}."
-		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}con sniper de {green}{3}{blue}, asistido por {olive}{4}{blue}."
+		"en"		"{olive}{1} {blue}skeeted {olive}{2} {blue}with {green}{3}{blue}, assisted by {olive}{4}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}con {green}{3}{blue}, asistido por {olive}{4}{blue}."
 	}
 
-	"HunterSkeetGL"
+	"HunterSkeetWeaponHeadshotAssist"
 	{
-		"#format"	"{1:s},{2:s},{3:d}"
-		"en"		"{olive}{1} {blue}skeeted {olive}{2} {blue}with a direct {green}Grenade Launcher {blue}hit for {green}{3} {blue}damage."
-		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}con impacto directo de {green}Grenade Launcher {blue}por {green}{3} {blue}de daño."
-	}
-
-	"HunterSkeetGLPerfect"
-	{
-		"#format"	"{1:s},{2:s},{3:d}"
-		"en"		"{olive}{1} {blue}landed a {green}Skeet Perfect {blue}on {olive}{2} {blue}with a direct {green}Grenade Launcher {blue}hit for {green}{3} {blue}damage."
-		"es"		"{olive}{1} {blue}hizo {green}Skeet Perfecto {blue}a {olive}{2} {blue}con impacto directo de {green}Grenade Launcher {blue}por {green}{3} {blue}de daño."
-	}
-
-	"HunterSkeetGLAssist"
-	{
-		"#format"	"{1:s},{2:s},{3:d},{4:s}"
-		"en"		"{olive}{1} {blue}skeeted {olive}{2} {blue}with a direct {green}Grenade Launcher {blue}hit for {green}{3} {blue}damage, assisted by {olive}{4}{blue}."
-		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}con impacto directo de {green}Grenade Launcher {blue}por {green}{3} {blue}de daño, asistido por {olive}{4}{blue}."
+		"#format"	"{1:s},{2:s},{3:s},{4:s}"
+		"en"		"{olive}{1} {blue}landed a {green}Skeet Headshot {blue}on {olive}{2} {blue}with {green}{3}{blue}, assisted by {olive}{4}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet Headshot {blue}a {olive}{2} {blue}con {green}{3}{blue}, asistido por {olive}{4}{blue}."
 	}
 
 	"PerfectSkeetSingleShot"
@@ -356,29 +349,43 @@
 	"SmokerSelfClearKill"
 	{
 		"#format"	"{1:s},{2:s}"
-		"en"		"{olive}{1} {blue}self-cleared {olive}{2}{blue}."
-		"es"		"{olive}{1} {blue}se libero de {olive}{2}{blue}."
+		"en"		"{olive}{1} {blue}landed a {green}SelfClear {blue}on {olive}{2}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}SelfClear {blue}a {olive}{2}{blue}."
 	}
 
 	"SmokerSelfClearKillAssist"
 	{
 		"#format"	"{1:s},{2:s},{3:s}"
-		"en"		"{olive}{1} {blue}self-cleared {olive}{2}{blue}, assisted by {olive}{3}{blue}."
-		"es"		"{olive}{1} {blue}se libero de {olive}{2}{blue}, asistido por {olive}{3}{blue}."
+		"en"		"{olive}{1} {blue}landed a {green}SelfClear {blue}on {olive}{2}{blue}, assisted by {olive}{3}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}SelfClear {blue}a {olive}{2}{blue}, asistido por {olive}{3}{blue}."
+	}
+
+	"SmokerSelfClearHeadshot"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"{olive}{1} {blue}landed a {green}SelfClear Headshot {blue}on {olive}{2}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}SelfClear Headshot {blue}a {olive}{2}{blue}."
+	}
+
+	"SmokerSelfClearHeadshotAssist"
+	{
+		"#format"	"{1:s},{2:s},{3:s}"
+		"en"		"{olive}{1} {blue}landed a {green}SelfClear Headshot {blue}on {olive}{2}{blue}, assisted by {olive}{3}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}SelfClear Headshot {blue}a {olive}{2}{blue}, asistido por {olive}{3}{blue}."
 	}
 
 	"SmokerSelfClearShove"
 	{
 		"#format"	"{1:s},{2:s}"
-		"en"		"{olive}{1} {blue}shove-cleared {olive}{2}{blue}."
-		"es"		"{olive}{1} {blue}se libero de {olive}{2} {blue}con empujón."
+		"en"		"{olive}{1} {blue}landed a {green}SelfClear-Shove {blue}on {olive}{2}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}SelfClear-Shove {blue}a {olive}{2}{blue}."
 	}
 
 	"SmokerSelfClearShoveAssist"
 	{
 		"#format"	"{1:s},{2:s},{3:s}"
-		"en"		"{olive}{1} {blue}shove-cleared {olive}{2}{blue}, assisted by {olive}{3}{blue}."
-		"es"		"{olive}{1} {blue}se libero de {olive}{2} {blue}con empujón, asistido por {olive}{3}{blue}."
+		"en"		"{olive}{1} {blue}landed a {green}SelfClear-Shove {blue}on {olive}{2}{blue}, assisted by {olive}{3}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}SelfClear-Shove {blue}a {olive}{2}{blue}, asistido por {olive}{3}{blue}."
 	}
 
 	"BoomerPopBot"
@@ -395,6 +402,20 @@
 		"es"		"{olive}{1} {blue}revento a {olive}Boomer (IA) {blue}en {green}{2}s{blue}, asistido por {olive}{3}{blue}."
 	}
 
+	"BoomerPopBotHeadshot"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"{olive}{1} {blue}popped {olive}Boomer (IA) {green}Headshot {blue}in {green}{2}s{blue}."
+		"es"		"{olive}{1} {blue}revento a {olive}Boomer (IA) {green}Headshot {blue}en {green}{2}s{blue}."
+	}
+
+	"BoomerPopBotHeadshotAssist"
+	{
+		"#format"	"{1:s},{2:s},{3:s}"
+		"en"		"{olive}{1} {blue}popped {olive}Boomer (IA) {green}Headshot {blue}in {green}{2}s{blue}, assisted by {olive}{3}{blue}."
+		"es"		"{olive}{1} {blue}revento a {olive}Boomer (IA) {green}Headshot {blue}en {green}{2}s{blue}, asistido por {olive}{3}{blue}."
+	}
+
 	"BoomerPopPlayer"
 	{
 		"#format"	"{1:s},{2:s},{3:s}"
@@ -407,6 +428,20 @@
 		"#format"	"{1:s},{2:s},{3:s},{4:s}"
 		"en"		"{olive}{1} {blue}popped {olive}{2} {blue}in {green}{3}s{blue}, assisted by {olive}{4}{blue}."
 		"es"		"{olive}{1} {blue}revento a {olive}{2} {blue}en {green}{3}s{blue}, asistido por {olive}{4}{blue}."
+	}
+
+	"BoomerPopPlayerHeadshot"
+	{
+		"#format"	"{1:s},{2:s},{3:s}"
+		"en"		"{olive}{1} {blue}popped {olive}{2} {green}Headshot {blue}in {green}{3}s{blue}."
+		"es"		"{olive}{1} {blue}revento a {olive}{2} {green}Headshot {blue}en {green}{3}s{blue}."
+	}
+
+	"BoomerPopPlayerHeadshotAssist"
+	{
+		"#format"	"{1:s},{2:s},{3:s},{4:s}"
+		"en"		"{olive}{1} {blue}popped {olive}{2} {green}Headshot {blue}in {green}{3}s{blue}, assisted by {olive}{4}{blue}."
+		"es"		"{olive}{1} {blue}revento a {olive}{2} {green}Headshot {blue}en {green}{3}s{blue}, asistido por {olive}{4}{blue}."
 	}
 
 	"BoomerVomitLandedSingle"
@@ -757,6 +792,13 @@
 		"#format"	"{1:s},{2:s},{3:s}"
 		"en"		"{olive}{1} {blue}died to {olive}{2} {blue}({green}{3}{blue})"
 		"es"		"{olive}{1} {blue}murio por {olive}{2} {blue}({green}{3}{blue})"
+	}
+
+	"SpecialInfectedKillLeadHeadshot"
+	{
+		"#format"	"{1:s},{2:s},{3:s}"
+		"en"		"{olive}{1} {blue}died to {olive}{2} {green}Headshot {blue}({green}{3}{blue})"
+		"es"		"{olive}{1} {blue}murio por {olive}{2} {green}Headshot {blue}({green}{3}{blue})"
 	}
 
 	"SpecialInfectedKillAssistHead"

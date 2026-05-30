@@ -6,8 +6,7 @@
 #include <sdktools>
 #include <console_table>
 #include <left4dhooks>
-#include <l4d2util_weapons>
-#include <l4d2util_constants>
+#include <l4d2util>
 
 #define MAX_MESSAGE_LENGTH 512
 #include <colors>

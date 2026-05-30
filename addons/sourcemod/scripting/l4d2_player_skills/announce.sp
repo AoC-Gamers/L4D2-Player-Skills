@@ -1249,46 +1249,34 @@ void Announce_Skill(int eventId)
 		case L4D2Skill_HunterSkeet:
 		{
 			char assistList[256];
+			char weaponName[64];
 			Announce_FormatAssistList(eventIndex, assistList, sizeof(assistList));
+			Skills_GetWeaponDisplayName(g_SkillEvents[eventIndex].actorWeaponId, weaponName, sizeof(weaponName));
 
-			if (g_SkillEvents[eventIndex].grenadeLauncher)
+			if (g_SkillEvents[eventIndex].grenadeLauncher || g_SkillEvents[eventIndex].sniper)
 			{
-				if (g_SkillEvents[eventIndex].perfect)
+				if (g_SkillEvents[eventIndex].headshot)
 				{
-					CPrintToChatAll("%s %t", tag, "HunterSkeetGLPerfect", actorName, victimName, g_SkillEvents[eventIndex].damage);
+					if (g_SkillEvents[eventIndex].assistsCount > 0)
+					{
+						CPrintToChatAll("%s %t", tag, "HunterSkeetWeaponHeadshotAssist", actorName, victimName, weaponName, assistList);
+					}
+					else
+					{
+						CPrintToChatAll("%s %t", tag, "HunterSkeetWeaponHeadshot", actorName, victimName, weaponName);
+					}
+				}
+				else if (g_SkillEvents[eventIndex].perfect)
+				{
+					CPrintToChatAll("%s %t", tag, "HunterSkeetWeaponPerfect", actorName, victimName, weaponName);
 				}
 				else if (g_SkillEvents[eventIndex].assistsCount > 0)
 				{
-					CPrintToChatAll("%s %t", tag, "HunterSkeetGLAssist", actorName, victimName, g_SkillEvents[eventIndex].damage, assistList);
+					CPrintToChatAll("%s %t", tag, "HunterSkeetWeaponAssist", actorName, victimName, weaponName, assistList);
 				}
 				else
 				{
-					CPrintToChatAll("%s %t", tag,
-						"HunterSkeetGL",
-						actorName,
-						victimName,
-						g_SkillEvents[eventIndex].damage);
-				}
-			}
-			else if (g_SkillEvents[eventIndex].sniper)
-			{
-				char hitType[16];
-				strcopy(hitType, sizeof(hitType), g_SkillEvents[eventIndex].headshot ? "headshot" : "shot");
-				if (g_SkillEvents[eventIndex].perfect)
-				{
-					CPrintToChatAll("%s %t", tag, "HunterSkeetSniperPerfect", actorName, victimName, hitType);
-				}
-				else if (g_SkillEvents[eventIndex].assistsCount > 0)
-				{
-					CPrintToChatAll("%s %t", tag, "HunterSkeetSniperAssist", actorName, victimName, hitType, assistList);
-				}
-				else
-				{
-					CPrintToChatAll("%s %t", tag,
-						"HunterSkeetSniper",
-						actorName,
-						victimName,
-						hitType);
+					CPrintToChatAll("%s %t", tag, "HunterSkeetWeapon", actorName, victimName, weaponName);
 				}
 			}
 			else if (g_SkillEvents[eventIndex].perfect)
@@ -1466,7 +1454,9 @@ void Announce_Skill(int eventId)
 			CPrintToChatAll("%s %t", tag,
 				g_SkillEvents[eventIndex].withShove
 					? (g_SkillEvents[eventIndex].assistsCount > 0 ? "SmokerSelfClearShoveAssist" : "SmokerSelfClearShove")
-					: (g_SkillEvents[eventIndex].assistsCount > 0 ? "SmokerSelfClearKillAssist" : "SmokerSelfClearKill"),
+					: (g_SkillEvents[eventIndex].headshot
+						? (g_SkillEvents[eventIndex].assistsCount > 0 ? "SmokerSelfClearHeadshotAssist" : "SmokerSelfClearHeadshot")
+						: (g_SkillEvents[eventIndex].assistsCount > 0 ? "SmokerSelfClearKillAssist" : "SmokerSelfClearKill")),
 				actorName,
 				victimName,
 				assistList);
@@ -1482,7 +1472,9 @@ void Announce_Skill(int eventId)
 			if (g_SkillEvents[eventIndex].victim.bot)
 			{
 				CPrintToChatAll("%s %t", tag,
-					g_SkillEvents[eventIndex].assistsCount > 0 ? "BoomerPopBotAssist" : "BoomerPopBot",
+					g_SkillEvents[eventIndex].headshot
+						? (g_SkillEvents[eventIndex].assistsCount > 0 ? "BoomerPopBotHeadshotAssist" : "BoomerPopBotHeadshot")
+						: (g_SkillEvents[eventIndex].assistsCount > 0 ? "BoomerPopBotAssist" : "BoomerPopBot"),
 					actorName,
 					timeText,
 					assistList);
@@ -1490,7 +1482,9 @@ void Announce_Skill(int eventId)
 			else
 			{
 				CPrintToChatAll("%s %t", tag,
-					g_SkillEvents[eventIndex].assistsCount > 0 ? "BoomerPopPlayerAssist" : "BoomerPopPlayer",
+					g_SkillEvents[eventIndex].headshot
+						? (g_SkillEvents[eventIndex].assistsCount > 0 ? "BoomerPopPlayerHeadshotAssist" : "BoomerPopPlayerHeadshot")
+						: (g_SkillEvents[eventIndex].assistsCount > 0 ? "BoomerPopPlayerAssist" : "BoomerPopPlayer"),
 					actorName,
 					victimName,
 					timeText,
@@ -1867,7 +1861,8 @@ void Announce_Skill(int eventId)
 				actorStat,
 				sizeof(actorStat));
 
-			FormatEx(line, sizeof(line), "%T", "SpecialInfectedKillLead",
+			FormatEx(line, sizeof(line), "%T",
+				g_SkillEvents[eventIndex].headshot ? "SpecialInfectedKillLeadHeadshot" : "SpecialInfectedKillLead",
 				LANG_SERVER,
 				victimName,
 				actorName,

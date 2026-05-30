@@ -152,7 +152,9 @@ Reglas:
   - `Skeet-Rock`
 - las propiedades no forman parte del nombre base
   - `Skeet Perfecto`
+  - `Skeet Headshot`
   - `Level Perfecto`
+  - `SelfClear Headshot`
 - el nombre interno del enum no debe imprimirse directo en chat
   - evitar `PerfectSkeet`, `PerfectLevel`, `SkeetMelee`, `RockSkeet`
 - el nombre base va primero y el modificador técnico después
@@ -173,6 +175,14 @@ Entonces:
 - `chipDamage` y `perfect` describen el contexto;
 - `headshot`, `sniper` o `grenadeLauncher` describen la variante técnica del kill shot sin obligar a crear otro evento base;
 - si una kill en pounce no califica como `HunterSkeet` ni siquiera contra baseline completo, no debe emitirse como skill principal separada.
+
+Regla visual actual para ranged skeets:
+
+- `Headshot` y `Perfecto` se tratan como propiedades;
+- si ambas aplican, `Headshot` tiene prioridad visual;
+- el arma va al final como contexto:
+  - `Skeet Headshot ... con Military Sniper`
+  - `Skeet Perfecto ... con Grenade Launcher`
 
 Esto evita degradar automáticamente una jugada fuerte solo porque otro daño previo ya redujo la vida del Hunter.
 
@@ -214,6 +224,26 @@ En ese caso, el contexto adicional sigue siendo útil:
 - `perfect` marca que el Hunter murió en pounce y con vida completa;
 - `headshot` existe como metadata cuando aplica a la jugada detectada.
 - `reportedHigh` marca que el deadstop ocurrió sobre un high pounce detectado por el juego.
+
+## 5.3. Caso Smoker SelfClear
+
+`SmokerSelfClear` sigue siendo una sola habilidad base:
+
+- `SelfClear`
+
+Sus variantes visibles viven como propiedades o forma mecánica:
+
+- `SelfClear Headshot`
+  - propiedad de ejecución sobre la ruta kill;
+- `SelfClear-Shove`
+  - variante mecánica distinta dentro del mismo evento base `SmokerSelfClear`.
+
+Entonces:
+
+- `TongueCut` sigue siendo una skill separada;
+- `SelfClear` cubre la liberación propia cuando el `Smoker` ya llegó;
+- `Headshot` no crea otro skill type;
+- `Shove` se expresa como naming visual compuesto.
 
 ---
 

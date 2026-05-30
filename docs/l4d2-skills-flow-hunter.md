@@ -53,6 +53,19 @@ La variante técnica se expresa con propiedades:
 - `sniper`
 - `grenade_launcher`
 - `headshot`
+- `perfect`
+
+Regla visual actual:
+
+- `Skeet` es la habilidad base;
+- `Headshot` y `Perfecto` son propiedades;
+- si `headshot` y `perfect` coinciden, el announce prioriza `Headshot`;
+- el arma visible se imprime como contexto:
+  - `con Military Sniper`
+  - `con AWP`
+  - `con Scout`
+  - `con Magnum`
+  - `con Grenade Launcher`
 
 ### Properties
 
@@ -71,9 +84,10 @@ Notas:
 - `damage` y `actor_damage` deben representar daño efectivo de la jugada, no
   `raw damage` inflado del blast final;
 - el announce visible usa:
-  - `Skeet Perfecto ... (damage/shots)`
-  - `Skeet ... (damage/shots)`
-  - `Skeet ... (damage/shots), asistido por ...`
+  - `Skeet Headshot ... con {arma}`
+  - `Skeet Perfecto ... con {arma}`
+  - `Skeet ... con {arma}, asistido por ...`
+  - `Skeet ... (damage/shots)` en la ruta no-ranged tradicional
 
 ### Flow
 

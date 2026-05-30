@@ -558,6 +558,14 @@ event
 }
 ```
 
+Notas:
+
+- `HunterSkeet` sigue siendo el evento base;
+- `headshot`, `perfect`, `sniper` y `grenade_launcher` viven como propiedades;
+- en chat, `Headshot` tiene prioridad visual sobre `Perfecto` cuando ambas
+  aplican;
+- el arma visible se deriva de `actor_weaponid`.
+
 ### HunterSkeetMelee
 
 ```text
@@ -1490,6 +1498,10 @@ Ejemplos:
 - `TankRockSkeet` y `TankRockHit` no agregan propiedades especiales hoy
 - `CarAlarmTriggered` usa `reason`, `indirect` y `forced`; además puede incluir el infectado responsable en `victim`
 - `BunnyHopStreak` necesita `streak` y `max_velocity`
+- `SmokerSelfClear`
+  - puede incluir `with_shove` y `headshot`;
+  - `with_shove` identifica la variante mecánica `SelfClear-Shove`;
+  - `headshot` identifica la propiedad visual `SelfClear Headshot` en la ruta kill
 
 Notas prácticas:
 
@@ -1519,7 +1531,12 @@ Ejemplos:
 
 - `HunterSkeet`
   - payload puede incluir `chip_damage`;
-  - chat puede omitir la palabra `chip` y mostrar solo `(damage/shots)` y assists.
+  - chat puede omitir la palabra `chip` y mostrar solo `(damage/shots)` y assists;
+  - el chat puede preferir `Skeet Headshot` o `Skeet Perfecto` segun la prioridad visual actual.
 - `ChargerLevel`
   - payload puede incluir `chip_damage`;
   - chat puede mostrar `Level (dmg/shots)` en vez de wording explicito de chip.
+- `SmokerSelfClear`
+  - payload puede incluir `with_shove` y `headshot`;
+  - chat puede mostrar `SelfClear`, `SelfClear Headshot` o `SelfClear-Shove`
+    sin cambiar el `skill type` base.

@@ -153,10 +153,17 @@ La tabla survivor no debe mapear una phrase por columna. Debe agrupar por famili
 
 Incluye:
 
-- `SkeetSingleShot`
-- `SkeetMultiShot`
-- `HunterSkeetSniper`
-- `HunterSkeetGL`
+- `HunterSkeet`
+  - variantes de shotgun
+  - variantes con arma visible como:
+    - `Skeet ... con Military Sniper`
+    - `Skeet ... con AWP`
+    - `Skeet ... con Scout`
+    - `Skeet ... con Magnum`
+    - `Skeet ... con Grenade Launcher`
+  - variantes con propiedad:
+    - `Skeet Headshot`
+    - `Skeet Perfecto`
 
 #### SkeetPerfect
 
@@ -202,8 +209,10 @@ Incluye:
 
 Incluye:
 
-- `SmokerSelfClearKill`
-- `SmokerSelfClearShove`
+- `SmokerSelfClear`
+  - `SelfClear`
+  - `SelfClear Headshot`
+  - `SelfClear-Shove`
 
 #### BoomerPops
 
