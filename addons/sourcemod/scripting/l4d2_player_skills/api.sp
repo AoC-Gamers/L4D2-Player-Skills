@@ -876,12 +876,31 @@ void API_WriteEventAssists(Handle kv, int eventIndex)
 	KvGoBack(kv);
 }
 
-void API_WriteEventSpecialRoles(Handle kv, int eventIndex)
+bool API_ShouldWriteEventVictimKeys(int eventIndex, L4D2ApiEventFamily family)
 {
-	if (g_SkillEvents[eventIndex].victim.userid > 0
-		|| g_SkillEvents[eventIndex].victim.accountId > 0
-		|| g_SkillEvents[eventIndex].victim.bot
-		|| g_SkillEvents[eventIndex].victim.name[0] != '\0')
+	if (family != L4D2ApiEventFamily_BossEvent)
+	{
+		return true;
+	}
+
+	switch (g_SkillEvents[eventIndex].type)
+	{
+		case L4D2Skill_TankDead, L4D2Skill_WitchDead, L4D2Skill_WitchCrown:
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+void API_WriteEventSpecialRoles(Handle kv, int eventIndex, L4D2ApiEventFamily family)
+{
+	if (API_ShouldWriteEventVictimKeys(eventIndex, family)
+		&& (g_SkillEvents[eventIndex].victim.userid > 0
+			|| g_SkillEvents[eventIndex].victim.accountId > 0
+			|| g_SkillEvents[eventIndex].victim.bot
+			|| g_SkillEvents[eventIndex].victim.name[0] != '\0'))
 	{
 		API_SetEventPlayerKeys(kv, "victim", g_SkillEvents[eventIndex].victim);
 	}
@@ -894,6 +913,19 @@ void API_WriteEventSpecialRoles(Handle kv, int eventIndex)
 	API_SetEventPlayerKeys(kv, "pinvictim", g_SkillEvents[eventIndex].pinVictim);
 }
 
+bool API_ShouldWriteActorWeaponId(int eventIndex)
+{
+	switch (g_SkillEvents[eventIndex].type)
+	{
+		case L4D2Skill_WitchDead:
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
 void API_WriteEventSkillProperties(Handle kv, int eventIndex)
 {
 	if (!KvJumpToKey(kv, "properties", true))
@@ -901,34 +933,15 @@ void API_WriteEventSkillProperties(Handle kv, int eventIndex)
 		return;
 	}
 
-	if (g_SkillEvents[eventIndex].damage > 0)
-	{
-		KvSetNum(kv, "damage", g_SkillEvents[eventIndex].damage);
-	}
-
 	if (g_SkillEvents[eventIndex].actorDamage > 0)
 	{
 		KvSetNum(kv, "actor_damage", g_SkillEvents[eventIndex].actorDamage);
 	}
 
-	if (g_SkillEvents[eventIndex].assisterDamage > 0)
+	if (API_ShouldWriteActorWeaponId(eventIndex)
+		&& g_SkillEvents[eventIndex].actorWeaponId > WEPID_NONE)
 	{
-		KvSetNum(kv, "assister_damage", g_SkillEvents[eventIndex].assisterDamage);
-	}
-
-	if (g_SkillEvents[eventIndex].assisterShots > 0)
-	{
-		KvSetNum(kv, "assister_shots", g_SkillEvents[eventIndex].assisterShots);
-	}
-
-	if (g_SkillEvents[eventIndex].assistScope != L4D2SkillAssistScope_None)
-	{
-		KvSetNum(kv, "assist_scope", g_SkillEvents[eventIndex].assistScope);
-	}
-
-	if (g_SkillEvents[eventIndex].damageScope != L4D2SkillDamageScope_None)
-	{
-		KvSetNum(kv, "damage_scope", g_SkillEvents[eventIndex].damageScope);
+		KvSetNum(kv, "actor_weaponid", g_SkillEvents[eventIndex].actorWeaponId);
 	}
 
 	if (g_SkillEvents[eventIndex].chipDamage > 0)
@@ -1028,6 +1041,68 @@ void API_WriteBossDamageEntries(Handle kv, int sessionIndex)
 	KvGoBack(kv);
 }
 
+int API_GetTankControlEntryCountByIndex(int sessionIndex)
+{
+	int count = 0;
+	for (int entry = 0; entry < g_BossSessions[sessionIndex].tank.controlCount && entry < L4D2_SKILLS_MAX_TANK_CONTROLS; entry++)
+	{
+		if (g_BossSessions[sessionIndex].tank.controls[entry].active)
+		{
+			count++;
+		}
+	}
+
+	return count;
+}
+
+void API_WriteBossTankControls(Handle kv, int sessionIndex)
+{
+	int count = API_GetTankControlEntryCountByIndex(sessionIndex);
+	KvSetNum(kv, "tank_control_count", count);
+	if (!KvJumpToKey(kv, "tank_control", true))
+	{
+		return;
+	}
+
+	int writeIndex = 0;
+	for (int entry = 0; entry < g_BossSessions[sessionIndex].tank.controlCount && entry < L4D2_SKILLS_MAX_TANK_CONTROLS; entry++)
+	{
+		if (!g_BossSessions[sessionIndex].tank.controls[entry].active)
+		{
+			continue;
+		}
+
+		char entryKey[8];
+		IntToString(writeIndex++, entryKey, sizeof(entryKey));
+		if (!KvJumpToKey(kv, entryKey, true))
+		{
+			continue;
+		}
+
+		KvSetNum(kv, "userid", g_BossSessions[sessionIndex].tank.controls[entry].player.userid);
+		KvSetNum(kv, "accountid", g_BossSessions[sessionIndex].tank.controls[entry].player.accountId);
+		KvSetString(kv, "name", g_BossSessions[sessionIndex].tank.controls[entry].player.name);
+		KvSetNum(kv, "bot", g_BossSessions[sessionIndex].tank.controls[entry].player.bot ? 1 : 0);
+
+		float controlTime = g_BossSessions[sessionIndex].tank.controls[entry].controlTime;
+		if (g_BossSessions[sessionIndex].tank.controls[entry].startedAt > 0.0)
+		{
+			controlTime += GetGameTime() - g_BossSessions[sessionIndex].tank.controls[entry].startedAt;
+		}
+			KvSetFloat(kv, "control_time", controlTime);
+			if (g_BossSessions[sessionIndex].tank.controls[entry].overflow)
+			{
+				KvSetNum(kv, "overflow", 1);
+				KvSetNum(kv, "merged_controls", g_BossSessions[sessionIndex].tank.controls[entry].mergedControls);
+			}
+			KvSetNum(kv, "rocks_thrown", g_BossSessions[sessionIndex].tank.controls[entry].rocksThrown);
+			KvSetNum(kv, "rocks_hit", g_BossSessions[sessionIndex].tank.controls[entry].rocksHit);
+			KvGoBack(kv);
+	}
+
+	KvGoBack(kv);
+}
+
 void API_WriteBossSessionKeyValues(Handle kv, int sessionIndex)
 {
 	if (sessionIndex < 0 || sessionIndex >= L4D2_SKILLS_MAX_BOSSES || g_BossSessions[sessionIndex].id == 0)
@@ -1043,11 +1118,7 @@ void API_WriteBossSessionKeyValues(Handle kv, int sessionIndex)
 	KvSetNum(kv, "id", g_BossSessions[sessionIndex].id);
 	KvSetNum(kv, "type", g_BossSessions[sessionIndex].type);
 	KvSetNum(kv, "state", g_BossSessions[sessionIndex].state);
-	KvSetNum(kv, "max_health", g_BossSessions[sessionIndex].maxHealth);
-	KvSetNum(kv, "last_health", g_BossSessions[sessionIndex].lastHealth);
 	KvSetNum(kv, "total_damage", g_BossSessions[sessionIndex].totalDamage);
-	KvSetFloat(kv, "started_at", g_BossSessions[sessionIndex].startedAt);
-	KvSetFloat(kv, "closed_at", g_BossSessions[sessionIndex].closedAt);
 
 	float aliveTime = 0.0;
 	if (g_BossSessions[sessionIndex].startedAt > 0.0)
@@ -1057,8 +1128,6 @@ void API_WriteBossSessionKeyValues(Handle kv, int sessionIndex)
 	}
 	KvSetFloat(kv, "alive_time", aliveTime);
 
-	API_SetEventPlayerKeys(kv, "owner", g_BossSessions[sessionIndex].owner);
-	API_SetEventPlayerKeys(kv, "pending_owner", g_BossSessions[sessionIndex].tank.pendingOwner);
 	API_WriteBossDamageEntries(kv, sessionIndex);
 
 	switch (g_BossSessions[sessionIndex].type)
@@ -1067,80 +1136,40 @@ void API_WriteBossSessionKeyValues(Handle kv, int sessionIndex)
 		{
 			if (KvJumpToKey(kv, "tank_session", true))
 			{
-				KvSetNum(kv, "rocks_thrown", g_BossSessions[sessionIndex].tank.rocksThrown);
-				KvSetNum(kv, "rocks_hit", g_BossSessions[sessionIndex].tank.rocksHit);
 				KvSetNum(kv, "in_stasis", g_BossSessions[sessionIndex].tank.inStasis ? 1 : 0);
 				KvSetNum(kv, "end_reason", g_BossSessions[sessionIndex].tank.endReason);
 				KvGoBack(kv);
 			}
+
+			API_WriteBossTankControls(kv, sessionIndex);
 		}
 
-		case L4D2Boss_Witch:
-		{
-			if (KvJumpToKey(kv, "witch_session", true))
+			case L4D2Boss_Witch:
 			{
-				KvSetNum(kv, "startled", g_BossSessions[sessionIndex].witch.startled ? 1 : 0);
-				KvSetNum(kv, "crown_detected", g_BossSessions[sessionIndex].witch.crownDetected ? 1 : 0);
-				KvGoBack(kv);
+				if (KvJumpToKey(kv, "witch_session", true))
+				{
+					KvSetNum(kv, "startled", g_BossSessions[sessionIndex].witch.startled ? 1 : 0);
+					KvSetNum(kv, "crown_detected", g_BossSessions[sessionIndex].witch.crownDetected ? 1 : 0);
+
+					if (g_BossSessions[sessionIndex].witch.harasser.userid > 0 || g_BossSessions[sessionIndex].witch.harasser.name[0] != '\0')
+					{
+						API_SetEventPlayerKeys(kv, "harasser", g_BossSessions[sessionIndex].witch.harasser);
+					}
+
+					if (g_BossSessions[sessionIndex].witch.incapVictim.userid > 0 || g_BossSessions[sessionIndex].witch.incapVictim.name[0] != '\0')
+					{
+						API_SetEventPlayerKeys(kv, "incap_victim", g_BossSessions[sessionIndex].witch.incapVictim);
+					}
+
+					if (g_BossSessions[sessionIndex].witch.crowner.userid > 0 || g_BossSessions[sessionIndex].witch.crowner.name[0] != '\0')
+					{
+						API_SetEventPlayerKeys(kv, "crowner", g_BossSessions[sessionIndex].witch.crowner);
+					}
+
+					KvGoBack(kv);
+				}
 			}
 		}
-	}
-
-	KvGoBack(kv);
-}
-
-void API_WriteEventContextBlock(Handle kv)
-{
-	if (!KvJumpToKey(kv, "context", true))
-	{
-		return;
-	}
-
-	char baseModeName[24];
-	char versusContextName[32];
-	Skills_GetModeBaseName(g_Runtime.baseMode, baseModeName, sizeof(baseModeName));
-	Skills_GetVersusContextName(g_Runtime.versusContext, versusContextName, sizeof(versusContextName));
-
-	KvSetNum(kv, "base_mode", g_Runtime.baseMode);
-	KvSetString(kv, "base_mode_name", baseModeName);
-	KvSetNum(kv, "survivor_limit", g_Runtime.configuredSurvivorLimit);
-	KvSetNum(kv, "infected_limit", g_Runtime.configuredPlayerZombieLimit);
-	KvSetNum(kv, "si_pool_mask", g_Runtime.siPoolMask);
-	KvSetNum(kv, "enabled_si_classes", g_Runtime.enabledSiClassCount);
-	KvSetNum(kv, "team_size", g_Runtime.versusTeamSize);
-	KvSetNum(kv, "versus_context", g_Runtime.versusContext);
-	KvSetString(kv, "versus_context_name", versusContextName);
-	KvSetNum(kv, "round_start_signal", g_Runtime.roundStartSignal);
-	KvSetNum(kv, "round_end_signal", g_Runtime.roundEndSignal);
-	KvSetNum(kv, "round_live_signal", g_Runtime.roundLiveSignal);
-
-	KvGoBack(kv);
-}
-
-void API_WriteSummaryContextBlockCommon(Handle kv, PlayerSkillsGameMode baseMode, int survivorLimit, int infectedLimit, int siPoolMask, int enabledSiClasses, int teamSize, PlayerSkillsVersusContextType versusContext, PlayerSkillsRoundStartSignalType roundStartSignal, PlayerSkillsRoundEndSignalType roundEndSignal, PlayerSkillsRoundLiveSignalType roundLiveSignal)
-{
-	if (!KvJumpToKey(kv, "context", true))
-	{
-		return;
-	}
-
-	char baseModeName[24];
-	char versusContextName[32];
-	Skills_GetModeBaseName(baseMode, baseModeName, sizeof(baseModeName));
-	Skills_GetVersusContextName(versusContext, versusContextName, sizeof(versusContextName));
-
-	KvSetNum(kv, "base_mode", baseMode);
-	KvSetString(kv, "base_mode_name", baseModeName);
-	KvSetNum(kv, "survivor_limit", survivorLimit);
-	KvSetNum(kv, "infected_limit", infectedLimit);
-	KvSetNum(kv, "si_pool_mask", siPoolMask);
-	KvSetNum(kv, "enabled_si_classes", enabledSiClasses);
-	KvSetNum(kv, "team_size", teamSize);
-	KvSetNum(kv, "versus_context", versusContext);
-	KvSetString(kv, "versus_context_name", versusContextName);
-	KvSetNum(kv, "round_start_signal", roundStartSignal);
-	KvSetNum(kv, "round_end_signal", roundEndSignal);
-	KvSetNum(kv, "round_live_signal", roundLiveSignal);
 
 	KvGoBack(kv);
 }
@@ -1290,7 +1319,6 @@ bool API_WriteEventKeyValuesForFamily(Handle kv, int eventIndex, L4D2ApiEventFam
 {
 	char rootKey[32];
 	rootKey[0] = '\0';
-	char typeName[48];
 	int publicTypeId = 0;
 
 	switch (family)
@@ -1300,7 +1328,6 @@ bool API_WriteEventKeyValuesForFamily(Handle kv, int eventIndex, L4D2ApiEventFam
 			strcopy(rootKey, sizeof(rootKey), "skill_event");
 			L4D2ApiSkillType publicType = API_MapSkillType(g_SkillEvents[eventIndex].type);
 			publicTypeId = view_as<int>(publicType);
-			API_GetSkillTypeName(publicType, typeName, sizeof(typeName));
 		}
 
 		case L4D2ApiEventFamily_Kill:
@@ -1308,7 +1335,6 @@ bool API_WriteEventKeyValuesForFamily(Handle kv, int eventIndex, L4D2ApiEventFam
 			strcopy(rootKey, sizeof(rootKey), "kill_event");
 			L4D2ApiKillType publicType = API_MapKillType(g_SkillEvents[eventIndex].type);
 			publicTypeId = view_as<int>(publicType);
-			API_GetKillTypeName(publicType, typeName, sizeof(typeName));
 		}
 
 		case L4D2ApiEventFamily_BossEvent:
@@ -1316,7 +1342,6 @@ bool API_WriteEventKeyValuesForFamily(Handle kv, int eventIndex, L4D2ApiEventFam
 			strcopy(rootKey, sizeof(rootKey), "boss_event");
 			L4D2ApiBossEventType publicType = API_MapBossEventType(g_SkillEvents[eventIndex].type);
 			publicTypeId = view_as<int>(publicType);
-			API_GetBossEventTypeName(publicType, typeName, sizeof(typeName));
 		}
 
 		default:
@@ -1333,12 +1358,10 @@ bool API_WriteEventKeyValuesForFamily(Handle kv, int eventIndex, L4D2ApiEventFam
 
 	KvSetNum(kv, "id", g_SkillEvents[eventIndex].id);
 	KvSetNum(kv, "type_id", publicTypeId);
-	KvSetString(kv, "type_name", typeName);
-
-	API_WriteEventContextBlock(kv);
+	KvSetNum(kv, "base_mode", g_Runtime.baseMode);
 	API_SetEventPlayerKeys(kv, "actor", g_SkillEvents[eventIndex].actor);
 	API_WriteEventAssists(kv, eventIndex);
-	API_WriteEventSpecialRoles(kv, eventIndex);
+	API_WriteEventSpecialRoles(kv, eventIndex, family);
 	API_WriteEventSkillProperties(kv, eventIndex);
 
 	if (family == L4D2ApiEventFamily_BossEvent)
@@ -1458,20 +1481,9 @@ public int Native_PlayerSkills_FillSkillSummaryKeyValues(Handle plugin, int numP
 	}
 
 	KvSetNum(kv, "id", g_SkillSummaries[summaryIndex].id);
-	KvSetString(kv, "map", g_SkillSummaries[summaryIndex].map);
 	KvSetNum(kv, "total_events", g_SkillSummaries[summaryIndex].totalEvents);
 	KvSetFloat(kv, "created_at", g_SkillSummaries[summaryIndex].createdAt);
-	API_WriteSummaryContextBlockCommon(kv,
-		g_SkillSummaries[summaryIndex].baseMode,
-		g_SkillSummaries[summaryIndex].configuredSurvivorLimit,
-		g_SkillSummaries[summaryIndex].configuredPlayerZombieLimit,
-		g_SkillSummaries[summaryIndex].siPoolMask,
-		g_SkillSummaries[summaryIndex].enabledSiClassCount,
-		g_SkillSummaries[summaryIndex].versusTeamSize,
-		g_SkillSummaries[summaryIndex].versusContext,
-		g_SkillSummaries[summaryIndex].roundStartSignal,
-		g_SkillSummaries[summaryIndex].roundEndSignal,
-		g_SkillSummaries[summaryIndex].roundLiveSignal);
+	KvSetNum(kv, "base_mode", g_SkillSummaries[summaryIndex].baseMode);
 	API_WriteSkillSummaryEntries(kv, summaryIndex);
 
 	KvGoBack(kv);
@@ -1500,20 +1512,9 @@ public int Native_PlayerSkills_FillKillSummaryKeyValues(Handle plugin, int numPa
 	}
 
 	KvSetNum(kv, "id", g_KillSummaries[summaryIndex].id);
-	KvSetString(kv, "map", g_KillSummaries[summaryIndex].map);
 	KvSetNum(kv, "total_events", g_KillSummaries[summaryIndex].totalEvents);
 	KvSetFloat(kv, "created_at", g_KillSummaries[summaryIndex].createdAt);
-	API_WriteSummaryContextBlockCommon(kv,
-		g_KillSummaries[summaryIndex].baseMode,
-		g_KillSummaries[summaryIndex].configuredSurvivorLimit,
-		g_KillSummaries[summaryIndex].configuredPlayerZombieLimit,
-		g_KillSummaries[summaryIndex].siPoolMask,
-		g_KillSummaries[summaryIndex].enabledSiClassCount,
-		g_KillSummaries[summaryIndex].versusTeamSize,
-		g_KillSummaries[summaryIndex].versusContext,
-		g_KillSummaries[summaryIndex].roundStartSignal,
-		g_KillSummaries[summaryIndex].roundEndSignal,
-		g_KillSummaries[summaryIndex].roundLiveSignal);
+	KvSetNum(kv, "base_mode", g_KillSummaries[summaryIndex].baseMode);
 	API_WriteKillSummaryEntries(kv, summaryIndex);
 
 	KvGoBack(kv);

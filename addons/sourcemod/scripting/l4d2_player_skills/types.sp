@@ -9,6 +9,7 @@
 #define L4D2_SKILLS_MAX_EVENT_ASSISTS  8
 #define L4D2_SKILLS_MAX_SUMMARIES	   16
 #define L4D2_SKILLS_MAX_SUMMARY_ENTRIES 24
+#define L4D2_SKILLS_MAX_TANK_CONTROLS  8
 #define L4D2_SKILLS_SHOTGUN_BLAST_TIME 0.1
 #define L4D2_SKILLS_DEFAULT_BOOMER_HEALTH 50
 #define L4D2_SKILLS_DEFAULT_SMOKER_HEALTH 250
@@ -530,21 +531,51 @@ enum struct L4D2DamageEntry
 	}
 }
 
-enum struct L4D2TankSessionData
+enum struct L4D2TankControlEntry
 {
+	bool active;
+	bool overflow;
+	int mergedControls;
+	L4D2PlayerRef player;
+	float startedAt;
+	float endedAt;
+	float controlTime;
 	int rocksThrown;
 	int rocksHit;
-	bool inStasis;
-	L4D2PlayerRef pendingOwner;
-	L4D2TankSessionEndReason endReason;
 
 	void Reset()
 	{
+		this.active = false;
+		this.overflow = false;
+		this.mergedControls = 0;
+		this.player.Reset();
+		this.startedAt = 0.0;
+		this.endedAt = 0.0;
+		this.controlTime = 0.0;
 		this.rocksThrown = 0;
 		this.rocksHit = 0;
+	}
+}
+
+enum struct L4D2TankSessionData
+{
+	bool inStasis;
+	L4D2TankSessionEndReason endReason;
+	L4D2TankControlEntry controls[L4D2_SKILLS_MAX_TANK_CONTROLS];
+	int controlCount;
+	int activeControlIndex;
+
+	void Reset()
+	{
 		this.inStasis = false;
-		this.pendingOwner.Reset();
 		this.endReason = L4D2TankSessionEnd_None;
+		this.controlCount = 0;
+		this.activeControlIndex = -1;
+
+		for (int i = 0; i < L4D2_SKILLS_MAX_TANK_CONTROLS; i++)
+		{
+			this.controls[i].Reset();
+		}
 	}
 }
 
@@ -611,11 +642,12 @@ enum struct L4D2BossSessionData
 	int			  maxHealth;
 	int			  lastHealth;
 	int			  totalDamage;
-	float		  startedAt;
-	float		  closedAt;
-	bool		  printed;
-	L4D2TankSessionData tank;
-	L4D2WitchSessionData witch;
+		float		  startedAt;
+		float		  closedAt;
+		bool		  printed;
+		bool		  finalized;
+		L4D2TankSessionData tank;
+		L4D2WitchSessionData witch;
 
 	/**
 	 * @brief Clears the runtime state for a boss damage session.
@@ -634,13 +666,14 @@ enum struct L4D2BossSessionData
 		this.maxHealth	  			= 0;
 		this.lastHealth  			= 0;
 		this.totalDamage 			= 0;
-		this.startedAt	  			= 0.0;
-		this.closedAt	  			= 0.0;
-		this.printed	  			= false;
-		this.tank.Reset();
-		this.witch.Reset();
+			this.startedAt	  			= 0.0;
+			this.closedAt	  			= 0.0;
+			this.printed	  			= false;
+			this.finalized	  			= false;
+			this.tank.Reset();
+			this.witch.Reset();
+		}
 	}
-}
 
 /**
  * @brief Canonical in-memory payload for one detected skill event.

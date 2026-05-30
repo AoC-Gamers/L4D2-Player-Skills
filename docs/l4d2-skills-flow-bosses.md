@@ -33,20 +33,31 @@ Este documento resume los flujos actuales de skills y sesiones relacionadas con 
 - `g_BossSessions`
 - `g_BossDamage`
 - common session:
-  - owner actual
   - `maxHealth`
   - `lastHealth`
   - `totalDamage`
 - `tank` substate:
-  - pending owner
   - `inStasis`
-  - `rocksThrown`
-  - `rocksHit`
+  - `endReason`
+  - `controlCount`
+  - `activeControlIndex`
+  - `controls[]`
+
+Cada entrada de `controls[]` guarda:
+
+- identidad persistente del controller
+- `controlTime`
+- `rocksThrown`
+- `rocksHit`
+- `overflow`
+- `mergedControls`
 
 Regla de ownership:
 
 - cada `Tank` vive en su propia boss session;
-- cualquier métrica nueva de `Tank` debe agregarse como estado por sesión, no como contador global;
+- el payload público ya no depende de un único `owner`;
+- la identidad pública del `Tank` vive en `tank_control`;
+- cualquier métrica nueva de `Tank` debe agregarse por sesión o por segmento de control, no como contador global;
 - el diseño actual admite múltiples `Tank` simultáneos siempre que el tracking siga resolviendo por `victim`, `userid`, `entity` o `rock owner`.
 
 ### Emit
@@ -59,6 +70,11 @@ Regla de ownership:
 
 La sesión de daño se finaliza aparte para el resumen de boss.
 
+Regla de identidad pública:
+
+- `TankDead` ya no expone `victim_*`;
+- la identidad pública del `Tank` debe leerse desde `boss_session.tank_control`.
+
 ### Properties
 
 `TankDead` no necesita `skill_properties` especiales.
@@ -66,15 +82,34 @@ La sesión de daño se finaliza aparte para el resumen de boss.
 Contexto adicional:
 
 - `tank_session`
-  - `rocks_thrown`
-  - `rocks_hit`
-  - `alive_time`
+  - `in_stasis`
+  - `end_reason`
 - `boss_session`
   - se puede inspeccionar completo con `PlayerSkills_FillBossSessionKeyValues(...)`
   - incluye:
     - estado común
     - `damage_entries`
-    - `tank.end_reason`
+    - `tank_control_count`
+    - `tank_control[]`
+
+Regla de KV público:
+
+- `rocks_thrown` y `rocks_hit`
+  - ya no viven en `tank_session`;
+- ahora viven en cada segmento de `tank_control`;
+- el summary de announce del `Tank`
+  - deriva el total sumando todos los segmentos.
+
+Reglas de segmentación:
+
+- si el control pasa de un humano a otro humano distinto
+  - se abre un nuevo segmento;
+- si el control pasa de humano a bot y luego vuelve el mismo humano
+  - el tramo bot se absorbe en el segmento humano original;
+- si el historial supera el máximo de segmentos
+  - el último slot se reutiliza como `overflow`;
+  - ese slot expone `overflow = 1`;
+  - y `merged_controls` indica cuántos controles quedaron compactados ahí.
 
 ### Tank Session Close
 
@@ -203,8 +238,6 @@ flowchart TD
 - `g_BossSessions`
 - `g_BossDamage`
 - common session:
-  - `maxHealth`
-  - `lastHealth`
   - `totalDamage`
 - `witch` substate:
   - `startled`
@@ -227,6 +260,7 @@ Regla de ownership:
 
 - cada `Witch` vive en su propia boss session;
 - el estado fino de `crown`, `startle`, `harasser` e `incapVictim` debe permanecer aislado por entidad/session;
+- el payload público de `Witch` no usa identidad de controller;
 - el diseño actual admite múltiples `Witch` simultáneas siempre que el tracking siga resolviendo por entidad.
 
 ### Emit
@@ -252,6 +286,23 @@ Regla de announce:
 
 - `WitchDead`
   - imprime el resumen tradicional de daño hecho a la `Witch`.
+
+Regla de KV público:
+
+- `WitchCrown`
+  - omite `victim_*`
+  - mantiene `actor_weaponid`
+- `WitchDead`
+  - omite `victim_*`
+  - omite `actor_weaponid`
+- `witch_session`
+  - mantiene:
+    - `startled`
+    - `crown_detected`
+  - no expone identidad de controller
+- `damage_entries`
+  - no expone `weaponid`
+  - porque una misma sesión de `Witch` puede mezclar varias armas por survivor
 
 ### Round End Policy
 

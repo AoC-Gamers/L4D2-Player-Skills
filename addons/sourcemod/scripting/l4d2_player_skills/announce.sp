@@ -2169,6 +2169,28 @@ void Announce_BossDamage(int sessionIndex)
 }
 
 // Tank and Witch summary helpers.
+void Announce_GetTankRockTotals(int sessionIndex, int &rocksThrown, int &rocksHit)
+{
+	rocksThrown = 0;
+	rocksHit = 0;
+
+	if (sessionIndex < 0 || sessionIndex >= L4D2_SKILLS_MAX_BOSSES)
+	{
+		return;
+	}
+
+	for (int entry = 0; entry < g_BossSessions[sessionIndex].tank.controlCount && entry < L4D2_SKILLS_MAX_TANK_CONTROLS; entry++)
+	{
+		if (!g_BossSessions[sessionIndex].tank.controls[entry].active)
+		{
+			continue;
+		}
+
+		rocksThrown += g_BossSessions[sessionIndex].tank.controls[entry].rocksThrown;
+		rocksHit += g_BossSessions[sessionIndex].tank.controls[entry].rocksHit;
+	}
+}
+
 void Announce_TankDamage(int sessionIndex, bool tankAlive)
 {
 	if (sessionIndex < 0 || sessionIndex >= L4D2_SKILLS_MAX_BOSSES || g_BossSessions[sessionIndex].id == 0)
@@ -2179,8 +2201,12 @@ void Announce_TankDamage(int sessionIndex, bool tankAlive)
 	char bossName[64];
 	Announce_GetBossName(sessionIndex, bossName, sizeof(bossName));
 	char aliveTime[32];
-	FormatEx(aliveTime, sizeof(aliveTime), "%.1fs", GetGameTime() - g_BossSessions[sessionIndex].startedAt);
-	bool hasRockSection = g_BossSessions[sessionIndex].tank.rocksThrown > 0;
+	float endTime = g_BossSessions[sessionIndex].closedAt > 0.0 ? g_BossSessions[sessionIndex].closedAt : GetGameTime();
+	FormatEx(aliveTime, sizeof(aliveTime), "%.1fs", endTime - g_BossSessions[sessionIndex].startedAt);
+	int rocksThrown = 0;
+	int rocksHit = 0;
+	Announce_GetTankRockTotals(sessionIndex, rocksThrown, rocksHit);
+	bool hasRockSection = rocksThrown > 0;
 
 	if (tankAlive)
 	{
@@ -2192,8 +2218,8 @@ void Announce_TankDamage(int sessionIndex, bool tankAlive)
 					bossName,
 					g_BossSessions[sessionIndex].lastHealth,
 					aliveTime,
-					g_BossSessions[sessionIndex].tank.rocksHit,
-					g_BossSessions[sessionIndex].tank.rocksThrown);
+					rocksHit,
+					rocksThrown);
 			}
 			else
 			{
@@ -2213,8 +2239,8 @@ void Announce_TankDamage(int sessionIndex, bool tankAlive)
 				CPrintToChatAll("%t %t", "Tag", "BossTankDamageTitleTimeRocks",
 					bossName,
 					aliveTime,
-					g_BossSessions[sessionIndex].tank.rocksHit,
-					g_BossSessions[sessionIndex].tank.rocksThrown);
+					rocksHit,
+					rocksThrown);
 			}
 			else
 			{
@@ -2515,23 +2541,59 @@ bool Announce_IsWitchCrownerEntry(int sessionIndex, int entry)
 
 void Announce_GetBossName(int sessionIndex, char[] buffer, int maxlen)
 {
+	if (g_BossSessions[sessionIndex].type == L4D2Boss_Tank)
+	{
+		int tankControllers = 0;
+		bool hasOverflow = false;
+		char singleName[64];
+
+		for (int entry = 0; entry < g_BossSessions[sessionIndex].tank.controlCount && entry < L4D2_SKILLS_MAX_TANK_CONTROLS; entry++)
+		{
+			if (!g_BossSessions[sessionIndex].tank.controls[entry].active)
+			{
+				continue;
+			}
+
+			tankControllers++;
+			if (g_BossSessions[sessionIndex].tank.controls[entry].overflow)
+			{
+				hasOverflow = true;
+			}
+
+			if (tankControllers == 1)
+			{
+				strcopy(singleName, sizeof(singleName), g_BossSessions[sessionIndex].tank.controls[entry].player.name);
+			}
+		}
+
+		if (tankControllers == 1 && !hasOverflow && singleName[0] != '\0')
+		{
+			strcopy(buffer, maxlen, singleName);
+			return;
+		}
+
+		if (tankControllers > 1 || hasOverflow)
+		{
+			strcopy(buffer, maxlen, "Multiple");
+			return;
+		}
+
+		strcopy(buffer, maxlen, "AI");
+		return;
+	}
+
 	if (g_BossSessions[sessionIndex].owner.name[0] != '\0')
 	{
 		strcopy(buffer, maxlen, g_BossSessions[sessionIndex].owner.name);
 		return;
 	}
 
-	switch (g_BossSessions[sessionIndex].type)
-	{
-		case L4D2Boss_Tank:
+		switch (g_BossSessions[sessionIndex].type)
 		{
-			strcopy(buffer, maxlen, "AI");
-		}
-
-		case L4D2Boss_Witch:
-		{
-			strcopy(buffer, maxlen, "Witch");
-		}
+			case L4D2Boss_Witch:
+			{
+				strcopy(buffer, maxlen, "Witch");
+			}
 
 		default:
 		{

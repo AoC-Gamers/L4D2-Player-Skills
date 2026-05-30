@@ -67,9 +67,9 @@ void Boss_OnClientPutInServer(int client)
 	}
 }
 
-void Boss_OnClientDisconnect(int client)
-{
-	Boss_UnhookTankDamageClient(client);
+	void Boss_OnClientDisconnect(int client)
+	{
+		Boss_UnhookTankDamageClient(client);
 
 	for (int index = 0; index < L4D2_SKILLS_MAX_BOSSES; index++)
 	{
@@ -78,13 +78,18 @@ void Boss_OnClientDisconnect(int client)
 			continue;
 		}
 
-		if (g_BossSessions[index].userid == GetClientUserId(client))
-		{
-			g_BossSessions[index].owner.Capture(client);
-			Skills_Debug(PlayerSkillsDebug_Boss, "Boss owner disconnected. session=%d userid=%d", g_BossSessions[index].id, g_BossSessions[index].userid);
+			if (g_BossSessions[index].userid == GetClientUserId(client))
+			{
+				if (g_BossSessions[index].type == L4D2Boss_Tank)
+				{
+					L4D2BossSession(index).CloseActiveTankControl(GetGameTime());
+				}
+
+				g_BossSessions[index].owner.Capture(client);
+				Skills_Debug(PlayerSkillsDebug_Boss, "Boss owner disconnected. session=%d userid=%d", g_BossSessions[index].id, g_BossSessions[index].userid);
+			}
 		}
 	}
-}
 
 void Boss_HookTankDamageClient(int client)
 {
@@ -143,7 +148,6 @@ void Boss_OnReplaceTank(int tank, int newtank)
 	L4D2BossSession(sessionIndex).RefreshOwner(newtank);
 	g_BossSessions[sessionIndex].lastHealth = GetClientHealth(newtank);
 	g_BossSessions[sessionIndex].tank.inStasis = false;
-	g_BossSessions[sessionIndex].tank.pendingOwner.Reset();
 	Skills_Debug(PlayerSkillsDebug_Boss, "Tank control transferred. session=%d old=%d new=%d userid=%d", g_BossSessions[sessionIndex].id, tank, newtank, g_BossSessions[sessionIndex].userid);
 }
 
@@ -165,14 +169,6 @@ void Boss_OnTryOfferingTankBot(int tank, bool enterStasis)
 	g_BossSessions[sessionIndex].lastHealth = GetClientHealth(tank);
 
 	int pendingPlayer = L4D_GetPendingTankPlayer();
-	if (IsValidClient(pendingPlayer))
-	{
-		g_BossSessions[sessionIndex].tank.pendingOwner.Capture(pendingPlayer);
-	}
-	else
-	{
-		g_BossSessions[sessionIndex].tank.pendingOwner.Reset();
-	}
 
 	Skills_Debug(PlayerSkillsDebug_Boss, "TryOfferingTankBot pre. session=%d tank=%d stasis=%d pending=%d", g_BossSessions[sessionIndex].id, tank, enterStasis, pendingPlayer);
 }
@@ -195,10 +191,6 @@ void Boss_OnTryOfferingTankBotPost(int tank, bool enterStasis)
 	g_BossSessions[sessionIndex].lastHealth = GetClientHealth(tank);
 
 	int pendingPlayer = L4D_GetPendingTankPlayer();
-	if (IsValidClient(pendingPlayer))
-	{
-		g_BossSessions[sessionIndex].tank.pendingOwner.Capture(pendingPlayer);
-	}
 
 	Skills_Debug(PlayerSkillsDebug_Boss, "TryOfferingTankBot post. session=%d tank=%d stasis=%d pending=%d", g_BossSessions[sessionIndex].id, tank, enterStasis, pendingPlayer);
 }
@@ -222,7 +214,6 @@ void Boss_OnTryOfferingTankBotPostHandled(int tank, bool enterStasis)
 	}
 
 	g_BossSessions[sessionIndex].tank.inStasis = enterStasis;
-	g_BossSessions[sessionIndex].tank.pendingOwner.Reset();
 	Skills_Debug(PlayerSkillsDebug_Boss, "TryOfferingTankBot handled. session=%d tank=%d stasis=%d", g_BossSessions[sessionIndex].id, tank, enterStasis);
 }
 
@@ -482,8 +473,8 @@ void Boss_EventPlayerIncapacitatedStart(Event event)
 	Boss_AnnounceWitchRemainingHealth(witch);
 }
 
-void Boss_EventWitchKilled(Event event)
-{
+	void Boss_EventWitchKilled(Event event)
+	{
 	if (!Skills_IsEnabled())
 	{
 		return;
@@ -507,24 +498,26 @@ void Boss_EventWitchKilled(Event event)
 
 	Boss_HookWitchDamageEntity(sessionIndex, witch);
 
-	// If the Witch session already produced a visible announce path (for example
-	// the remaining-health summary triggered on incap), do not emit an additional
-	// death-side announce for the same Witch lifecycle.
-	if (g_BossSessions[sessionIndex].printed)
-	{
-		g_BossSessions[sessionIndex].lastHealth = 0;
-		g_BossSessions[sessionIndex].state = L4D2BossState_Printed;
-		return;
-	}
+		// If the Witch session already produced a visible announce path (for example
+		// the remaining-health summary triggered on incap), do not emit an additional
+		// death-side announce for the same Witch lifecycle.
+		if (g_BossSessions[sessionIndex].printed)
+		{
+			g_BossSessions[sessionIndex].lastHealth = 0;
+			g_BossSessions[sessionIndex].state = L4D2BossState_Dead;
+			Boss_FinalizeSession(sessionIndex);
+			return;
+		}
 
-	if (IsValidTank(killer))
-	{
-		Announce_WitchKilledByTank(sessionIndex, killer);
-		g_BossSessions[sessionIndex].printed = true;
-		g_BossSessions[sessionIndex].state = L4D2BossState_Printed;
-		g_BossSessions[sessionIndex].lastHealth = 0;
-		return;
-	}
+		if (IsValidTank(killer))
+		{
+			Announce_WitchKilledByTank(sessionIndex, killer);
+			g_BossSessions[sessionIndex].printed = true;
+			g_BossSessions[sessionIndex].lastHealth = 0;
+			g_BossSessions[sessionIndex].state = L4D2BossState_Dead;
+			Boss_FinalizeSession(sessionIndex);
+			return;
+		}
 
 	g_BossSessions[sessionIndex].witch.pendingKillerUserid = GetClientUserId(killer);
 	g_BossSessions[sessionIndex].witch.pendingWitchOneShot = oneShot;
@@ -552,11 +545,17 @@ Action Boss_TimerEvaluateWitchDeath(Handle timer, any data)
 		return Plugin_Stop;
 	}
 
-	if (g_BossSessions[sessionIndex].printed)
-	{
-		Skills_Debug(PlayerSkillsDebug_Boss, "Witch death timer aborted. session=%d reason=already_printed", g_BossSessions[sessionIndex].id);
-		return Plugin_Stop;
-	}
+		if (g_BossSessions[sessionIndex].printed)
+		{
+			Skills_Debug(PlayerSkillsDebug_Boss, "Witch death timer continuing to finalize. session=%d reason=already_printed", g_BossSessions[sessionIndex].id);
+			g_BossSessions[sessionIndex].lastHealth = 0;
+			g_BossSessions[sessionIndex].state = L4D2BossState_Dead;
+			g_BossSessions[sessionIndex].witch.pendingKillerUserid = 0;
+			g_BossSessions[sessionIndex].witch.pendingWitchOneShot = false;
+			g_BossSessions[sessionIndex].witch.pendingWitchMeleeOnly = false;
+			Boss_FinalizeSession(sessionIndex);
+			return Plugin_Stop;
+		}
 
 	int killer = GetClientOfUserId(g_BossSessions[sessionIndex].witch.pendingKillerUserid);
 	if (IsValidSurvivor(killer))
@@ -564,26 +563,28 @@ Action Boss_TimerEvaluateWitchDeath(Handle timer, any data)
 		Boss_CreateWitchDeadEvent(sessionIndex, killer);
 	}
 
-	if (g_BossSessions[sessionIndex].printed)
-	{
-		g_BossSessions[sessionIndex].lastHealth = 0;
-		g_BossSessions[sessionIndex].state = L4D2BossState_Printed;
-		g_BossSessions[sessionIndex].witch.pendingKillerUserid = 0;
-		g_BossSessions[sessionIndex].witch.pendingWitchOneShot = false;
-		g_BossSessions[sessionIndex].witch.pendingWitchMeleeOnly = false;
-		return Plugin_Stop;
-	}
+		if (g_BossSessions[sessionIndex].printed)
+		{
+			g_BossSessions[sessionIndex].lastHealth = 0;
+			g_BossSessions[sessionIndex].witch.pendingKillerUserid = 0;
+			g_BossSessions[sessionIndex].witch.pendingWitchOneShot = false;
+			g_BossSessions[sessionIndex].witch.pendingWitchMeleeOnly = false;
+			g_BossSessions[sessionIndex].state = L4D2BossState_Dead;
+			Boss_FinalizeSession(sessionIndex);
+			return Plugin_Stop;
+		}
 
-	if (g_BossSessions[sessionIndex].witch.crownDetected)
-	{
-		g_BossSessions[sessionIndex].lastHealth = 0;
-		g_BossSessions[sessionIndex].printed = true;
-		g_BossSessions[sessionIndex].state = L4D2BossState_Printed;
-		g_BossSessions[sessionIndex].witch.pendingKillerUserid = 0;
-		g_BossSessions[sessionIndex].witch.pendingWitchOneShot = false;
-		g_BossSessions[sessionIndex].witch.pendingWitchMeleeOnly = false;
-		return Plugin_Stop;
-	}
+		if (g_BossSessions[sessionIndex].witch.crownDetected)
+		{
+			g_BossSessions[sessionIndex].lastHealth = 0;
+			g_BossSessions[sessionIndex].printed = true;
+			g_BossSessions[sessionIndex].state = L4D2BossState_Dead;
+			g_BossSessions[sessionIndex].witch.pendingKillerUserid = 0;
+			g_BossSessions[sessionIndex].witch.pendingWitchOneShot = false;
+			g_BossSessions[sessionIndex].witch.pendingWitchMeleeOnly = false;
+			Boss_FinalizeSession(sessionIndex);
+			return Plugin_Stop;
+		}
 
 	g_BossSessions[sessionIndex].lastHealth = 0;
 	g_BossSessions[sessionIndex].state = L4D2BossState_Dead;
@@ -848,9 +849,8 @@ void Boss_CreateTankDeadEvent(int sessionIndex, int killer)
 		return;
 	}
 
-	g_SkillEvents[eventIndex].actor.Capture(killer);
-	g_SkillEvents[eventIndex].victim = g_BossSessions[sessionIndex].owner;
-	g_SkillEvents[eventIndex].actor2 = g_BossSessions[sessionIndex].id;
+		g_SkillEvents[eventIndex].actor.Capture(killer);
+		g_SkillEvents[eventIndex].actor2 = g_BossSessions[sessionIndex].id;
 
 	Action result = API_FireSkillDetected(eventId, L4D2Skill_TankDead);
 	if (result < Plugin_Handled)
@@ -872,7 +872,7 @@ void Boss_OnTankRockReleased(int tank)
 		return;
 	}
 
-	g_BossSessions[sessionIndex].tank.rocksThrown++;
+	L4D2BossSession(sessionIndex).RecordTankRockThrown();
 }
 
 void Boss_OnTankRockConnected(int tank)
@@ -888,7 +888,7 @@ void Boss_OnTankRockConnected(int tank)
 		return;
 	}
 
-	g_BossSessions[sessionIndex].tank.rocksHit++;
+	L4D2BossSession(sessionIndex).RecordTankRockHit();
 }
 
 bool Boss_DidRoundEndInWipe()
@@ -918,21 +918,26 @@ bool Boss_DidRoundEndInWipe()
 	return foundAnySurvivor;
 }
 
-void Boss_FinalizeSession(int sessionIndex)
-{
-	if (sessionIndex < 0 || sessionIndex >= L4D2_SKILLS_MAX_BOSSES || g_BossSessions[sessionIndex].id == 0)
+	void Boss_FinalizeSession(int sessionIndex)
 	{
-		return;
-	}
+		if (sessionIndex < 0 || sessionIndex >= L4D2_SKILLS_MAX_BOSSES || g_BossSessions[sessionIndex].id == 0)
+		{
+			return;
+		}
 
-	if (g_BossSessions[sessionIndex].printed)
-	{
-		return;
-	}
+		if (g_BossSessions[sessionIndex].finalized)
+		{
+			return;
+		}
 
 	if (g_BossSessions[sessionIndex].closedAt <= 0.0)
 	{
 		g_BossSessions[sessionIndex].closedAt = GetGameTime();
+	}
+
+	if (g_BossSessions[sessionIndex].type == L4D2Boss_Tank)
+	{
+		L4D2BossSession(sessionIndex).CloseActiveTankControl(g_BossSessions[sessionIndex].closedAt);
 	}
 
 	if (g_BossSessions[sessionIndex].type == L4D2Boss_Tank
@@ -960,17 +965,21 @@ void Boss_FinalizeSession(int sessionIndex)
 			g_BossSessions[sessionIndex].witch.crownDetected);
 	}
 
-	Action result = API_FireBossDamageFinalized(g_BossSessions[sessionIndex].id, g_BossSessions[sessionIndex].type);
-	if (result < Plugin_Handled)
-	{
-		Announce_BossDamage(sessionIndex);
+		Action result = API_FireBossDamageFinalized(g_BossSessions[sessionIndex].id, g_BossSessions[sessionIndex].type);
+		g_BossSessions[sessionIndex].finalized = true;
+		if (result < Plugin_Handled && !g_BossSessions[sessionIndex].printed)
+		{
+			Announce_BossDamage(sessionIndex);
+		}
+		else
+		{
+			if (!g_BossSessions[sessionIndex].printed)
+			{
+				g_BossSessions[sessionIndex].printed = true;
+				g_BossSessions[sessionIndex].state = L4D2BossState_Printed;
+			}
+		}
 	}
-	else
-	{
-		g_BossSessions[sessionIndex].printed = true;
-		g_BossSessions[sessionIndex].state = L4D2BossState_Printed;
-	}
-}
 
 void Boss_OnWitchSetHarasser(int witch, int victim)
 {
@@ -1205,14 +1214,8 @@ void Boss_CreateWitchDeadEvent(int sessionIndex, int killer)
 		return;
 	}
 
-	g_SkillEvents[eventIndex].actor.Capture(killer);
-	g_SkillEvents[eventIndex].victim.client = g_BossSessions[sessionIndex].entity;
-	g_SkillEvents[eventIndex].victim.userid = 0;
-	g_SkillEvents[eventIndex].victim.accountId = 0;
-	g_SkillEvents[eventIndex].victim.bot = true;
-	strcopy(g_SkillEvents[eventIndex].victim.name, sizeof(g_SkillEvents[eventIndex].victim.name), "Witch");
-	strcopy(g_SkillEvents[eventIndex].victim.auth, sizeof(g_SkillEvents[eventIndex].victim.auth), "WITCH");
-	g_SkillEvents[eventIndex].damageScope = L4D2SkillDamageScope_SkillWindow;
+		g_SkillEvents[eventIndex].actor.Capture(killer);
+		g_SkillEvents[eventIndex].damageScope = L4D2SkillDamageScope_SkillWindow;
 	g_SkillEvents[eventIndex].actorDamage = actualDamage;
 	g_SkillEvents[eventIndex].damage = actualDamage;
 	g_SkillEvents[eventIndex].chipDamage = chipDamage < 0 ? 0 : chipDamage;

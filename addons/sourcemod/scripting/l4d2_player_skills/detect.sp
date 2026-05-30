@@ -913,6 +913,7 @@ void Detect_TryEmitHunterSkeetShotgun(int hunter, int attacker, bool headshot)
 		g_SkillEvents[eventIndex].damageScope = L4D2SkillDamageScope_SkillWindow;
 		g_SkillEvents[eventIndex].damage = isTeamSkeet ? potentialTeamDamage : potentialKillerDamage;
 		g_SkillEvents[eventIndex].actorDamage = potentialKillerDamage;
+		g_SkillEvents[eventIndex].actorWeaponId = Detect_GetLastWeaponId(attacker);
 		g_SkillEvents[eventIndex].shots = shots;
 		g_SkillEvents[eventIndex].headshot = headshot;
 		int pounceAssistsFound = Detect_FillHunterSkeetPriorDamage(eventIndex, hunter, attacker, potentialKillerDamage, shots);
@@ -965,6 +966,7 @@ void Detect_TryEmitHunterSkeetShotgunFallback(int hunter, int attacker, bool hea
 		g_SkillEvents[eventIndex].damageScope = L4D2SkillDamageScope_SkillWindow;
 		g_SkillEvents[eventIndex].damage = fallbackEffectiveDamage;
 		g_SkillEvents[eventIndex].actorDamage = fallbackEffectiveDamage;
+		g_SkillEvents[eventIndex].actorWeaponId = Detect_GetSiLifeWeaponIdByAttacker(hunter, attacker);
 		g_SkillEvents[eventIndex].shots = killerLifeShots;
 		g_SkillEvents[eventIndex].headshot = headshot;
 		int pounceAssistsFound = Detect_FillHunterSkeetPriorDamageFromLifeSnapshot(eventIndex, hunter, attacker);
