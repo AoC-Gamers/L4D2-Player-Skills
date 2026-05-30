@@ -271,7 +271,7 @@ public void OnPluginStart()
 	g_cvJockeyHighPounceHeight	= CreateConVar("l4d2_player_skills_jockey_high_pounce_height", "300", "Minimum vertical height for JockeyHighPounce.");
 	g_cvDetectInstaKillHeight	= CreateConVar("l4d2_player_skills_charger_instakill_height", "400", "Minimum vertical drop for ChargerInstaKill.");
 	g_cvDetectDeathSetupHeight	= CreateConVar("l4d2_player_skills_charger_death_setup_height", "100", "Minimum vertical drop for ChargerDeathSetup incap classification.");
-	g_cvChargerClawPrintMinHits = CreateConVar("l4d2_player_skills_charger_claw_print_min_hits", "0", "Minimum Charger claw hits required to print a life summary. 0=disabled.");
+	g_cvChargerClawPrintMinHits = CreateConVar("l4d2_player_skills_charger_claw_hits", "4", "Minimum Charger claw hits required before printing the post-death claw summary. 0=disabled.");
 	g_cvDetectBHopMinStreak		= CreateConVar("l4d2_player_skills_bhop_streak_min", "3", "Minimum amount of successful hops for BunnyHopStreak.");
 	g_cvDetectBHopMinInitSpeed	= CreateConVar("l4d2_player_skills_bhop_init_speed", "150", "Minimum initial jump speed to start tracking BunnyHopStreak.");
 	g_cvDetectBHopContSpeed		= CreateConVar("l4d2_player_skills_bhop_keep_speed", "300", "Minimum speed that keeps a hop streak even without acceleration.");
@@ -1126,13 +1126,13 @@ Action Command_Skills(int client, int args)
 				L4D2Skill_JockeyHighPounce, "SkillsLabelJockeyHighPounce",
 				L4D2Skill_JockeyJumpStop, "SkillsLabelJumpStop",
 				L4D2Skill_JockeySkeetMelee, "SkillsLabelJockeySkeetMelee",
-				L4D2Skill_BoomerVomitLanded, "SkillsLabelVomit",
+				L4D2Skill_JockeySkeet, "SkillsLabelJockeySkeet",
 				L4D2Skill_CarAlarmTriggered, "SkillsLabelCarAlarm");
 
 			Announce_PrintSkillsSummaryLine(client, counts,
 				L4D2Skill_BunnyHopStreak, "SkillsLabelBHop",
 				L4D2Skill_TankRockSkeet, "SkillsLabelRockSkeet",
-				L4D2Skill_None, "",
+				L4D2Skill_BoomerVomitLanded, "SkillsLabelVomit",
 				L4D2Skill_None, "",
 				L4D2Skill_None, "",
 				L4D2Skill_None, "");

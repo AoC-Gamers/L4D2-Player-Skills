@@ -55,6 +55,19 @@ La variante técnica se expresa con propiedades:
 - `headshot`
 - `perfect`
 
+Whitelist actual de armas para `HunterSkeet`:
+
+- `shotgun`
+- `Hunting Rifle`
+- `Military Sniper`
+- `AWP`
+- `Scout`
+- `Magnum`
+- `Grenade Launcher`
+
+Fuera de esa whitelist, una kill en pounce no debe clasificarse como `HunterSkeet`;
+debe caer a `HunterKill`.
+
 Regla visual actual:
 
 - `Skeet` es la habilidad base;

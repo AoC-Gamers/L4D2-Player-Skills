@@ -7,6 +7,7 @@ Este documento resume los flujos actuales de skills relacionadas con `Charger`.
 - `ChargerLevel`
 - `ChargerInstaKill`
 - `ChargerDeathSetup`
+- `ChargerClawSummary`
 - `SpecialPinClear` en el contexto de `Charger`
 
 ## ChargerLevel
@@ -243,6 +244,60 @@ flowchart TD
     D -->|yes| C
     D -->|no| E[Emit ChargerDeathSetup]
 ```
+
+## ChargerClawSummary
+
+`ChargerClawSummary` no es una skill competitiva. Es un announce post-mortem que
+resume cuántos golpes básicos válidos conectó un `Charger` durante su vida.
+
+### Sources
+
+- `player_hurt`
+
+El flujo se apoya en `player_hurt` porque el juego reporta los claws básicos del
+`Charger` con:
+
+- `weapon = charger_claw`
+- `weaponId = WEPID_CHARGER_CLAW`
+
+### Emit
+
+Se imprime solo después de la muerte del `Charger`, y siempre después del print
+de muerte principal (`ChargerKill` o `ChargerLevel`).
+
+Se anuncia cuando:
+
+- el `Charger` acumuló al menos `l4d2_player_skills_charger_claw_hits`
+  golpes válidos;
+- el round llegó al cierre normal de vida del `Charger`.
+
+### Qué cuenta
+
+Cuenta solo golpes básicos válidos del `Charger` sobre survivors válidos.
+
+### Qué no cuenta
+
+No cuenta hits si:
+
+- el `Charger` sigue en `charge`;
+- el `Charger` ya está en flujo de `pin` propio;
+- la víctima está incapacitada;
+- la víctima está colgando;
+- la víctima está pineada por otro infectado;
+- el daño no corresponde al claw básico (`charger_claw` o equivalente melee
+  permitido por el filtro).
+
+### Output
+
+El announce resume:
+
+- total de golpes válidos;
+- breakdown por survivor;
+- stat por survivor en formato `(dmg/hit)`.
+
+Ejemplo:
+
+- `Charger (Test-Subject) conecto 8 golpes: Francis (50/5), Louis (30/3).`
 
 ## SpecialPinClear with Charger
 

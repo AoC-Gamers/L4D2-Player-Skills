@@ -60,6 +60,7 @@ enum L4D2SkillType
 	L4D2Skill_ChargerKill,
 	L4D2Skill_JockeyJumpStop,
 	L4D2Skill_JockeySkeetMelee,
+	L4D2Skill_JockeySkeet,
 	L4D2Skill_WitchCrown,
 
 	L4D2Skill_Size

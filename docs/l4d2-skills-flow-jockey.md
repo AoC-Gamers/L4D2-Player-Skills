@@ -7,6 +7,7 @@ Este documento resume los flujos actuales de skills relacionadas con `Jockey`.
 - `JockeyHighPounce`
 - `JockeyJumpStop`
 - `JockeySkeetMelee`
+- `JockeySkeet`
 
 ## Modelo
 
@@ -137,5 +138,61 @@ flowchart TD
     D -->|yes| F{Still effectively leaping}
     F -->|no| E
     F -->|yes| G[Emit JockeySkeetMelee]
+    G --> H[Suppress JockeyKill]
+```
+
+## JockeySkeet
+
+### Sources
+
+- `player_jump_apex`
+- `player_hurt`
+- `player_death`
+
+### Emit
+
+Se emite `JockeySkeet` cuando:
+
+- el `Jockey` sigue dentro de la ventana efectiva de leap,
+- la muerte final ocurre por arma ranged válida,
+- y la kill se resuelve antes de que la vida total del `Jockey` se anuncie como `JockeyKill`.
+
+Whitelist actual de armas para `JockeySkeet`:
+
+- `shotgun`
+- `Grenade Launcher`
+- `Hunting Rifle`
+- `Military Sniper`
+- `AWP`
+- `Scout`
+- `Magnum`
+
+Reglas:
+
+- `shotgun` puede calificar aunque exista asistencia previa;
+- `Grenade Launcher` puede calificar sin `headshot`;
+- `snipers` y `Magnum` solo califican cuando el remate final fue `Headshot`;
+- no existe variante `Perfecta` para `JockeySkeet`.
+
+### Properties
+
+- `damage`
+- `shots`
+- `headshot`
+- `sniper`
+- `grenade_launcher`
+- `assists`
+
+### Flow
+
+```mermaid
+flowchart TD
+    A[player_jump_apex] --> B[Open effective leap window]
+    B --> C[player_death on Jockey]
+    C --> D{Weapon in ranged whitelist}
+    D -->|no| E[Fall back to JockeyKill]
+    D -->|yes| F{Still effectively leaping}
+    F -->|no| E
+    F -->|yes| G[Emit JockeySkeet]
     G --> H[Suppress JockeyKill]
 ```

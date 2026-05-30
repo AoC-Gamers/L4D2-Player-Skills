@@ -125,18 +125,17 @@ void Announce_ChargerClawSummary(int charger)
 		FormatEx(segment, sizeof(segment), "%s%s (%d/%d)",
 			i == 0 ? "" : ", ",
 			victimName,
-			Detect_GetChargerClawVictimHits(charger, victims[i]),
-			Detect_GetChargerClawVictimDamage(charger, victims[i]));
+			Detect_GetChargerClawVictimDamage(charger, victims[i]),
+			Detect_GetChargerClawVictimHits(charger, victims[i]));
 		StrCat(victimList, sizeof(victimList), segment);
 	}
 
 	char tag[32];
-	FormatEx(tag, sizeof(tag), "%T", "Tag", LANG_SERVER);
+	FormatEx(tag, sizeof(tag), "%T", "Tag1", LANG_SERVER);
 	CPrintToChatAll("%s %t", tag,
 		"ChargerClawSummary",
 		actorName,
 		Detect_GetChargerClawTotalHits(charger),
-		Detect_GetChargerClawTotalDamage(charger),
 		victimList);
 }
 
@@ -255,6 +254,10 @@ bool Announce_ShouldAnnounceSkill(int eventIndex)
 			shouldAnnounce = Announce_HasMask(g_cvAnnounceJockey, view_as<int>(PlayerSkillsAnnounceJockey_JumpStop));
 		}
 		case L4D2Skill_JockeySkeetMelee:
+		{
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceJockey, view_as<int>(PlayerSkillsAnnounceJockey_SkeetMelee));
+		}
+		case L4D2Skill_JockeySkeet:
 		{
 			shouldAnnounce = Announce_HasMask(g_cvAnnounceJockey, view_as<int>(PlayerSkillsAnnounceJockey_SkeetMelee));
 		}
@@ -662,6 +665,7 @@ int Announce_MapSurvivorTableFamily(L4D2SkillType type)
 		case L4D2Skill_SmokerKill, L4D2Skill_BoomerKill, L4D2Skill_HunterKill, L4D2Skill_SpitterKill, L4D2Skill_JockeyKill, L4D2Skill_ChargerKill: return 14;
 		case L4D2Skill_JockeyJumpStop: return 15;
 		case L4D2Skill_JockeySkeetMelee: return 16;
+		case L4D2Skill_JockeySkeet: return 17;
 	}
 
 	return -1;
@@ -708,6 +712,7 @@ void Announce_GetSurvivorTableFamilyName(int family, char[] buffer, int maxlen)
 		case 14: strcopy(buffer, maxlen, "SpecialInfectedKills");
 		case 15: strcopy(buffer, maxlen, "JockeyJumpStops");
 		case 16: strcopy(buffer, maxlen, "JockeySkeetMelees");
+		case 17: strcopy(buffer, maxlen, "JockeySkeets");
 		default: buffer[0] = '\0';
 	}
 }
@@ -767,6 +772,7 @@ bool Announce_IsSurvivorTableFamilyVisible(int family)
 		}
 		case 15: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_JockeyJumpStop);
 		case 16: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_JockeySkeetMelee);
+		case 17: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_JockeySkeet);
 	}
 
 	return false;
@@ -823,6 +829,7 @@ int Announce_CountSurvivorTableFamilyForClient(int client, int family)
 		}
 		case 15: return Announce_CountSkillTypeForClient(client, L4D2Skill_JockeyJumpStop);
 		case 16: return Announce_CountSkillTypeForClient(client, L4D2Skill_JockeySkeetMelee);
+		case 17: return Announce_CountSkillTypeForClient(client, L4D2Skill_JockeySkeet);
 	}
 
 	return 0;
@@ -1428,6 +1435,55 @@ void Announce_Skill(int eventId)
 			CPrintToChatAll("%s %t", tag, "JockeySkeetMelee",
 				actorName,
 				victimName);
+		}
+
+		case L4D2Skill_JockeySkeet:
+		{
+			char assistList[256];
+			char weaponName[64];
+			char actorStat[64];
+			Announce_FormatAssistList(eventIndex, assistList, sizeof(assistList));
+			Announce_FormatSimpleKillStat(g_SkillEvents[eventIndex].actorDamage, g_SkillEvents[eventIndex].shots, actorStat, sizeof(actorStat));
+			Skills_GetWeaponDisplayName(g_SkillEvents[eventIndex].actorWeaponId, weaponName, sizeof(weaponName));
+			bool specialWeapon = g_SkillEvents[eventIndex].sniper
+				|| g_SkillEvents[eventIndex].grenadeLauncher
+				|| g_SkillEvents[eventIndex].actorWeaponId == view_as<int>(L4D2WeaponId_PistolMagnum);
+
+			if (g_SkillEvents[eventIndex].headshot)
+			{
+				if (specialWeapon && g_SkillEvents[eventIndex].assistsCount > 0)
+				{
+					CPrintToChatAll("%s %t", tag, "JockeySkeetWeaponHeadshotAssist", actorName, victimName, weaponName, actorStat, assistList);
+				}
+				else if (specialWeapon)
+				{
+					CPrintToChatAll("%s %t", tag, "JockeySkeetWeaponHeadshot", actorName, victimName, weaponName, actorStat);
+				}
+				else if (g_SkillEvents[eventIndex].assistsCount > 0)
+				{
+					CPrintToChatAll("%s %t", tag, "JockeySkeetHeadshotAssist", actorName, victimName, actorStat, assistList);
+				}
+				else
+				{
+					CPrintToChatAll("%s %t", tag, "JockeySkeetHeadshot", actorName, victimName, actorStat);
+				}
+			}
+			else if (specialWeapon && g_SkillEvents[eventIndex].assistsCount > 0)
+			{
+				CPrintToChatAll("%s %t", tag, "JockeySkeetWeaponAssist", actorName, victimName, weaponName, actorStat, assistList);
+			}
+			else if (specialWeapon)
+			{
+				CPrintToChatAll("%s %t", tag, "JockeySkeetWeapon", actorName, victimName, weaponName, actorStat);
+			}
+			else if (g_SkillEvents[eventIndex].assistsCount > 0)
+			{
+				CPrintToChatAll("%s %t", tag, "JockeySkeetAssist", actorName, victimName, actorStat, assistList);
+			}
+			else
+			{
+				CPrintToChatAll("%s %t", tag, "JockeySkeet", actorName, victimName, actorStat);
+			}
 		}
 
 		case L4D2Skill_SpecialPinClear:

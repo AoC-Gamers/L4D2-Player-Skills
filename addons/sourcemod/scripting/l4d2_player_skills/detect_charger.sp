@@ -207,20 +207,9 @@ void Detect_RecordChargerClawHit(int charger, int victim, int damage)
 	g_DetectChargerClaw[charger].totalDamage += damage;
 	g_DetectChargerClaw[charger].victimHits[victim]++;
 	g_DetectChargerClaw[charger].victimDamage[victim] += damage;
-
-	if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
-	{
-		Skills_Debug(PlayerSkillsDebug_Detect,
-			"Charger claw hit recorded. charger=%d victim=%d damage=%d total_hits=%d total_damage=%d",
-			charger,
-			victim,
-			damage,
-			g_DetectChargerClaw[charger].totalHits,
-			g_DetectChargerClaw[charger].totalDamage);
-	}
 }
 
-void Detect_RecordChargerClawHitFromDamage(int victim, int attacker, int inflictor, float damage, int damagetype)
+void Detect_RecordChargerClawHitFromDamage(int victim, int attacker, int inflictor, float damage, int damagetype, int weaponId = WEPID_NONE)
 {
 	if (!Skills_IsEnabled()
 		|| !IsValidSurvivor(victim)
@@ -242,13 +231,22 @@ void Detect_RecordChargerClawHitFromDamage(int victim, int attacker, int inflict
 		return;
 	}
 
+	int currentPinner = Detect_GetCurrentPinnedAttacker(victim);
+	if (L4D_IsPlayerIncapacitated(victim)
+		|| L4D_IsPlayerHangingFromLedge(victim)
+		|| (currentPinner > 0 && currentPinner != attacker))
+	{
+		return;
+	}
+
 	if (inflictor > 0 && inflictor != attacker)
 	{
 		return;
 	}
 
+	bool clawWeapon = weaponId == WEPID_CHARGER_CLAW;
 	bool meleeLikeDamage = (damagetype & DMG_CLUB) != 0 || (damagetype & DMG_SLASH) != 0;
-	if (!meleeLikeDamage && inflictor != attacker)
+	if (!clawWeapon && !meleeLikeDamage && inflictor != attacker)
 	{
 		return;
 	}
@@ -276,11 +274,6 @@ bool Detect_ShouldAnnounceChargerClawSummary(int charger)
 int Detect_GetChargerClawTotalHits(int charger)
 {
 	return (charger >= 1 && charger <= MaxClients) ? g_DetectChargerClaw[charger].totalHits : 0;
-}
-
-int Detect_GetChargerClawTotalDamage(int charger)
-{
-	return (charger >= 1 && charger <= MaxClients) ? g_DetectChargerClaw[charger].totalDamage : 0;
 }
 
 int Detect_GetChargerClawVictimHits(int charger, int victim)

@@ -1186,12 +1186,21 @@ Action Detect_TimerEvaluateChargerDeath(Handle timer, any userid)
 	{
 		if (Detect_TryEmitChargerLevelFromDeath(charger, attacker))
 		{
+			if (Detect_ShouldAnnounceChargerClawSummary(charger))
+			{
+				Announce_ChargerClawSummary(charger);
+			}
 			Detect_ResetCharger(charger);
 			Detect_ResetSiLifeKillTrack(charger);
 			return Plugin_Stop;
 		}
 
 		Detect_EmitSiLifeKill(charger, attacker, headshot);
+	}
+
+	if (Detect_ShouldAnnounceChargerClawSummary(charger))
+	{
+		Announce_ChargerClawSummary(charger);
 	}
 
 	Detect_ResetCharger(charger);
@@ -2577,6 +2586,11 @@ void Detect_EventPlayerHurt(Event event)
 		Detect_RecordSiLifeKillDamage(victim, attacker, damage, weaponId, damageType, hitgroup);
 	}
 
+	if (damage > 0 && IsValidSurvivor(victim) && IsValidZombieClass(attacker, L4D2ZombieClass_Charger))
+	{
+		Detect_RecordChargerClawHitFromDamage(victim, attacker, event.GetInt("entityid"), float(damage), damageType, weaponId);
+	}
+
 	if (IsValidSurvivor(victim) && g_DetectChargeVictim[victim].charger > 0 && damage > 0)
 	{
 		bool byTrigger = false;
@@ -2692,9 +2706,81 @@ void Detect_TryEmitJockeyMeleeSkeet(Event event, int victim, int attacker, bool 
 	}
 }
 
+void Detect_TryEmitJockeyRangedSkeet(Event event, int victim, int attacker, bool shouldEmitSiLifeKill)
+{
+	if (!IsValidZombieClass(victim, L4D2ZombieClass_Jockey) || !shouldEmitSiLifeKill || !IsValidSurvivor(attacker))
+	{
+		return;
+	}
+
+	if (!Detect_IsJockeyEffectivelyLeaping(victim))
+	{
+		return;
+	}
+
+	char weapon[64];
+	event.GetString("weapon", weapon, sizeof(weapon));
+	L4D2WeaponId weaponId = view_as<L4D2WeaponId>(Skills_GetWeaponIdFromEventName(weapon));
+	bool headshot = Detect_ResolveHeadshot(victim, attacker, event.GetBool("headshot"));
+	bool grenadeLauncher = weaponId == L4D2WeaponId_GrenadeLauncher;
+	bool shotgun = Skills_IsShotgunWeaponId(view_as<int>(weaponId));
+	bool sniperHeadshot = headshot && (
+		weaponId == L4D2WeaponId_HuntingRifle
+		|| weaponId == L4D2WeaponId_SniperMilitary
+		|| weaponId == L4D2WeaponId_SniperAWP
+		|| weaponId == L4D2WeaponId_SniperScout
+		|| weaponId == L4D2WeaponId_PistolMagnum);
+	if (!grenadeLauncher && !sniperHeadshot && !shotgun)
+	{
+		return;
+	}
+
+	int effectiveDamage[MAXPLAYERS + 1];
+	Detect_BuildSiLifeEffectiveDamageByAttacker(victim, L4D2ZombieClass_Jockey, attacker, effectiveDamage);
+
+	int eventId = Skills_CreateEvent(L4D2Skill_JockeySkeet);
+	int eventIndex = Skills_GetEventIndex(eventId);
+	if (eventIndex == -1)
+	{
+		return;
+	}
+
+	int maxHealth = Skills_GetSpecialMaxHealth(L4D2ZombieClass_Jockey);
+	g_SkillEvents[eventIndex].actor.Capture(attacker);
+	g_SkillEvents[eventIndex].victim.Capture(victim);
+	g_SkillEvents[eventIndex].zombieClass = L4D2ZombieClass_Jockey;
+	g_SkillEvents[eventIndex].damageScope = L4D2SkillDamageScope_SkillWindow;
+	g_SkillEvents[eventIndex].damage = maxHealth;
+	g_SkillEvents[eventIndex].actorDamage = effectiveDamage[attacker];
+	g_SkillEvents[eventIndex].shots = Detect_GetSiLifeShotsByAttacker(victim, attacker);
+	g_SkillEvents[eventIndex].headshot = headshot;
+	g_SkillEvents[eventIndex].sniper = sniperHeadshot;
+	g_SkillEvents[eventIndex].grenadeLauncher = grenadeLauncher;
+	g_SkillEvents[eventIndex].actorWeaponId = view_as<int>(weaponId);
+	g_SkillEvents[eventIndex].actorChipDamage = Detect_GetSiLifePreviousDamageByAttacker(victim, attacker);
+	g_SkillEvents[eventIndex].actorChipShots = Detect_GetSiLifePreviousShotsByAttacker(victim, attacker);
+
+	int assistsFound = Detect_WriteSiTrackAssistsToEventAsSkillWindow(eventIndex, victim, attacker);
+	int assistDamageTotal = 0;
+	for (int i = 0; i < assistsFound && i < L4D2_SKILLS_MAX_EVENT_ASSISTS; i++)
+	{
+		assistDamageTotal += g_SkillEvents[eventIndex].assistDamage[i];
+	}
+	g_SkillEvents[eventIndex].chipDamage = g_SkillEvents[eventIndex].actorChipDamage + assistDamageTotal;
+
+	Action result = API_FireSkillDetected(eventId, L4D2Skill_JockeySkeet);
+	if (result < Plugin_Handled)
+	{
+		Announce_Skill(eventId);
+	}
+
+	Detect_MarkSiLifeKillSuppressed(victim);
+}
+
 void Detect_HandleNonHunterSiDeath(Event event, int victim, int attacker, bool shouldEmitSiLifeKill)
 {
 	Detect_TryEmitJockeyMeleeSkeet(event, victim, attacker, shouldEmitSiLifeKill);
+	Detect_TryEmitJockeyRangedSkeet(event, victim, attacker, shouldEmitSiLifeKill);
 
 	if (IsValidZombieClass(victim, L4D2ZombieClass_Jockey))
 	{
@@ -2707,12 +2793,12 @@ void Detect_HandleNonHunterSiDeath(Event event, int victim, int attacker, bool s
 	bool pendingChargerKill = IsValidZombieClass(victim, L4D2ZombieClass_Charger)
 		&& shouldEmitSiLifeKill
 		&& !g_bDetectSuppressSiLifeKill[victim];
-	if (IsValidZombieClass(victim, L4D2ZombieClass_Charger) && Detect_ShouldAnnounceChargerClawSummary(victim))
-	{
-		Announce_ChargerClawSummary(victim);
-	}
 	if (pendingChargerKill && Detect_TryEmitChargerLevelFromDeath(victim, attacker))
 	{
+		if (Detect_ShouldAnnounceChargerClawSummary(victim))
+		{
+			Announce_ChargerClawSummary(victim);
+		}
 		Detect_ResetCharger(victim);
 		Detect_ResetSiLifeKillTrack(victim);
 		return;
@@ -2728,6 +2814,11 @@ void Detect_HandleNonHunterSiDeath(Event event, int victim, int attacker, bool s
 	if (shouldEmitSiLifeKill && !g_bDetectSuppressSiLifeKill[victim])
 	{
 		Detect_EmitSiLifeKill(victim, attacker, Detect_ResolveHeadshot(victim, attacker, event.GetBool("headshot")));
+	}
+	if (IsValidZombieClass(victim, L4D2ZombieClass_Charger) && Detect_ShouldAnnounceChargerClawSummary(victim))
+	{
+		Announce_ChargerClawSummary(victim);
+		Detect_ResetCharger(victim);
 	}
 	if (!pendingBoomerKill)
 	{
@@ -3060,7 +3151,8 @@ Action Detect_OnTakeDamage_Client(int victim, int &attacker, int &inflictor, flo
 	{
 		if (roundLive)
 		{
-			Detect_RecordChargerClawHitFromDamage(victim, attacker, inflictor, damage, damagetype);
+			int chargerWeaponId = IsValidZombieClass(attacker, L4D2ZombieClass_Charger) ? WEPID_CHARGER_CLAW : WEPID_NONE;
+			Detect_RecordChargerClawHitFromDamage(victim, attacker, inflictor, damage, damagetype, chargerWeaponId);
 		}
 
 		return Plugin_Continue;

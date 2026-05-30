@@ -967,6 +967,7 @@ stock void Skills_GetSkillTypeName(L4D2SkillType type, char[] buffer, int maxlen
 		case L4D2Skill_ChargerKill: strcopy(buffer, maxlen, "ChargerKill");
 		case L4D2Skill_JockeyJumpStop: strcopy(buffer, maxlen, "JockeyJumpStop");
 		case L4D2Skill_JockeySkeetMelee: strcopy(buffer, maxlen, "JockeySkeetMelee");
+		case L4D2Skill_JockeySkeet: strcopy(buffer, maxlen, "JockeySkeet");
 		case L4D2Skill_WitchCrown: strcopy(buffer, maxlen, "WitchCrown");
 		default: strcopy(buffer, maxlen, "None");
 	}
@@ -1034,7 +1035,7 @@ stock void Skills_FormatEventPlayerRoleName(int eventIndex, int slot, char[] buf
 			{
 				zombieClass = L4D2ZombieClass_Smoker;
 			}
-			case L4D2Skill_JockeyJumpStop, L4D2Skill_JockeySkeetMelee:
+			case L4D2Skill_JockeyJumpStop, L4D2Skill_JockeySkeetMelee, L4D2Skill_JockeySkeet:
 			{
 				zombieClass = L4D2ZombieClass_Jockey;
 			}
@@ -1193,7 +1194,7 @@ stock bool Skills_IsSkillTypeEnabledInCurrentMode(L4D2SkillType type)
 		{
 			return Skills_IsZombieClassEnabledInCurrentContext(L4D2ZombieClass_Smoker);
 		}
-		case L4D2Skill_JockeyHighPounce, L4D2Skill_JockeyJumpStop, L4D2Skill_JockeySkeetMelee, L4D2Skill_JockeyLedgeHang:
+		case L4D2Skill_JockeyHighPounce, L4D2Skill_JockeyJumpStop, L4D2Skill_JockeySkeetMelee, L4D2Skill_JockeySkeet, L4D2Skill_JockeyLedgeHang:
 		{
 			return Skills_IsZombieClassEnabledInCurrentContext(L4D2ZombieClass_Jockey);
 		}
@@ -1348,6 +1349,10 @@ stock int Skills_GetEventRating(int eventIndex)
 		case L4D2Skill_JockeyJumpStop:
 		{
 			return 1;
+		}
+		case L4D2Skill_JockeySkeet:
+		{
+			return 3;
 		}
 		case L4D2Skill_JockeySkeetMelee:
 		{

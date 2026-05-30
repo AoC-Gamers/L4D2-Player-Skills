@@ -102,6 +102,7 @@ En corto:
 
 - `Kill` = resumen total de vida.
 - `Skill` = resumen técnico de la jugada.
+- `Summary` = announce auxiliar de cierre que no compite con una skill principal.
 
 Regla de daño actual:
 
@@ -136,6 +137,14 @@ Nota de UX:
   - `Level`
   - `Level (dmg/shots)` si hubo daño previo propio del actor
   - `Level ..., asistido por ...` si hubo contribución ajena
+
+Nota adicional:
+
+- `ChargerClawSummary` cae en la categoría `Summary`, no en `Kill` ni en `Skill`;
+- se construye desde `player_hurt`;
+- resume claws básicos válidos del `Charger`;
+- se imprime después de la muerte del `Charger`;
+- no compite con `ChargerKill` ni con `ChargerLevel`.
 
 ### 4.2. Naming visual de announces
 
@@ -175,6 +184,28 @@ Entonces:
 - `chipDamage` y `perfect` describen el contexto;
 - `headshot`, `sniper` o `grenadeLauncher` describen la variante técnica del kill shot sin obligar a crear otro evento base;
 - si una kill en pounce no califica como `HunterSkeet` ni siquiera contra baseline completo, no debe emitirse como skill principal separada.
+
+`Skeet` no significa "cualquier kill en aire". El detector usa una whitelist
+de armas por skill:
+
+- `HunterSkeet`
+  - `shotgun`
+  - `Hunting Rifle`
+  - `Military Sniper`
+  - `AWP`
+  - `Scout`
+  - `Magnum`
+  - `Grenade Launcher`
+- `JockeySkeet`
+  - `shotgun`
+  - `Grenade Launcher`
+  - `Hunting Rifle`
+  - `Military Sniper`
+  - `AWP`
+  - `Scout`
+  - `Magnum`
+
+Fuera de esa whitelist, la muerte debe caer al flujo normal `*Kill`.
 
 Regla visual actual para ranged skeets:
 

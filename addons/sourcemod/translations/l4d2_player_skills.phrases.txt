@@ -164,6 +164,12 @@
 		"es"		"JockeySM"
 	}
 
+	"SkillsLabelJockeySkeet"
+	{
+		"en"		"JockeySkeet"
+		"es"		"JockeySkeet"
+	}
+
 	"SkeetSingleShotAssisted"
 	{
 		"#format"	"{1:s},{2:s},{3:d},{4:d},{5:s}"
@@ -323,6 +329,62 @@
 		"#format"	"{1:s},{2:s}"
 		"en"		"{olive}{1} {blue}did a {green}Skeet-Melee {blue}to {olive}{2}{blue}."
 		"es"		"{olive}{1} {blue}hizo {green}Skeet-Melee {blue}a {olive}{2}{blue}."
+	}
+
+	"JockeySkeet"
+	{
+		"#format"	"{1:s},{2:s},{3:s}"
+		"en"		"{olive}{1} {blue}did a {green}Skeet {blue}to {olive}{2} {blue}({olive}{3}{blue})."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}({olive}{3}{blue})."
+	}
+
+	"JockeySkeetAssist"
+	{
+		"#format"	"{1:s},{2:s},{3:s},{4:s}"
+		"en"		"{olive}{1} {blue}did a {green}Skeet {blue}to {olive}{2} {blue}({olive}{3}{blue}), assisted by {olive}{4}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}({olive}{3}{blue}), asistido por {olive}{4}{blue}."
+	}
+
+	"JockeySkeetHeadshot"
+	{
+		"#format"	"{1:s},{2:s},{3:s}"
+		"en"		"{olive}{1} {blue}did a {green}Skeet Headshot {blue}to {olive}{2} {blue}({olive}{3}{blue})."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet Headshot {blue}a {olive}{2} {blue}({olive}{3}{blue})."
+	}
+
+	"JockeySkeetHeadshotAssist"
+	{
+		"#format"	"{1:s},{2:s},{3:s},{4:s}"
+		"en"		"{olive}{1} {blue}did a {green}Skeet Headshot {blue}to {olive}{2} {blue}({olive}{3}{blue}), assisted by {olive}{4}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet Headshot {blue}a {olive}{2} {blue}({olive}{3}{blue}), asistido por {olive}{4}{blue}."
+	}
+
+	"JockeySkeetWeapon"
+	{
+		"#format"	"{1:s},{2:s},{3:s},{4:s}"
+		"en"		"{olive}{1} {blue}did a {green}Skeet {blue}to {olive}{2} {blue}with {olive}{3} {blue}({olive}{4}{blue})."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}con {olive}{3} {blue}({olive}{4}{blue})."
+	}
+
+	"JockeySkeetWeaponAssist"
+	{
+		"#format"	"{1:s},{2:s},{3:s},{4:s},{5:s}"
+		"en"		"{olive}{1} {blue}did a {green}Skeet {blue}to {olive}{2} {blue}with {olive}{3} {blue}({olive}{4}{blue}), assisted by {olive}{5}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}con {olive}{3} {blue}({olive}{4}{blue}), asistido por {olive}{5}{blue}."
+	}
+
+	"JockeySkeetWeaponHeadshot"
+	{
+		"#format"	"{1:s},{2:s},{3:s},{4:s}"
+		"en"		"{olive}{1} {blue}did a {green}Skeet Headshot {blue}to {olive}{2} {blue}with {olive}{3} {blue}({olive}{4}{blue})."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet Headshot {blue}a {olive}{2} {blue}con {olive}{3} {blue}({olive}{4}{blue})."
+	}
+
+	"JockeySkeetWeaponHeadshotAssist"
+	{
+		"#format"	"{1:s},{2:s},{3:s},{4:s},{5:s}"
+		"en"		"{olive}{1} {blue}did a {green}Skeet Headshot {blue}to {olive}{2} {blue}with {olive}{3} {blue}({olive}{4}{blue}), assisted by {olive}{5}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet Headshot {blue}a {olive}{2} {blue}con {olive}{3} {blue}({olive}{4}{blue}), asistido por {olive}{5}{blue}."
 	}
 
 	"SpecialPinClear"
@@ -516,9 +578,9 @@
 
 	"ChargerClawSummary"
 	{
-		"#format"	"{1:s},{2:d},{3:d},{4:s}"
-		"en"		"{olive}{1} {blue}landed {green}{2} {blue}claw hits for {green}{3} {blue}damage: {olive}{4}{blue}."
-		"es"		"{olive}{1} {blue}conecto {green}{2} {blue}basicos por {green}{3} {blue}de daño: {olive}{4}{blue}."
+		"#format"	"{1:s},{2:d},{3:s}"
+		"en"		"{olive}{1} {blue}landed {green}{2} {blue}claw hits: {olive}{3}{blue}."
+		"es"		"{olive}{1} {blue}conecto {green}{2} {blue}golpes: {olive}{3}{blue}."
 	}
 
 	"ChargerInstaKillCarry"
