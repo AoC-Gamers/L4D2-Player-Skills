@@ -127,7 +127,7 @@ void Detect_EventChargerKilled(Event event)
 	if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
 	{
 		Skills_Debug(PlayerSkillsDebug_Detect,
-			"Charger killed event. charger=%d attacker=%d melee=%d charging=%d tracked_raw=%d tracked_effective=%d",
+			"Charger killed event. charger=%d attacker=%d melee=%d charging=%d state_charging=%d effective_charging=%d",
 			charger,
 			attacker,
 			melee ? 1 : 0,
@@ -150,7 +150,7 @@ void Detect_EventChargerCarryStart(Event event)
 	if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
 	{
 		Skills_Debug(PlayerSkillsDebug_Detect,
-			"Charger carry start event. charger=%d victim=%d tracked_raw=%d tracked_effective=%d",
+			"Charger carry start event. charger=%d victim=%d state_charging=%d effective_charging=%d",
 			charger,
 			victim,
 			(charger > 0 && charger <= MaxClients && Detect_IsChargerCharging(charger)) ? 1 : 0,
@@ -236,8 +236,8 @@ void Detect_RecordChargerClawHitFromDamage(int victim, int attacker, int inflict
 	}
 
 	if (Detect_IsChargerEffectivelyCharging(attacker)
-		|| g_iDetectPinnedClass[attacker] == view_as<int>(L4D2ZombieClass_Charger)
-		|| g_iDetectPinnedVictim[attacker] > 0)
+		|| g_DetectPinRegistry.pinnedClassByAttacker[attacker] == view_as<int>(L4D2ZombieClass_Charger)
+		|| g_DetectPinRegistry.pinnedVictimByAttacker[attacker] > 0)
 	{
 		return;
 	}
@@ -419,7 +419,7 @@ void Detect_RecordChargeVictim(int charger, int victim, bool wasCarried)
 		return;
 	}
 
-	int assister = g_iDetectPinnerByVictim[victim];
+	int assister = g_DetectPinRegistry.pinnerByVictim[victim];
 	if (!IsValidInfected(assister) || assister == charger)
 	{
 		assister = L4D2_GetSpecialInfectedDominatingMe(victim);
@@ -720,8 +720,8 @@ void Detect_FillChargerLevelPriorDamage(int eventIndex, int victim, int attacker
 		assistDamageTotal += g_SkillEvents[eventIndex].assistDamage[i];
 	}
 
-	int actorChipDamage = Detect_GetSiLifeContributorPreviousDamage(victim, attacker);
-	int actorChipShots = Detect_GetSiLifeContributorPreviousShots(victim, attacker);
+	int actorChipDamage = Detect_GetSiLifePreviousDamageByAttacker(victim, attacker);
+	int actorChipShots = Detect_GetSiLifePreviousShotsByAttacker(victim, attacker);
 	int inferredChipDamage = actorChipDamage + assistDamageTotal;
 	if (chipDamage > inferredChipDamage)
 	{
@@ -862,7 +862,7 @@ bool Detect_TryEmitChargerLevelFromDeath(int victim, int attacker)
 	float rawDamage = g_DetectChargerDamageSnapshot[victim].lastRawDamage;
 	if (rawDamage <= 0.0)
 	{
-		rawDamage = float(Detect_GetSiLifeContributorDamage(victim, attacker));
+		rawDamage = float(Detect_GetSiLifeDamageByAttacker(victim, attacker));
 	}
 
 	bool qualifiesAtBaseline = rawDamage >= float(chargerHealth);

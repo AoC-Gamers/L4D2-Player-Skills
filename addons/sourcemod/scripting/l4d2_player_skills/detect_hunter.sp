@@ -28,19 +28,15 @@ void Detect_ResetHunterPounceState(int hunter)
 {
 	g_bDetectHunterPouncing[hunter] = false;
 	g_fDetectHunterPounceSeenAt[hunter] = 0.0;
-	g_iDetectHunterShotDmgTeam[hunter] = 0;
-	g_iDetectHunterOverkill[hunter] = 0;
-	g_bDetectHunterKilledPouncing[hunter] = false;
+	g_DetectHunterShotWindow[hunter].teamBlastDamage = 0;
+	g_DetectHunterShotWindow[hunter].overkillDamage = 0;
+	g_DetectHunterShotWindow[hunter].killedPouncing = false;
 
 	for (int attacker = 1; attacker <= MaxClients; attacker++)
 	{
-		g_bDetectShotCounted[hunter][attacker] = false;
-		g_bDetectHunterShotCounted[hunter][attacker] = false;
+		g_DetectSiLife[hunter].byAttacker[attacker].shotCounted = false;
 		g_fDetectHunterLastShove[hunter][attacker] = 0.0;
-		g_iDetectHunterDamage[hunter][attacker] = 0;
-		g_iDetectHunterShots[hunter][attacker] = 0;
-		g_iDetectHunterShotDmg[hunter][attacker] = 0;
-		g_fDetectHunterShotStart[hunter][attacker] = 0.0;
+		g_DetectHunterShotWindow[hunter].byAttacker[attacker].Reset();
 	}
 }
 
@@ -48,10 +44,7 @@ void Detect_ResetHunter(int hunter)
 {
 	Detect_ResetHunterPounceState(hunter);
 	g_DetectLeap[hunter].Reset();
-	g_bDetectPendingHunterDeathEval[hunter] = false;
-	g_bDetectPendingHunterDeathHeadshot[hunter] = false;
-	g_iDetectPendingHunterDeathAttackerUserId[hunter] = 0;
-	g_sDetectPendingHunterDeathWeapon[hunter][0] = '\0';
+	g_DetectPendingHunterDeath[hunter].Reset();
 	g_iDetectHunterSpawnHealth[hunter] = 0;
 	g_DetectHunterDamageSnapshot[hunter].Reset();
 }

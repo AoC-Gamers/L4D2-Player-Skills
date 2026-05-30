@@ -3,7 +3,7 @@
 #endif
 #define _l4d2_player_skills_detect_smoker_included
 
-int Detect_GetTrackedSmokerVictim(int smoker)
+int Detect_GetSmokerVictimFromState(int smoker)
 {
 	if (!IsValidZombieClass(smoker, L4D2ZombieClass_Smoker))
 	{
@@ -20,21 +20,21 @@ int Detect_GetTrackedSmokerVictim(int smoker)
 	return IsValidSurvivor(victim) ? victim : 0;
 }
 
-int Detect_GetTrackedSmokerByVictim(int victim)
+int Detect_FindSmokerByVictim(int victim)
 {
 	if (!IsValidSurvivor(victim))
 	{
 		return 0;
 	}
 
-	int smoker = g_iDetectSmokerOwnerByVictim[victim];
-	if (IsValidZombieClass(smoker, L4D2ZombieClass_Smoker) && Detect_GetTrackedSmokerVictim(smoker) == victim)
+	int smoker = g_DetectPinRegistry.smokerOwnerByVictim[victim];
+	if (IsValidZombieClass(smoker, L4D2ZombieClass_Smoker) && Detect_GetSmokerVictimFromState(smoker) == victim)
 	{
 		return smoker;
 	}
 
 	smoker = L4D_GetAttackerSmoker(victim);
-	if (IsValidZombieClass(smoker, L4D2ZombieClass_Smoker) && Detect_GetTrackedSmokerVictim(smoker) == victim)
+	if (IsValidZombieClass(smoker, L4D2ZombieClass_Smoker) && Detect_GetSmokerVictimFromState(smoker) == victim)
 	{
 		return smoker;
 	}
@@ -57,17 +57,17 @@ void Detect_EventChokeStart(Event event)
 	}
 
 	g_DetectSmoker[smoker].victim = victim;
-	g_iDetectSmokerOwnerByVictim[victim] = smoker;
+	g_DetectPinRegistry.smokerOwnerByVictim[victim] = smoker;
 	g_DetectSmoker[smoker].reached = true;
 	g_fDetectSpecialClearTimeA[smoker] = GetGameTime();
 
 	if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
 	{
 		Skills_Debug(PlayerSkillsDebug_Detect,
-			"SpecialClear choke_start. smoker=%d victim=%d tracked_victim=%d timeA=%.3f",
+			"SpecialClear choke_start. smoker=%d victim=%d pin_victim=%d timeA=%.3f",
 			smoker,
 			victim,
-			g_iDetectPinnedVictim[smoker],
+			g_DetectPinRegistry.pinnedVictimByAttacker[smoker],
 			g_fDetectSpecialClearTimeA[smoker]);
 	}
 }
@@ -90,11 +90,11 @@ void Detect_EventChokeStopped(Event event)
 	if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
 	{
 		Skills_Debug(PlayerSkillsDebug_Detect,
-			"SpecialClear choke_stopped. stopper=%d victim=%d smoker=%d tracked_victim=%d timeA=%.3f",
+			"SpecialClear choke_stopped. stopper=%d victim=%d smoker=%d pin_victim=%d timeA=%.3f",
 			stopper,
 			victim,
 			smoker,
-			g_iDetectPinnedVictim[smoker],
+			g_DetectPinRegistry.pinnedVictimByAttacker[smoker],
 			g_fDetectSpecialClearTimeA[smoker]);
 	}
 
@@ -149,7 +149,7 @@ void Detect_EventTonguePullStopped(Event event)
 		return;
 	}
 
-	int smoker = Detect_GetTrackedSmokerByVictim(victim);
+	int smoker = Detect_FindSmokerByVictim(victim);
 
 	bool hasReachedSmoker = false;
 	if (IsValidZombieClass(smoker, L4D2ZombieClass_Smoker))
@@ -170,8 +170,8 @@ void Detect_EventTonguePullStopped(Event event)
 			smoker,
 			hasReachedSmoker ? 1 : 0,
 			IsValidZombieClass(smoker, L4D2ZombieClass_Smoker) && g_DetectSmoker[smoker].shoved ? 1 : 0,
-			IsValidZombieClass(smoker, L4D2ZombieClass_Smoker) ? g_iDetectPinnedVictim[smoker] : 0,
-			g_iDetectPinnerByVictim[victim]);
+			IsValidZombieClass(smoker, L4D2ZombieClass_Smoker) ? g_DetectPinRegistry.pinnedVictimByAttacker[smoker] : 0,
+			g_DetectPinRegistry.pinnerByVictim[victim]);
 	}
 
 	if (stopper == victim && IsValidZombieClass(smoker, L4D2ZombieClass_Smoker) && !hasReachedSmoker)
@@ -247,12 +247,12 @@ void Detect_ResetSmoker(int smoker)
 		return;
 	}
 
-	int victim = Detect_GetTrackedSmokerVictim(smoker);
+	int victim = Detect_GetSmokerVictimFromState(smoker);
 	g_DetectSmoker[smoker].Reset();
 
-	if (victim > 0 && victim <= MaxClients && g_iDetectSmokerOwnerByVictim[victim] == smoker)
+	if (victim > 0 && victim <= MaxClients && g_DetectPinRegistry.smokerOwnerByVictim[victim] == smoker)
 	{
-		g_iDetectSmokerOwnerByVictim[victim] = 0;
+		g_DetectPinRegistry.smokerOwnerByVictim[victim] = 0;
 	}
 }
 
@@ -263,8 +263,8 @@ void Detect_ClearSmokerVictim(int victim)
 		return;
 	}
 
-	int smoker = g_iDetectSmokerOwnerByVictim[victim];
-	g_iDetectSmokerOwnerByVictim[victim] = 0;
+	int smoker = g_DetectPinRegistry.smokerOwnerByVictim[victim];
+	g_DetectPinRegistry.smokerOwnerByVictim[victim] = 0;
 
 	if (smoker > 0 && smoker <= MaxClients && g_DetectSmoker[smoker].victim == victim)
 	{
@@ -283,9 +283,9 @@ void Detect_SetPinState(int attacker, int victim, int zombieClass, float timeA, 
 	Detect_ClearPinStateByAttacker(attacker);
 	Detect_ClearPinStateByVictim(victim);
 
-	g_iDetectPinnedVictim[attacker] = victim;
-	g_iDetectPinnerByVictim[victim] = attacker;
-	g_iDetectPinnedClass[attacker] = zombieClass;
+	g_DetectPinRegistry.pinnedVictimByAttacker[attacker] = victim;
+	g_DetectPinRegistry.pinnerByVictim[victim] = attacker;
+	g_DetectPinRegistry.pinnedClassByAttacker[attacker] = zombieClass;
 	g_fDetectSpecialClearTimeA[attacker] = timeA;
 	g_fDetectSpecialClearTimeB[attacker] = timeB;
 
@@ -308,15 +308,15 @@ void Detect_ClearPinStateByAttacker(int attacker)
 		return;
 	}
 
-	int victim = g_iDetectPinnedVictim[attacker];
-	g_iDetectPinnedVictim[attacker] = 0;
-	g_iDetectPinnedClass[attacker] = 0;
+	int victim = g_DetectPinRegistry.pinnedVictimByAttacker[attacker];
+	g_DetectPinRegistry.pinnedVictimByAttacker[attacker] = 0;
+	g_DetectPinRegistry.pinnedClassByAttacker[attacker] = 0;
 	g_fDetectSpecialClearTimeA[attacker] = -1.0;
 	g_fDetectSpecialClearTimeB[attacker] = -1.0;
 
-	if (victim > 0 && victim <= MaxClients && g_iDetectPinnerByVictim[victim] == attacker)
+	if (victim > 0 && victim <= MaxClients && g_DetectPinRegistry.pinnerByVictim[victim] == attacker)
 	{
-		g_iDetectPinnerByVictim[victim] = 0;
+		g_DetectPinRegistry.pinnerByVictim[victim] = 0;
 	}
 
 	if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
@@ -335,13 +335,13 @@ void Detect_ClearPinStateByVictim(int victim)
 		return;
 	}
 
-	int attacker = g_iDetectPinnerByVictim[victim];
-	g_iDetectPinnerByVictim[victim] = 0;
+	int attacker = g_DetectPinRegistry.pinnerByVictim[victim];
+	g_DetectPinRegistry.pinnerByVictim[victim] = 0;
 
-	if (attacker > 0 && attacker <= MaxClients && g_iDetectPinnedVictim[attacker] == victim)
+	if (attacker > 0 && attacker <= MaxClients && g_DetectPinRegistry.pinnedVictimByAttacker[attacker] == victim)
 	{
-		g_iDetectPinnedVictim[attacker] = 0;
-		g_iDetectPinnedClass[attacker] = 0;
+		g_DetectPinRegistry.pinnedVictimByAttacker[attacker] = 0;
+		g_DetectPinRegistry.pinnedClassByAttacker[attacker] = 0;
 		g_fDetectSpecialClearTimeA[attacker] = -1.0;
 		g_fDetectSpecialClearTimeB[attacker] = -1.0;
 	}
@@ -358,9 +358,9 @@ void Detect_ClearPinStateByVictim(int victim)
 bool Detect_IsPinnedClass(int infected)
 {
 	return infected > 0 && infected <= MaxClients
-		&& g_iDetectPinnedVictim[infected] > 0
-		&& g_iDetectPinnedClass[infected] >= view_as<int>(L4D2ZombieClass_Smoker)
-		&& g_iDetectPinnedClass[infected] <= view_as<int>(L4D2ZombieClass_Charger);
+		&& g_DetectPinRegistry.pinnedVictimByAttacker[infected] > 0
+		&& g_DetectPinRegistry.pinnedClassByAttacker[infected] >= view_as<int>(L4D2ZombieClass_Smoker)
+		&& g_DetectPinRegistry.pinnedClassByAttacker[infected] <= view_as<int>(L4D2ZombieClass_Charger);
 }
 
 bool Detect_IsStillPinning(int infected, int victim)
@@ -428,13 +428,13 @@ bool Detect_IsValidTeamClear(int clearer, int pinner)
 				"SpecialClear valid clear check. clearer=%d pinner=%d result=0 reason=invalid_inputs pinnedClass=%d pinvictim=%d",
 				clearer,
 				pinner,
-				pinner >= 1 && pinner <= MaxClients ? g_iDetectPinnedClass[pinner] : 0,
-				pinner >= 1 && pinner <= MaxClients ? g_iDetectPinnedVictim[pinner] : 0);
+				pinner >= 1 && pinner <= MaxClients ? g_DetectPinRegistry.pinnedClassByAttacker[pinner] : 0,
+				pinner >= 1 && pinner <= MaxClients ? g_DetectPinRegistry.pinnedVictimByAttacker[pinner] : 0);
 		}
 		return false;
 	}
 
-	int pinvictim = g_iDetectPinnedVictim[pinner];
+	int pinvictim = g_DetectPinRegistry.pinnedVictimByAttacker[pinner];
 	if (!IsValidSurvivor(pinvictim))
 	{
 		pinvictim = L4D2_GetSurvivorVictim(pinner);
@@ -485,7 +485,7 @@ bool Detect_IsValidTeamClear(int clearer, int pinner)
 			clearer,
 			pinner,
 			pinvictim,
-			g_iDetectPinnedClass[pinner],
+			g_DetectPinRegistry.pinnedClassByAttacker[pinner],
 			g_fDetectSpecialClearTimeA[pinner],
 			g_fDetectSpecialClearTimeB[pinner]);
 	}
@@ -508,7 +508,7 @@ void Detect_EmitSpecialClear(int clearer, int pinner, bool withShove)
 		return;
 	}
 
-	int pinvictim = g_iDetectPinnedVictim[pinner];
+	int pinvictim = g_DetectPinRegistry.pinnedVictimByAttacker[pinner];
 	if (!IsValidSurvivor(pinvictim))
 	{
 		pinvictim = L4D2_GetSurvivorVictim(pinner);
@@ -560,7 +560,7 @@ void Detect_EmitSpecialClear(int clearer, int pinner, bool withShove)
 
 	g_SkillEvents[eventIndex].actor.Capture(clearer);
 	g_SkillEvents[eventIndex].victim.Capture(pinner);
-	g_SkillEvents[eventIndex].zombieClass = g_iDetectPinnedClass[pinner];
+	g_SkillEvents[eventIndex].zombieClass = g_DetectPinRegistry.pinnedClassByAttacker[pinner];
 	g_SkillEvents[eventIndex].timeA = g_fDetectSpecialClearTimeA[pinner] >= 0.0 ? (now - g_fDetectSpecialClearTimeA[pinner]) : -1.0;
 	g_SkillEvents[eventIndex].timeB = g_fDetectSpecialClearTimeB[pinner] >= 0.0 ? (now - g_fDetectSpecialClearTimeB[pinner]) : -1.0;
 	g_SkillEvents[eventIndex].withShove = withShove;
@@ -572,7 +572,7 @@ void Detect_EmitSpecialClear(int clearer, int pinner, bool withShove)
 			"SpecialClear emit payload. clearer=%d pinner=%d class=%d pinvictim=%d withShove=%d timeA=%.3f timeB=%.3f",
 			clearer,
 			pinner,
-			g_iDetectPinnedClass[pinner],
+			g_DetectPinRegistry.pinnedClassByAttacker[pinner],
 			pinvictim,
 			withShove ? 1 : 0,
 			g_SkillEvents[eventIndex].timeA,

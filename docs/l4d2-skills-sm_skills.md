@@ -504,9 +504,9 @@ Eso implica:
 
 El resumen corto de chat se mantiene orientado al actor objetivo.
 
-No cambia con esta refactor.
+No cambia con esta limpieza interna.
 
-La refactor solo afecta la tabla detallada de consola.
+La limpieza interna solo afecta la tabla detallada de consola.
 
 ## Impacto en Código
 

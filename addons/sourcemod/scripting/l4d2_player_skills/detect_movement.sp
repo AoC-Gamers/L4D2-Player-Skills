@@ -251,7 +251,7 @@ void Detect_EventJockeyPunched(Event event)
 	bool isLunging = event.GetBool("islunging");
 
 	Skills_Debug(PlayerSkillsDebug_Detect,
-		"Jockey punched event. jockey=%d attacker=%d islunging=%d tracked_leaping=%d",
+		"Jockey punched event. jockey=%d attacker=%d islunging=%d effective_leaping=%d",
 		jockey,
 		attacker,
 		isLunging ? 1 : 0,
@@ -271,7 +271,7 @@ void Detect_EventJockeyKilled(Event event)
 	event.GetString("weapon", weapon, sizeof(weapon));
 
 	Skills_Debug(PlayerSkillsDebug_Detect,
-		"Jockey killed event. jockey=%d attacker=%d weapon=%s tracked_leaping=%d",
+		"Jockey killed event. jockey=%d attacker=%d weapon=%s effective_leaping=%d",
 		jockey,
 		attacker,
 		weapon,

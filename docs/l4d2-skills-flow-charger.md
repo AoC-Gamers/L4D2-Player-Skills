@@ -31,8 +31,7 @@ clasificación rica de `Level` se resuelva primero.
 - `g_fDetectChargerChargeSeenAt`
 - `g_bDetectChargerKilledMelee`
 - `g_bDetectChargerKilledCharging`
-- `g_bDetectPendingChargerDeathEval`
-- `g_iDetectPendingChargerDeathAttackerUserId`
+- `g_DetectPendingChargerDeath`
 
 Fuentes auxiliares de verdad para charge:
 

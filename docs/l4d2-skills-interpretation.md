@@ -370,7 +370,7 @@ Si la respuesta es no:
 Esta interpretación se usa como referencia para:
 
 - diseño de nuevas detecciones;
-- refactor de enums;
+- organización interna del detector;
 - API pública;
 - y copy visible al jugador.
 
