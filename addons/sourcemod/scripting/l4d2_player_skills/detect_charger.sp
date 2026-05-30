@@ -862,6 +862,9 @@ bool Detect_TryEmitChargerLevelFromDeath(int victim, int attacker)
 	float rawDamage = g_DetectChargerDamageSnapshot[victim].lastRawDamage;
 	if (rawDamage <= 0.0)
 	{
+		// Death-side fallback: melee finishers can reach player_death without a
+		// trustworthy final OnTakeDamagePost snapshot, so reuse life-kill damage
+		// instead of dropping the level classification outright.
 		rawDamage = float(Detect_GetSiLifeDamageByAttacker(victim, attacker));
 	}
 

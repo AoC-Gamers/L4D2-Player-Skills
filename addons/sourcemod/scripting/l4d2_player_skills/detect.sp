@@ -865,6 +865,9 @@ void Detect_TryEmitHunterSkeetShotgun(int hunter, int attacker, bool headshot)
 
 void Detect_TryEmitHunterSkeetShotgunFallback(int hunter, int attacker, bool headshot, int hunterHealthBeforeDamage)
 {
+	// Some shotgun kills land entirely through life-kill accounting without a
+	// stable blast window. Keep this fallback so single-shot skeets survive
+	// event ordering differences instead of degrading to HunterKill.
 	int interruptDamage = g_cvDetectPounceInterrupt != null ? g_cvDetectPounceInterrupt.IntValue : 150;
 	int killerLifeDamage = Detect_GetSiLifeDamageByAttacker(hunter, attacker);
 	int killerLifeShots = Detect_GetSiLifeShotsByAttacker(hunter, attacker);
@@ -913,6 +916,8 @@ void Detect_TryEmitHunterSkeetShotgunFallback(int hunter, int attacker, bool hea
 
 Action Detect_TimerAnnounceBoomerKill(Handle timer, any userid)
 {
+	// BoomerPop is decided in boomer_exploded, while the generic kill summary is
+	// built from player_death. Delay the plain kill briefly so Pop can suppress it.
 	int boomer = GetClientOfUserId(userid);
 	if (boomer < 1 || boomer > MaxClients)
 	{
@@ -954,6 +959,8 @@ Action Detect_TimerAnnounceBoomerKill(Handle timer, any userid)
 
 Action Detect_TimerEvaluateHunterDeath(Handle timer, any userid)
 {
+	// Hunter death is evaluated out-of-frame because shotgun pellets, pounce-end
+	// state and player_death ordering are not stable in the same tick.
 	int hunter = GetClientOfUserId(userid);
 	if (hunter < 1 || hunter > MaxClients)
 	{
@@ -1092,6 +1099,8 @@ Action Detect_TimerEvaluateHunterDeath(Handle timer, any userid)
 
 Action Detect_TimerEvaluateChargerDeath(Handle timer, any userid)
 {
+	// ChargerLevel and the generic ChargerKill compete for the same death.
+	// Delay the simple kill so the richer level classification resolves first.
 	int charger = GetClientOfUserId(userid);
 	if (charger < 1 || charger > MaxClients)
 	{
@@ -2943,6 +2952,8 @@ void Detect_EventWeaponFire(Event event)
 	g_iDetectLastWeaponId[attacker] = Skills_GetWeaponIdFromEventName(weapon);
 	g_fDetectLastWeaponFireTime[attacker] = GetGameTime();
 
+	// Reset per-shot gates on weapon_fire rather than player_hurt so multi-pellet
+	// weapons and splash ticks can still collapse into one logical shot.
 	for (int victim = 1; victim <= MaxClients; victim++)
 	{
 		g_DetectSiLife[victim].byAttacker[attacker].shotCounted = false;

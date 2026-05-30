@@ -534,6 +534,9 @@ void Boss_EventWitchKilled(Event event)
 	g_BossSessions[sessionIndex].pendingKillerUserid = GetClientUserId(killer);
 	g_BossSessions[sessionIndex].pendingWitchOneShot = oneShot;
 	g_BossSessions[sessionIndex].pendingWitchMeleeOnly = meleeOnly;
+	// Witch kill classification is delayed for the same reason as Hunter death:
+	// shotgun pellets and the final kill event do not always arrive in a stable
+	// order, so the crown decision must run on the settled session state.
 	CreateTimer(0.10, Boss_TimerEvaluateWitchDeath, sessionIndex, TIMER_FLAG_NO_MAPCHANGE);
 	Skills_Debug(PlayerSkillsDebug_Boss, "Witch death queued. session=%d killer=%d oneshot=%d melee_only=%d delay=0.10", g_BossSessions[sessionIndex].id, killer, oneShot, meleeOnly);
 }
