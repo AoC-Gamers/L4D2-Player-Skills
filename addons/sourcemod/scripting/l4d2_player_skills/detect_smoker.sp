@@ -27,7 +27,13 @@ int Detect_FindSmokerByVictim(int victim)
 		return 0;
 	}
 
-	int smoker = g_DetectPinRegistry.smokerOwnerByVictim[victim];
+	int smoker = Detect_GetCurrentPinnedAttacker(victim);
+	if (IsValidZombieClass(smoker, L4D2ZombieClass_Smoker) && Detect_GetSmokerVictimFromState(smoker) == victim)
+	{
+		return smoker;
+	}
+
+	smoker = g_DetectPinRegistry.smokerOwnerByVictim[victim];
 	if (IsValidZombieClass(smoker, L4D2ZombieClass_Smoker) && Detect_GetSmokerVictimFromState(smoker) == victim)
 	{
 		return smoker;
@@ -389,7 +395,7 @@ bool Detect_IsStillPinning(int infected, int victim)
 		return true;
 	}
 
-	int currentVictim = L4D2_GetSurvivorVictim(infected);
+	int currentVictim = Detect_GetCurrentPinnedVictim(infected);
 	if (currentVictim == victim)
 	{
 		if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
@@ -434,21 +440,15 @@ bool Detect_IsValidTeamClear(int clearer, int pinner)
 		return false;
 	}
 
-	int pinvictim = g_DetectPinRegistry.pinnedVictimByAttacker[pinner];
+	int pinvictim = Detect_GetCurrentPinnedVictim(pinner);
 	if (!IsValidSurvivor(pinvictim))
 	{
-		pinvictim = L4D2_GetSurvivorVictim(pinner);
-		if (!IsValidSurvivor(pinvictim)
-			&& IsValidZombieClass(pinner, L4D2ZombieClass_Charger)
-			&& L4D2_IsInQueuedPummel(pinner))
-		{
-			pinvictim = L4D2_GetQueuedPummelVictim(pinner);
-		}
+		return false;
+	}
 
-		if (IsValidSurvivor(pinvictim))
-		{
-			Detect_SetPinState(pinner, pinvictim, GetClientZombieClass(pinner), g_fDetectSpecialClearTimeA[pinner], g_fDetectSpecialClearTimeB[pinner]);
-		}
+	if (pinvictim != g_DetectPinRegistry.pinnedVictimByAttacker[pinner])
+	{
+		Detect_SetPinState(pinner, pinvictim, GetClientZombieClass(pinner), g_fDetectSpecialClearTimeA[pinner], g_fDetectSpecialClearTimeB[pinner]);
 	}
 
 	if (!IsValidSurvivor(pinvictim) || clearer == pinvictim)
@@ -508,21 +508,16 @@ void Detect_EmitSpecialClear(int clearer, int pinner, bool withShove)
 		return;
 	}
 
-	int pinvictim = g_DetectPinRegistry.pinnedVictimByAttacker[pinner];
+	int pinvictim = Detect_GetCurrentPinnedVictim(pinner);
 	if (!IsValidSurvivor(pinvictim))
 	{
-		pinvictim = L4D2_GetSurvivorVictim(pinner);
-		if (!IsValidSurvivor(pinvictim)
-			&& IsValidZombieClass(pinner, L4D2ZombieClass_Charger)
-			&& L4D2_IsInQueuedPummel(pinner))
-		{
-			pinvictim = L4D2_GetQueuedPummelVictim(pinner);
-		}
+		Detect_ClearPinStateByAttacker(pinner);
+		return;
+	}
 
-		if (IsValidSurvivor(pinvictim))
-		{
-			Detect_SetPinState(pinner, pinvictim, GetClientZombieClass(pinner), g_fDetectSpecialClearTimeA[pinner], g_fDetectSpecialClearTimeB[pinner]);
-		}
+	if (pinvictim != g_DetectPinRegistry.pinnedVictimByAttacker[pinner])
+	{
+		Detect_SetPinState(pinner, pinvictim, GetClientZombieClass(pinner), g_fDetectSpecialClearTimeA[pinner], g_fDetectSpecialClearTimeB[pinner]);
 	}
 
 	if (!IsValidSurvivor(clearer) || !IsValidSurvivor(pinvictim))

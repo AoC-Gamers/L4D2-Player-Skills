@@ -6,6 +6,66 @@
 #define L4D2_SKILLS_FAST_POP_TIME 1.0
 #define L4D2_SKILLS_COMPETITIVE_POP_MAX_TIME 3.0
 
+static const char g_L4D2WeaponDisplayNames[L4D2WeaponId_MAX][] =
+{
+	"None",
+	"Pistol",
+	"Uzi",
+	"Pump",
+	"Autoshotgun",
+	"M-16",
+	"Hunting Rifle",
+	"Mac",
+	"Chrome",
+	"Desert Rifle",
+	"Military Sniper",
+	"SPAS Shotgun",
+	"First Aid Kit",
+	"Molotov",
+	"Pipe Bomb",
+	"Pills",
+	"Gascan",
+	"Propane Tank",
+	"Oxygen Tank",
+	"Melee",
+	"Chainsaw",
+	"Grenade Launcher",
+	"Ammo Pack",
+	"Adrenaline",
+	"Defibrillator",
+	"Bile Bomb",
+	"AK-47",
+	"Gnome",
+	"Cola Bottles",
+	"Fireworks",
+	"Incendiary Ammo Pack",
+	"Explosive Ammo Pack",
+	"Deagle",
+	"MP5",
+	"SG552",
+	"AWP",
+	"Scout",
+	"M60",
+	"Tank Claw",
+	"Hunter Claw",
+	"Charger Claw",
+	"Boomer Claw",
+	"Smoker Claw",
+	"Spitter Claw",
+	"Jockey Claw",
+	"Machinegun",
+	"Vomit",
+	"Splat",
+	"Pounce",
+	"Lounge",
+	"Pull",
+	"Choke",
+	"Rock",
+	"Physics",
+	"Ammo",
+	"Upgrade Item"
+};
+
 /**
  * @brief Checks whether the plugin is currently enabled.
  *
@@ -84,7 +144,31 @@ stock bool Skills_IsRangedShotWeaponId(int wepid)
 
 stock int Skills_GetWeaponIdFromEventName(const char[] weaponName)
 {
-	return weaponName[0] != '\0' ? WeaponNameToId(weaponName) : WEPID_NONE;
+	if (weaponName[0] == '\0')
+	{
+		return WEPID_NONE;
+	}
+
+	if (StrEqual(weaponName, "grenade_launcher_projectile"))
+	{
+		return WEPID_GRENADE_LAUNCHER;
+	}
+
+	int weaponId = L4D2_GetWeaponIdByWeaponName(weaponName);
+	if (weaponId != WEPID_NONE)
+	{
+		return weaponId;
+	}
+
+	char prefixed[64];
+	FormatEx(prefixed, sizeof(prefixed), "weapon_%s", weaponName);
+	weaponId = L4D2_GetWeaponIdByWeaponName(prefixed);
+	if (weaponId != WEPID_NONE)
+	{
+		return weaponId;
+	}
+
+	return WeaponNameToId(weaponName);
 }
 
 /**
@@ -890,40 +974,13 @@ stock void Skills_GetSkillTypeName(L4D2SkillType type, char[] buffer, int maxlen
 
 stock void Skills_GetWeaponDisplayName(int weaponId, char[] buffer, int maxlen)
 {
-	switch (weaponId)
+	if (weaponId >= 0 && weaponId < view_as<int>(L4D2WeaponId_MAX))
 	{
-		case WEPID_SNIPER_MILITARY:
-		{
-			strcopy(buffer, maxlen, "Military Sniper");
-		}
-		case WEPID_HUNTING_RIFLE:
-		{
-			strcopy(buffer, maxlen, "Hunting Rifle");
-		}
-		case WEPID_SNIPER_AWP:
-		{
-			strcopy(buffer, maxlen, "AWP");
-		}
-		case WEPID_SNIPER_SCOUT:
-		{
-			strcopy(buffer, maxlen, "Scout");
-		}
-		case WEPID_PISTOL_MAGNUM:
-		{
-			strcopy(buffer, maxlen, "Magnum");
-		}
-		case WEPID_GRENADE_LAUNCHER:
-		{
-			strcopy(buffer, maxlen, "Grenade Launcher");
-		}
-		default:
-		{
-			GetLongWeaponName(weaponId, buffer, maxlen);
-			if (buffer[0] == '\0')
-			{
-				strcopy(buffer, maxlen, "Weapon");
-			}
-		}
+		strcopy(buffer, maxlen, g_L4D2WeaponDisplayNames[weaponId]);
+	}
+	else
+	{
+		strcopy(buffer, maxlen, "Weapon");
 	}
 }
 

@@ -438,6 +438,49 @@ int g_iDetectPendingBoomerKillEvent[MAXPLAYERS + 1];
 float g_fDetectSpecialClearTimeA[MAXPLAYERS + 1];
 float g_fDetectSpecialClearTimeB[MAXPLAYERS + 1];
 
+int Detect_GetCurrentPinnedVictim(int infected)
+{
+	if (!IsValidInfected(infected))
+	{
+		return 0;
+	}
+
+	int victim = L4D2_GetSurvivorVictim(infected);
+	if (IsValidSurvivor(victim))
+	{
+		return victim;
+	}
+
+	if (IsValidZombieClass(infected, L4D2ZombieClass_Charger) && L4D2_IsInQueuedPummel(infected))
+	{
+		victim = L4D2_GetQueuedPummelVictim(infected);
+		if (IsValidSurvivor(victim))
+		{
+			return victim;
+		}
+	}
+
+	victim = g_DetectPinRegistry.pinnedVictimByAttacker[infected];
+	return IsValidSurvivor(victim) ? victim : 0;
+}
+
+int Detect_GetCurrentPinnedAttacker(int survivor)
+{
+	if (!IsValidSurvivor(survivor))
+	{
+		return 0;
+	}
+
+	int attacker = L4D2_GetInfectedAttacker(survivor);
+	if (IsValidInfected(attacker))
+	{
+		return attacker;
+	}
+
+	attacker = g_DetectPinRegistry.pinnerByVictim[survivor];
+	return IsValidInfected(attacker) ? attacker : 0;
+}
+
 bool g_bDetectHunterPouncing[MAXPLAYERS + 1];
 float g_fDetectHunterPounceSeenAt[MAXPLAYERS + 1];
 bool g_bDetectJockeyLeaping[MAXPLAYERS + 1];
@@ -624,9 +667,28 @@ bool Detect_DidSiLifeLastShotHitHead(int victim, int attacker)
 	return g_DetectSiLife[victim].byAttacker[attacker].lastShotHitHead;
 }
 
+bool Detect_CanUseSiLifeHeadshotFallback(int victim, int attacker)
+{
+	if (victim < 1 || victim > MaxClients || attacker < 1 || attacker > MaxClients)
+	{
+		return false;
+	}
+
+	// The hitgroup fallback is only trustworthy for real shot weapons. Fire,
+	// splash and other continuous damage paths may report head hitgroups without
+	// meaning "headshot" semantically.
+	return Skills_IsRangedShotWeaponId(g_DetectSiLife[victim].byAttacker[attacker].weaponId);
+}
+
 bool Detect_ResolveHeadshot(int victim, int attacker, bool eventHeadshot)
 {
-	return eventHeadshot || Detect_DidSiLifeLastShotHitHead(victim, attacker);
+	if (eventHeadshot)
+	{
+		return true;
+	}
+
+	return Detect_CanUseSiLifeHeadshotFallback(victim, attacker)
+		&& Detect_DidSiLifeLastShotHitHead(victim, attacker);
 }
 
 void Detect_ResetSiLifeKillTrack(int infected)
@@ -760,7 +822,7 @@ void Detect_TryEmitHunterSkeetRanged(int hunter, int attacker, bool headshot, co
 {
 	bool sniperSkeet = headshot && Detect_IsSkeetWeaponSniper(weapon);
 	bool glSkeet = Detect_IsSkeetWeaponGL(weapon);
-	L4D2WeaponId rangedWeaponId = Detect_GetWeaponIdFromEventName(weapon);
+	L4D2WeaponId rangedWeaponId = view_as<L4D2WeaponId>(Skills_GetWeaponIdFromEventName(weapon));
 	bool qualifiesAtBaseline = rawDamage >= float(hunterBaselineHealth);
 	char hunterDecision[256];
 	FormatEx(hunterDecision, sizeof(hunterDecision),
@@ -1075,7 +1137,7 @@ Action Detect_TimerEvaluateHunterDeath(Handle timer, any userid)
 
 		if (!g_bDetectSuppressSiLifeKill[hunter]
 			&& killedPouncing
-			&& Skills_IsShotgunWeaponId(Detect_GetWeaponIdFromEventName(weapon))
+			&& Skills_IsShotgunWeaponId(Skills_GetWeaponIdFromEventName(weapon))
 			&& g_DetectHunterShotWindow[hunter].teamBlastDamage == 0)
 		{
 			Detect_TryEmitHunterSkeetShotgunFallback(hunter, attacker, headshot, hunterHealthBeforeDamage);
@@ -1170,10 +1232,10 @@ void Detect_FindSiAssistSlots(int victim, int attacker, int &slot, int &emptySlo
 
 void Detect_ApplySiLifeShot(int victim, int attacker, int hitgroup, bool countRealShots, int &assistShots)
 {
-	g_DetectSiLife[victim].byAttacker[attacker].lastShotHitHead = (hitgroup == HITGROUP_HEAD);
-
 	if (countRealShots)
 	{
+		g_DetectSiLife[victim].byAttacker[attacker].lastShotHitHead = (hitgroup == HITGROUP_HEAD);
+
 		if (!g_DetectSiLife[victim].byAttacker[attacker].shotCounted)
 		{
 			g_DetectSiLife[victim].byAttacker[attacker].previousShots = g_DetectSiLife[victim].byAttacker[attacker].shots;
@@ -1189,6 +1251,10 @@ void Detect_ApplySiLifeShot(int victim, int attacker, int hitgroup, bool countRe
 		return;
 	}
 
+	// Non-shot damage sources (fire, bleed-like ticks, splash follow-up) may
+	// still report a head hitgroup, but they should not promote Headshot as a
+	// kill property. Clear the fallback flag so only real shot events survive.
+	g_DetectSiLife[victim].byAttacker[attacker].lastShotHitHead = false;
 	g_DetectSiLife[victim].byAttacker[attacker].previousShots = g_DetectSiLife[victim].byAttacker[attacker].shots;
 	g_DetectSiLife[victim].byAttacker[attacker].shots++;
 	assistShots++;
@@ -2065,14 +2131,10 @@ void Detect_EventPlayerLedgeGrab(Event event)
 	int attacker = GetClientOfUserId(event.GetInt("attacker"));
 	if (!IsValidInfected(attacker))
 	{
-		attacker = Detect_FindSmokerByVictim(victim);
-		if (!IsValidZombieClass(attacker, L4D2ZombieClass_Smoker))
+		attacker = Detect_GetCurrentPinnedAttacker(victim);
+		if (!IsValidInfected(attacker))
 		{
-			attacker = g_DetectPinRegistry.pinnerByVictim[victim];
-			if (!IsValidInfected(attacker))
-			{
-				attacker = 0;
-			}
+			attacker = Detect_FindSmokerByVictim(victim);
 		}
 	}
 
@@ -2168,7 +2230,7 @@ void Detect_OnPummelVictimPost(int attacker, int victim)
 		return;
 	}
 
-	if (g_DetectPinRegistry.pinnedVictimByAttacker[attacker] != victim)
+	if (Detect_GetCurrentPinnedVictim(attacker) != victim)
 	{
 		Detect_SetPinState(attacker, victim, L4D2ZombieClass_Charger, GetGameTime(), GetGameTime());
 		return;
@@ -2227,7 +2289,7 @@ void Detect_EventPounceStopped(Event event)
 
 	int clearer = GetClientOfUserId(event.GetInt("userid"));
 	int victim = GetClientOfUserId(event.GetInt("victim"));
-	int hunter = IsValidSurvivor(victim) ? g_DetectPinRegistry.pinnerByVictim[victim] : 0;
+	int hunter = Detect_GetCurrentPinnedAttacker(victim);
 	if (!IsValidZombieClass(hunter, L4D2ZombieClass_Hunter))
 	{
 		return;
@@ -2239,8 +2301,8 @@ void Detect_EventPounceStopped(Event event)
 			"SpecialClear pounce_stopped event. clearer=%d victim=%d pin_pinner=%d pin_victim=%d",
 			clearer,
 			victim,
-			IsValidSurvivor(victim) ? g_DetectPinRegistry.pinnerByVictim[victim] : 0,
-			hunter >= 1 && hunter <= MaxClients ? g_DetectPinRegistry.pinnedVictimByAttacker[hunter] : 0);
+			Detect_GetCurrentPinnedAttacker(victim),
+			Detect_GetCurrentPinnedVictim(hunter));
 	}
 }
 
@@ -2256,7 +2318,7 @@ void Detect_EventPounceEnd(Event event)
 	bool trackedHunter = IsValidZombieClass(hunter, L4D2ZombieClass_Hunter);
 	if (!trackedHunter && IsValidSurvivor(victim))
 	{
-		int pinner = g_DetectPinRegistry.pinnerByVictim[victim];
+		int pinner = Detect_GetCurrentPinnedAttacker(victim);
 		trackedHunter = IsValidZombieClass(pinner, L4D2ZombieClass_Hunter);
 	}
 
@@ -2271,7 +2333,7 @@ void Detect_EventPounceEnd(Event event)
 			"SpecialClear pounce_end event. hunter=%d victim=%d pin_victim=%d",
 			hunter,
 			victim,
-			hunter >= 1 && hunter <= MaxClients ? g_DetectPinRegistry.pinnedVictimByAttacker[hunter] : 0);
+			Detect_GetCurrentPinnedVictim(hunter));
 	}
 }
 
@@ -2288,7 +2350,7 @@ void Detect_EventChargerCarryEnd(Event event)
 		return;
 	}
 
-	int victim = g_DetectPinRegistry.pinnedVictimByAttacker[charger];
+	int victim = Detect_GetCurrentPinnedVictim(charger);
 	if (!IsValidSurvivor(victim))
 	{
 		return;
@@ -2303,7 +2365,7 @@ void Detect_EventChargerCarryEnd(Event event)
 			charger,
 			victim,
 			g_fDetectSpecialClearTimeB[charger],
-			g_DetectPinRegistry.pinnedVictimByAttacker[charger]);
+			Detect_GetCurrentPinnedVictim(charger));
 	}
 }
 

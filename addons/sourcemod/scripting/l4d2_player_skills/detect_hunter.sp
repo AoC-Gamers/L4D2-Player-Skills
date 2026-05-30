@@ -113,13 +113,13 @@ float Detect_CalculateHunterPounceDamage(float distance)
 
 bool Detect_IsSkeetWeaponMelee(const char[] weapon)
 {
-	L4D2WeaponId weaponId = Detect_GetWeaponIdFromEventName(weapon);
+	L4D2WeaponId weaponId = view_as<L4D2WeaponId>(Skills_GetWeaponIdFromEventName(weapon));
 	return weaponId == L4D2WeaponId_Melee || weaponId == L4D2WeaponId_Chainsaw || StrEqual(weapon, "melee");
 }
 
 bool Detect_IsSkeetWeaponSniper(const char[] weapon)
 {
-	L4D2WeaponId weaponId = Detect_GetWeaponIdFromEventName(weapon);
+	L4D2WeaponId weaponId = view_as<L4D2WeaponId>(Skills_GetWeaponIdFromEventName(weapon));
 	return weaponId == L4D2WeaponId_HuntingRifle
 		|| weaponId == L4D2WeaponId_SniperMilitary
 		|| weaponId == L4D2WeaponId_SniperAWP
@@ -129,19 +129,6 @@ bool Detect_IsSkeetWeaponSniper(const char[] weapon)
 
 bool Detect_IsSkeetWeaponGL(const char[] weapon)
 {
-	L4D2WeaponId weaponId = Detect_GetWeaponIdFromEventName(weapon);
-	return weaponId == L4D2WeaponId_GrenadeLauncher || StrEqual(weapon, "grenade_launcher_projectile");
-}
-
-L4D2WeaponId Detect_GetWeaponIdFromEventName(const char[] weapon)
-{
-	L4D2WeaponId weaponId = L4D2_GetWeaponIdByWeaponName(weapon);
-	if (weaponId != L4D2WeaponId_None)
-	{
-		return weaponId;
-	}
-
-	char prefixed[64];
-	FormatEx(prefixed, sizeof(prefixed), "weapon_%s", weapon);
-	return L4D2_GetWeaponIdByWeaponName(prefixed);
+	L4D2WeaponId weaponId = view_as<L4D2WeaponId>(Skills_GetWeaponIdFromEventName(weapon));
+	return weaponId == L4D2WeaponId_GrenadeLauncher;
 }

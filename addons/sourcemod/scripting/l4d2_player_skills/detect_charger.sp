@@ -703,7 +703,7 @@ void Detect_CheckChargerInstaKill(Event event, int victim)
 
 bool Detect_IsChargerCharging(int charger)
 {
-	int abilityEnt = GetEntPropEnt(charger, Prop_Send, "m_customAbility");
+	int abilityEnt = L4D_GetPlayerCustomAbility(charger);
 	return IsValidEntity(abilityEnt) && GetEntProp(abilityEnt, Prop_Send, "m_isCharging") != 0;
 }
 
