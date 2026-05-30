@@ -543,6 +543,11 @@ void Boss_EventWitchKilled(Event event)
 
 Action Boss_TimerEvaluateWitchDeath(Handle timer, any data)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return Plugin_Stop;
+	}
+
 	int sessionIndex = data;
 
 	if (sessionIndex < 0 || sessionIndex >= L4D2_SKILLS_MAX_BOSSES

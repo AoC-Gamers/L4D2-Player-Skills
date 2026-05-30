@@ -1488,18 +1488,68 @@ void Announce_Skill(int eventId)
 
 		case L4D2Skill_SpecialPinClear:
 		{
-			CPrintToChatAll("%s %t", tag,
-				g_SkillEvents[eventIndex].withShove ? "SpecialPinClearShove" : "SpecialPinClear",
-				actorName,
-				victimName,
-				pinVictimName);
+			if (g_SkillEvents[eventIndex].zombieClass == view_as<int>(L4D2ZombieClass_Smoker) && !g_SkillEvents[eventIndex].withShove)
+			{
+				char phrase[64];
+				strcopy(phrase, sizeof(phrase), "SpecialPinClear");
+
+				switch (g_SkillEvents[eventIndex].reason)
+				{
+					case 1: strcopy(phrase, sizeof(phrase), "SmokerSpecialPinClearShot");
+					case 2, 3: strcopy(phrase, sizeof(phrase), "SmokerSpecialPinClearCut");
+				}
+
+				CPrintToChatAll("%s %t", tag, phrase,
+					actorName,
+					victimName,
+					pinVictimName);
+			}
+			else
+			{
+				CPrintToChatAll("%s %t", tag,
+					g_SkillEvents[eventIndex].withShove ? "SpecialPinClearShove" : "SpecialPinClear",
+					actorName,
+					victimName,
+					pinVictimName);
+			}
 		}
 
 		case L4D2Skill_SmokerTongueCut:
 		{
-			CPrintToChatAll("%s %t", tag, "SmokerTongueCut",
-				actorName,
-				victimName);
+			char weaponName[64];
+			Skills_GetWeaponDisplayName(g_SkillEvents[eventIndex].actorWeaponId, weaponName, sizeof(weaponName));
+
+			if (g_SkillEvents[eventIndex].reason == 1)
+			{
+				CPrintToChatAll("%s %t", tag, "SmokerTongueCutShot",
+					actorName,
+					victimName);
+			}
+			else if (g_SkillEvents[eventIndex].reason == 2)
+			{
+				CPrintToChatAll("%s %t", tag, "SmokerTongueCut",
+					actorName,
+					victimName);
+			}
+			else if (g_SkillEvents[eventIndex].reason == 3)
+			{
+				CPrintToChatAll("%s %t", tag, "SmokerTongueCut",
+					actorName,
+					victimName);
+			}
+			else if (g_SkillEvents[eventIndex].actorWeaponId != WEPID_NONE && weaponName[0] != '\0' && strcmp(weaponName, "Weapon") != 0)
+			{
+				CPrintToChatAll("%s %t", tag, "SmokerTongueCutWeapon",
+					actorName,
+					victimName,
+					weaponName);
+			}
+			else
+			{
+				CPrintToChatAll("%s %t", tag, "SmokerTongueCut",
+					actorName,
+					victimName);
+			}
 		}
 
 		case L4D2Skill_SmokerSelfClear:
@@ -1507,15 +1557,26 @@ void Announce_Skill(int eventId)
 			char assistList[256];
 			Announce_FormatAssistList(eventIndex, assistList, sizeof(assistList));
 
-			CPrintToChatAll("%s %t", tag,
-				g_SkillEvents[eventIndex].withShove
-					? (g_SkillEvents[eventIndex].assistsCount > 0 ? "SmokerSelfClearShoveAssist" : "SmokerSelfClearShove")
-					: (g_SkillEvents[eventIndex].headshot
+			if (g_SkillEvents[eventIndex].withShove)
+			{
+				CPrintToChatAll("%s %t", tag,
+					g_SkillEvents[eventIndex].assistsCount > 0 ? "SmokerSelfClearShoveAssist" : "SmokerSelfClearShove",
+					actorName,
+					victimName,
+					assistList);
+			}
+			else
+			{
+				CPrintToChatAll("%s %t", tag,
+					g_SkillEvents[eventIndex].headshot
 						? (g_SkillEvents[eventIndex].assistsCount > 0 ? "SmokerSelfClearHeadshotAssist" : "SmokerSelfClearHeadshot")
-						: (g_SkillEvents[eventIndex].assistsCount > 0 ? "SmokerSelfClearKillAssist" : "SmokerSelfClearKill")),
-				actorName,
-				victimName,
-				assistList);
+						: (g_SkillEvents[eventIndex].assistsCount > 0 ? "SmokerSelfClearKillAssist" : "SmokerSelfClearKill"),
+					actorName,
+					victimName,
+					g_SkillEvents[eventIndex].damage,
+					g_SkillEvents[eventIndex].shots,
+					assistList);
+			}
 		}
 
 		case L4D2Skill_BoomerPop:

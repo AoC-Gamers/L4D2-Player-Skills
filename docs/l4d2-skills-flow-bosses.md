@@ -209,6 +209,16 @@ Regla de announce:
 - `WitchDead`
   - imprime el resumen tradicional de daño hecho a la `Witch`.
 
+### Round End Policy
+
+El timer diferido de muerte de `Witch` usa política de `hard stop`.
+
+Si la ronda deja de estar `live` antes de resolver:
+
+- no se emite `WitchCrown`;
+- no se emite `WitchDead`;
+- no se imprime el cierre diferido de la sesión.
+
 ### Properties
 
 - `damage`

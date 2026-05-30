@@ -5,6 +5,11 @@
 
 Action Detect_TimerBoomerVomitCheck(Handle timer, any userid)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return Plugin_Stop;
+	}
+
 	int boomer = GetClientOfUserId(userid);
 	if (!IsValidZombieClass(boomer, L4D2ZombieClass_Boomer))
 	{
@@ -24,6 +29,11 @@ Action Detect_TimerBoomerVomitCheck(Handle timer, any userid)
 
 Action Detect_TimerCheckHop(Handle timer, any userid)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return Plugin_Stop;
+	}
+
 	int client = GetClientOfUserId(userid);
 	if (!IsValidSurvivor(client) || !IsPlayerAlive(client))
 	{
@@ -42,6 +52,11 @@ Action Detect_TimerCheckHop(Handle timer, any userid)
 
 Action Detect_TimerCheckHopStreak(Handle timer, any userid)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return Plugin_Stop;
+	}
+
 	int client = GetClientOfUserId(userid);
 	if (!IsValidSurvivor(client) || !IsPlayerAlive(client))
 	{

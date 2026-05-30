@@ -3,6 +3,78 @@
 #endif
 #define _l4d2_player_skills_detect_smoker_included
 
+#define L4D2_SKILLS_SMOKER_TONGUECUT_CONFIRM_TIME 1.25
+#define L4D2_SKILLS_SMOKER_BREAK_NONE 0
+#define L4D2_SKILLS_SMOKER_BREAK_SHOT 1
+#define L4D2_SKILLS_SMOKER_BREAK_CUT 2
+#define L4D2_SKILLS_SMOKER_BREAK_CHAINSAW 3
+
+int Detect_ResolveSmokerTongueBreakReason(int stopper, int damageType)
+{
+	int activeWeaponId = Skills_GetClientActiveWeaponId(stopper);
+	if (activeWeaponId == view_as<int>(L4D2WeaponId_Chainsaw))
+	{
+		return L4D2_SKILLS_SMOKER_BREAK_CHAINSAW;
+	}
+
+	if (damageType & (DMG_BULLET | DMG_BUCKSHOT))
+	{
+		return L4D2_SKILLS_SMOKER_BREAK_SHOT;
+	}
+
+	if (damageType & (DMG_SLASH | DMG_CLUB))
+	{
+		return L4D2_SKILLS_SMOKER_BREAK_CUT;
+	}
+
+	return L4D2_SKILLS_SMOKER_BREAK_NONE;
+}
+
+void Detect_EmitSmokerTongueCut(int survivor, int smoker, int reason = 0, int weaponId = WEPID_NONE)
+{
+	if (!IsValidSurvivor(survivor) || !IsValidZombieClass(smoker, L4D2ZombieClass_Smoker))
+	{
+		return;
+	}
+
+	int eventId = Skills_CreateEvent(L4D2Skill_SmokerTongueCut);
+	int eventIndex = Skills_GetEventIndex(eventId);
+	if (eventIndex == -1)
+	{
+		return;
+	}
+
+	g_SkillEvents[eventIndex].actor.Capture(survivor);
+	g_SkillEvents[eventIndex].victim.Capture(smoker);
+	g_SkillEvents[eventIndex].reason = reason;
+	g_SkillEvents[eventIndex].actorWeaponId = weaponId != WEPID_NONE ? weaponId : Skills_GetClientActiveWeaponId(survivor);
+
+	Action result = API_FireSkillDetected(eventId, L4D2Skill_SmokerTongueCut);
+	if (result < Plugin_Handled)
+	{
+		Announce_Skill(eventId);
+	}
+}
+
+Action Detect_TimerFinalizeSmokerTongueCut(Handle timer, any smokerUserId)
+{
+	if (!Skills_IsRoundLive())
+	{
+		return Plugin_Stop;
+	}
+
+	int smoker = GetClientOfUserId(smokerUserId);
+	if (!IsValidZombieClass(smoker, L4D2ZombieClass_Smoker) || !g_DetectSmoker[smoker].pendingTongueCut)
+	{
+		return Plugin_Stop;
+	}
+
+	int victim = g_DetectSmoker[smoker].victim;
+	Detect_EmitSmokerTongueCut(victim, smoker, g_DetectSmoker[smoker].pendingTongueCutReason, g_DetectSmoker[smoker].pendingTongueCutWeaponId);
+	Detect_ResetSmoker(smoker);
+	return Plugin_Stop;
+}
+
 int Detect_GetSmokerVictimFromState(int smoker)
 {
 	if (!IsValidZombieClass(smoker, L4D2ZombieClass_Smoker))
@@ -88,6 +160,7 @@ void Detect_EventChokeStopped(Event event)
 	int stopper = GetClientOfUserId(event.GetInt("userid"));
 	int victim = GetClientOfUserId(event.GetInt("victim"));
 	int smoker = GetClientOfUserId(event.GetInt("smoker"));
+	int breakReason = Detect_ResolveSmokerTongueBreakReason(stopper, event.GetInt("damage_type"));
 	if (!IsValidSurvivor(victim) || !IsValidZombieClass(smoker, L4D2ZombieClass_Smoker))
 	{
 		return;
@@ -117,6 +190,7 @@ void Detect_EventChokeStopped(Event event)
 			g_SkillEvents[eventIndex].timeA = g_fDetectSpecialClearTimeA[smoker] >= 0.0 ? (now - g_fDetectSpecialClearTimeA[smoker]) : -1.0;
 			g_SkillEvents[eventIndex].timeB = g_fDetectSpecialClearTimeB[smoker] >= 0.0 ? (now - g_fDetectSpecialClearTimeB[smoker]) : -1.0;
 			g_SkillEvents[eventIndex].withShove = false;
+			g_SkillEvents[eventIndex].reason = breakReason;
 			g_SkillEvents[eventIndex].pinVictim.Capture(victim);
 
 			Skills_Debug(PlayerSkillsDebug_Detect,
@@ -150,6 +224,8 @@ void Detect_EventTonguePullStopped(Event event)
 
 	int stopper = GetClientOfUserId(event.GetInt("userid"));
 	int victim = GetClientOfUserId(event.GetInt("victim"));
+	int breakReason = Detect_ResolveSmokerTongueBreakReason(stopper, event.GetInt("damage_type"));
+	int stopperWeaponId = Skills_GetClientActiveWeaponId(stopper);
 	if (!IsValidSurvivor(victim))
 	{
 		return;
@@ -180,21 +256,35 @@ void Detect_EventTonguePullStopped(Event event)
 			g_DetectPinRegistry.pinnerByVictim[victim]);
 	}
 
-	if (stopper == victim && IsValidZombieClass(smoker, L4D2ZombieClass_Smoker) && !hasReachedSmoker)
+	if (stopper == victim && IsValidZombieClass(smoker, L4D2ZombieClass_Smoker) && g_DetectSmoker[smoker].shoved)
 	{
-		int eventId = Skills_CreateEvent(L4D2Skill_SmokerTongueCut);
+		int eventId = Skills_CreateEvent(L4D2Skill_SmokerSelfClear);
 		int eventIndex = Skills_GetEventIndex(eventId);
 		if (eventIndex != -1)
 		{
 			g_SkillEvents[eventIndex].actor.Capture(victim);
 			g_SkillEvents[eventIndex].victim.Capture(smoker);
+			g_SkillEvents[eventIndex].withShove = true;
+			g_SkillEvents[eventIndex].damageScope = L4D2SkillDamageScope_SkillWindow;
+			g_SkillEvents[eventIndex].reason = breakReason;
+			Detect_WriteSiTrackAssistsToEventAsSkillWindow(eventIndex, smoker, victim);
 
-			Action result = API_FireSkillDetected(eventId, L4D2Skill_SmokerTongueCut);
+			Action result = API_FireSkillDetected(eventId, L4D2Skill_SmokerSelfClear);
 			if (result < Plugin_Handled)
 			{
 				Announce_Skill(eventId);
 			}
 		}
+	}
+	else if (stopper == victim && IsValidZombieClass(smoker, L4D2ZombieClass_Smoker) && !hasReachedSmoker)
+	{
+		g_DetectSmoker[smoker].pendingTongueCut = true;
+		g_DetectSmoker[smoker].pendingTongueCutReason = breakReason;
+		g_DetectSmoker[smoker].pendingTongueCutWeaponId = stopperWeaponId;
+		Detect_ClearPinStateByAttacker(smoker);
+		g_DetectPinRegistry.smokerOwnerByVictim[victim] = 0;
+		CreateTimer(L4D2_SKILLS_SMOKER_TONGUECUT_CONFIRM_TIME, Detect_TimerFinalizeSmokerTongueCut, GetClientUserId(smoker), TIMER_FLAG_NO_MAPCHANGE);
+		return;
 	}
 	else if (stopper != victim && IsValidSurvivor(stopper) && IsValidZombieClass(smoker, L4D2ZombieClass_Smoker))
 	{
@@ -209,6 +299,7 @@ void Detect_EventTonguePullStopped(Event event)
 			g_SkillEvents[eventIndex].timeA = g_fDetectSpecialClearTimeA[smoker] >= 0.0 ? (now - g_fDetectSpecialClearTimeA[smoker]) : -1.0;
 			g_SkillEvents[eventIndex].timeB = g_fDetectSpecialClearTimeB[smoker] >= 0.0 ? (now - g_fDetectSpecialClearTimeB[smoker]) : -1.0;
 			g_SkillEvents[eventIndex].withShove = false;
+			g_SkillEvents[eventIndex].reason = breakReason;
 			g_SkillEvents[eventIndex].pinVictim.Capture(victim);
 
 			Action clearResult = API_FireSkillDetected(eventId, L4D2Skill_SpecialPinClear);
@@ -218,26 +309,6 @@ void Detect_EventTonguePullStopped(Event event)
 			}
 		}
 	}
-	else if (stopper == victim && IsValidZombieClass(smoker, L4D2ZombieClass_Smoker) && hasReachedSmoker && g_DetectSmoker[smoker].shoved)
-	{
-		int eventId = Skills_CreateEvent(L4D2Skill_SmokerSelfClear);
-		int eventIndex = Skills_GetEventIndex(eventId);
-		if (eventIndex != -1)
-		{
-			g_SkillEvents[eventIndex].actor.Capture(victim);
-			g_SkillEvents[eventIndex].victim.Capture(smoker);
-			g_SkillEvents[eventIndex].withShove = true;
-			g_SkillEvents[eventIndex].damageScope = L4D2SkillDamageScope_SkillWindow;
-			Detect_WriteSiTrackAssistsToEventAsSkillWindow(eventIndex, smoker, victim);
-
-			Action result = API_FireSkillDetected(eventId, L4D2Skill_SmokerSelfClear);
-			if (result < Plugin_Handled)
-			{
-				Announce_Skill(eventId);
-			}
-		}
-	}
-
 	if (IsValidZombieClass(smoker, L4D2ZombieClass_Smoker))
 	{
 		Detect_ClearPinStateByAttacker(smoker);

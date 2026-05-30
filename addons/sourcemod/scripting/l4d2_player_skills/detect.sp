@@ -153,6 +153,9 @@ enum struct DetectSmokerState
 	int victim;
 	bool reached;
 	bool shoved;
+	bool pendingTongueCut;
+	int pendingTongueCutReason;
+	int pendingTongueCutWeaponId;
 
 	/**
 	 * @brief Clears the tracked Smoker runtime state.
@@ -164,6 +167,9 @@ enum struct DetectSmokerState
 		this.victim = 0;
 		this.reached = false;
 		this.shoved = false;
+		this.pendingTongueCut = false;
+		this.pendingTongueCutReason = 0;
+		this.pendingTongueCutWeaponId = WEPID_NONE;
 	}
 }
 
@@ -980,6 +986,11 @@ Action Detect_TimerAnnounceBoomerKill(Handle timer, any userid)
 {
 	// BoomerPop is decided in boomer_exploded, while the generic kill summary is
 	// built from player_death. Delay the plain kill briefly so Pop can suppress it.
+	if (!Skills_IsRoundLive())
+	{
+		return Plugin_Stop;
+	}
+
 	int boomer = GetClientOfUserId(userid);
 	if (boomer < 1 || boomer > MaxClients)
 	{
@@ -1023,6 +1034,11 @@ Action Detect_TimerEvaluateHunterDeath(Handle timer, any userid)
 {
 	// Hunter death is evaluated out-of-frame because shotgun pellets, pounce-end
 	// state and player_death ordering are not stable in the same tick.
+	if (!Skills_IsRoundLive())
+	{
+		return Plugin_Stop;
+	}
+
 	int hunter = GetClientOfUserId(userid);
 	if (hunter < 1 || hunter > MaxClients)
 	{
@@ -1163,6 +1179,11 @@ Action Detect_TimerEvaluateChargerDeath(Handle timer, any userid)
 {
 	// ChargerLevel and the generic ChargerKill compete for the same death.
 	// Delay the simple kill so the richer level classification resolves first.
+	if (!Skills_IsRoundLive())
+	{
+		return Plugin_Stop;
+	}
+
 	int charger = GetClientOfUserId(userid);
 	if (charger < 1 || charger > MaxClients)
 	{
@@ -2630,9 +2651,21 @@ void Detect_EventPlayerHurt(Event event)
 
 void Detect_HandleSmokerDeath(Event event, int victim, int attacker, bool shouldEmitSiLifeKill)
 {
-	if (IsValidSurvivor(attacker)
-		&& Detect_GetSmokerVictimFromState(victim) == attacker
-		&& g_DetectSmoker[victim].reached)
+	bool isVictimKiller = IsValidSurvivor(attacker) && Detect_GetSmokerVictimFromState(victim) == attacker;
+	bool emitSelfClear = false;
+	bool emitDeferredTongueCut = false;
+
+	if (isVictimKiller && g_DetectSmoker[victim].pendingTongueCut)
+	{
+		emitSelfClear = true;
+		emitDeferredTongueCut = !emitSelfClear;
+	}
+	else if (isVictimKiller && g_DetectSmoker[victim].reached)
+	{
+		emitSelfClear = true;
+	}
+
+	if (emitSelfClear)
 	{
 		int eventId = Skills_CreateEvent(L4D2Skill_SmokerSelfClear);
 		int eventIndex = Skills_GetEventIndex(eventId);
@@ -2653,6 +2686,10 @@ void Detect_HandleSmokerDeath(Event event, int victim, int attacker, bool should
 		}
 
 		Detect_MarkSiLifeKillSuppressed(victim);
+	}
+	else if (emitDeferredTongueCut)
+	{
+		Detect_EmitSmokerTongueCut(attacker, victim);
 	}
 
 	Detect_ClearPinStateByAttacker(victim);
@@ -2988,8 +3025,7 @@ void Detect_EventPlayerShoved(Event event)
 		Detect_EmitSpecialClear(attacker, victim, true);
 	}
 	else if (IsValidZombieClass(victim, L4D2ZombieClass_Smoker)
-		&& Detect_GetSmokerVictimFromState(victim) == attacker
-		&& g_DetectSmoker[victim].reached)
+		&& Detect_GetSmokerVictimFromState(victim) == attacker)
 	{
 		g_DetectSmoker[victim].shoved = true;
 	}

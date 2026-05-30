@@ -171,6 +171,24 @@ stock int Skills_GetWeaponIdFromEventName(const char[] weaponName)
 	return WeaponNameToId(weaponName);
 }
 
+stock int Skills_GetClientActiveWeaponId(int client)
+{
+	if (!IsValidClient(client))
+	{
+		return WEPID_NONE;
+	}
+
+	int weapon = L4D_GetPlayerCurrentWeapon(client);
+	if (weapon <= MaxClients || !IsValidEntity(weapon))
+	{
+		return WEPID_NONE;
+	}
+
+	char classname[64];
+	GetEntityClassname(weapon, classname, sizeof(classname));
+	return Skills_GetWeaponIdFromEventName(classname);
+}
+
 /**
  * @brief Clears the circular runtime buffer of detected skill events.
  *
@@ -896,18 +914,14 @@ stock void Skills_GetVersusContextName(PlayerSkillsVersusContextType context, ch
 
 stock void Skills_GetZombieClassName(L4D2ZombieClassType zombieClass, char[] buffer, int maxlen)
 {
-	switch (zombieClass)
+	if (zombieClass >= L4D2ZombieClass_Smoker && zombieClass <= L4D2ZombieClass_Tank)
 	{
-		case L4D2ZombieClass_Smoker: strcopy(buffer, maxlen, "Smoker");
-		case L4D2ZombieClass_Boomer: strcopy(buffer, maxlen, "Boomer");
-		case L4D2ZombieClass_Hunter: strcopy(buffer, maxlen, "Hunter");
-		case L4D2ZombieClass_Spitter: strcopy(buffer, maxlen, "Spitter");
-		case L4D2ZombieClass_Jockey: strcopy(buffer, maxlen, "Jockey");
-		case L4D2ZombieClass_Charger: strcopy(buffer, maxlen, "Charger");
-		case L4D2ZombieClass_Witch: strcopy(buffer, maxlen, "Witch");
-		case L4D2ZombieClass_Tank: strcopy(buffer, maxlen, "Tank");
-		default: strcopy(buffer, maxlen, "Infected");
+		// Left4DHooks stores the class-name table 0-based while the public zombie-class enum starts at 1.
+		strcopy(buffer, maxlen, L4D2_GetZombieClassname(view_as<L4D2ZombieClassType>(view_as<int>(zombieClass) - 1)));
+		return;
 	}
+
+	strcopy(buffer, maxlen, "Infected");
 }
 
 stock void Skills_FormatInfectedPlayerRefName(L4D2PlayerRef player, L4D2ZombieClassType zombieClass, char[] buffer, int maxlen)
@@ -1070,6 +1084,10 @@ stock void Skills_FormatEventPlayerRoleName(int eventIndex, int slot, char[] buf
 			case L4D2Skill_TankRockSkeet, L4D2Skill_TankDead:
 			{
 				zombieClass = L4D2ZombieClass_Tank;
+			}
+			case L4D2Skill_SpecialPinClear:
+			{
+				zombieClass = view_as<L4D2ZombieClassType>(g_SkillEvents[eventIndex].zombieClass);
 			}
 		}
 

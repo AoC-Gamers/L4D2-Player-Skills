@@ -146,6 +146,29 @@ Nota adicional:
 - se imprime después de la muerte del `Charger`;
 - no compite con `ChargerKill` ni con `ChargerLevel`.
 
+### 4.1.1. Política de cierre de ronda
+
+`l4d2_player_skills` usa política de `hard stop` al cierre de ronda.
+
+Esto significa:
+
+- si la ronda deja de estar `live`, el plugin deja de abrir tracking nuevo;
+- y los timers diferidos sensibles deben abortar sin emitir announce ni skill.
+
+Aplica especialmente a flujos diferidos como:
+
+- `BoomerKill`
+- `HunterSkeet` / `HunterKill`
+- `ChargerLevel` / `ChargerKill`
+- `ChargerDeathSetup`
+- `BoomerVomitLanded`
+- `WitchCrown` / `WitchDead`
+
+Objetivo:
+
+- evitar announces o skills tardíos cuando la ronda ya cerró;
+- evitar ambigüedad si el servidor congela survivors e infected al final de la ronda.
+
 ### 4.2. Naming visual de announces
 
 El nombre visible de chat debe separar:

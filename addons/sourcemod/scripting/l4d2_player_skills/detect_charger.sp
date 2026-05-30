@@ -565,6 +565,11 @@ void Detect_EmitChargerDeathSetup(int victim, bool incapped, bool ledgeHang)
 
 Action Detect_TimerEmitChargerDeathSetup(Handle timer, any userid)
 {
+	if (!Skills_IsRoundLive())
+	{
+		return Plugin_Stop;
+	}
+
 	int victim = GetClientOfUserId(userid);
 	if (!IsValidSurvivor(victim))
 	{

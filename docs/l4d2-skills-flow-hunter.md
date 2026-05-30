@@ -116,6 +116,16 @@ flowchart TD
     G -->|yes| H[Emit HunterSkeet]
 ```
 
+### Round End Policy
+
+El timer diferido de muerte de `Hunter` usa política de `hard stop`.
+
+Si la ronda deja de estar `live` antes de que el timer resuelva:
+
+- no se emite `HunterSkeet`;
+- no se emite `HunterKill`;
+- el flujo se aborta como evento pendiente de una ronda ya cerrada.
+
 ## HunterSkeetMelee
 
 ### Sources

@@ -171,6 +171,17 @@ flowchart TD
     G -->|yes| H[Emit ChargerInstaKill]
 ```
 
+### Round End Policy
+
+Los timers diferidos de `Charger` usan política de `hard stop`.
+
+Si la ronda deja de estar `live` antes de que resuelvan:
+
+- no se emite `ChargerKill`;
+- no se emite `ChargerLevel`;
+- no se emite `ChargerDeathSetup`;
+- no se imprime `ChargerClawSummary`.
+
 ## ChargerLedgeHang
 
 ### Sources
