@@ -7,6 +7,7 @@ Handle g_hForwardSkillDetected = INVALID_HANDLE;
 Handle g_hForwardSkillAnnounced = INVALID_HANDLE;
 Handle g_hForwardBossDamageFinalized = INVALID_HANDLE;
 Handle g_hForwardBossDamageAnnounced = INVALID_HANDLE;
+Handle g_hForwardTankSessionClosed = INVALID_HANDLE;
 Handle g_hForwardSummaryFinalized = INVALID_HANDLE;
 
 void API_CreateForwards()
@@ -15,6 +16,7 @@ void API_CreateForwards()
 	g_hForwardSkillAnnounced = CreateGlobalForward("PlayerSkills_OnSkillAnnounced", ET_Ignore, Param_Cell, Param_Cell);
 	g_hForwardBossDamageFinalized = CreateGlobalForward("PlayerSkills_OnBossDamageFinalized", ET_Event, Param_Cell, Param_Cell);
 	g_hForwardBossDamageAnnounced = CreateGlobalForward("PlayerSkills_OnBossDamageAnnounced", ET_Ignore, Param_Cell, Param_Cell);
+	g_hForwardTankSessionClosed = CreateGlobalForward("PlayerSkills_OnTankSessionClosed", ET_Ignore, Param_Cell, Param_Cell);
 	g_hForwardSummaryFinalized = CreateGlobalForward("PlayerSkills_OnSummaryFinalized", ET_Ignore, Param_Cell);
 }
 
@@ -22,6 +24,7 @@ void API_CreateNatives()
 {
 	CreateNative("PlayerSkills_IsEventValid", Native_PlayerSkills_IsEventValid);
 	CreateNative("PlayerSkills_FillEventKeyValues", Native_PlayerSkills_FillEventKeyValues);
+	CreateNative("PlayerSkills_FillBossSessionKeyValues", Native_PlayerSkills_FillBossSessionKeyValues);
 	CreateNative("PlayerSkills_GetEventType", Native_PlayerSkills_GetEventType);
 	CreateNative("PlayerSkills_GetEventInt", Native_PlayerSkills_GetEventInt);
 	CreateNative("PlayerSkills_GetEventFloat", Native_PlayerSkills_GetEventFloat);
@@ -170,6 +173,19 @@ void API_FireBossDamageAnnounced(int sessionId, L4D2BossType type)
 	Call_StartForward(g_hForwardBossDamageAnnounced);
 	Call_PushCell(sessionId);
 	Call_PushCell(type);
+	Call_Finish();
+}
+
+void API_FireTankSessionClosed(int sessionId, L4D2TankSessionEndReason reason)
+{
+	if (g_hForwardTankSessionClosed == INVALID_HANDLE)
+	{
+		return;
+	}
+
+	Call_StartForward(g_hForwardTankSessionClosed);
+	Call_PushCell(sessionId);
+	Call_PushCell(reason);
 	Call_Finish();
 }
 
@@ -704,7 +720,6 @@ void API_WriteTankSessionProperties(Handle kv, int eventIndex, int sessionIndex)
 
 	KvSetNum(kv, "rocks_thrown", g_BossSessions[sessionIndex].tank.rocksThrown);
 	KvSetNum(kv, "rocks_hit", g_BossSessions[sessionIndex].tank.rocksHit);
-	KvSetNum(kv, "wipe", Boss_DidTankWipe(sessionIndex) ? 1 : 0);
 
 	float aliveTime = 0.0;
 	if (g_BossSessions[sessionIndex].startedAt > 0.0)
@@ -737,6 +752,104 @@ void API_WriteWitchSessionProperties(Handle kv, int eventIndex, int sessionIndex
 	KvSetFloat(kv, "alive_time", aliveTime);
 	KvSetNum(kv, "startled", g_BossSessions[sessionIndex].witch.startled ? 1 : 0);
 	KvSetNum(kv, "total_damage", g_BossSessions[sessionIndex].totalDamage);
+
+	KvGoBack(kv);
+}
+
+void API_WriteBossDamageEntries(Handle kv, int sessionIndex)
+{
+	int count = API_GetBossDamageEntryCountByIndex(sessionIndex);
+	KvSetNum(kv, "damage_entries_count", count);
+
+	if (!KvJumpToKey(kv, "damage_entries", true))
+	{
+		return;
+	}
+
+	int writeIndex = 0;
+	for (int entry = 0; entry < L4D2_SKILLS_MAX_DAMAGE_ENTRIES; entry++)
+	{
+		if (!g_BossDamage[sessionIndex][entry].active)
+		{
+			continue;
+		}
+
+		char entryKey[8];
+		IntToString(writeIndex++, entryKey, sizeof(entryKey));
+		if (!KvJumpToKey(kv, entryKey, true))
+		{
+			continue;
+		}
+
+		KvSetNum(kv, "userid", g_BossDamage[sessionIndex][entry].player.userid);
+		KvSetNum(kv, "accountid", g_BossDamage[sessionIndex][entry].player.accountId);
+		KvSetString(kv, "name", g_BossDamage[sessionIndex][entry].player.name);
+		KvSetNum(kv, "bot", g_BossDamage[sessionIndex][entry].player.bot ? 1 : 0);
+		KvSetNum(kv, "damage", g_BossDamage[sessionIndex][entry].damage);
+		KvSetNum(kv, "shots", g_BossDamage[sessionIndex][entry].shots);
+		KvGoBack(kv);
+	}
+
+	KvGoBack(kv);
+}
+
+void API_WriteBossSessionKeyValues(Handle kv, int sessionIndex)
+{
+	if (sessionIndex < 0 || sessionIndex >= L4D2_SKILLS_MAX_BOSSES || g_BossSessions[sessionIndex].id == 0)
+	{
+		return;
+	}
+
+	if (!KvJumpToKey(kv, "boss_session", true))
+	{
+		return;
+	}
+
+	KvSetNum(kv, "id", g_BossSessions[sessionIndex].id);
+	KvSetNum(kv, "type", g_BossSessions[sessionIndex].type);
+	KvSetNum(kv, "state", g_BossSessions[sessionIndex].state);
+	KvSetNum(kv, "max_health", g_BossSessions[sessionIndex].maxHealth);
+	KvSetNum(kv, "last_health", g_BossSessions[sessionIndex].lastHealth);
+	KvSetNum(kv, "total_damage", g_BossSessions[sessionIndex].totalDamage);
+	KvSetFloat(kv, "started_at", g_BossSessions[sessionIndex].startedAt);
+	KvSetFloat(kv, "closed_at", g_BossSessions[sessionIndex].closedAt);
+
+	float aliveTime = 0.0;
+	if (g_BossSessions[sessionIndex].startedAt > 0.0)
+	{
+		float endTime = g_BossSessions[sessionIndex].closedAt > 0.0 ? g_BossSessions[sessionIndex].closedAt : GetGameTime();
+		aliveTime = endTime - g_BossSessions[sessionIndex].startedAt;
+	}
+	KvSetFloat(kv, "alive_time", aliveTime);
+
+	API_SetEventPlayerKeys(kv, "owner", g_BossSessions[sessionIndex].owner);
+	API_SetEventPlayerKeys(kv, "pending_owner", g_BossSessions[sessionIndex].tank.pendingOwner);
+	API_WriteBossDamageEntries(kv, sessionIndex);
+
+	switch (g_BossSessions[sessionIndex].type)
+	{
+		case L4D2Boss_Tank:
+		{
+			if (KvJumpToKey(kv, "tank_session", true))
+			{
+				KvSetNum(kv, "rocks_thrown", g_BossSessions[sessionIndex].tank.rocksThrown);
+				KvSetNum(kv, "rocks_hit", g_BossSessions[sessionIndex].tank.rocksHit);
+				KvSetNum(kv, "in_stasis", g_BossSessions[sessionIndex].tank.inStasis ? 1 : 0);
+				KvSetNum(kv, "end_reason", g_BossSessions[sessionIndex].tank.endReason);
+				KvGoBack(kv);
+			}
+		}
+
+		case L4D2Boss_Witch:
+		{
+			if (KvJumpToKey(kv, "witch_session", true))
+			{
+				KvSetNum(kv, "startled", g_BossSessions[sessionIndex].witch.startled ? 1 : 0);
+				KvSetNum(kv, "crown_detected", g_BossSessions[sessionIndex].witch.crownDetected ? 1 : 0);
+				KvGoBack(kv);
+			}
+		}
+	}
 
 	KvGoBack(kv);
 }
@@ -951,6 +1064,22 @@ public int Native_PlayerSkills_FillEventKeyValues(Handle plugin, int numParams)
 	}
 
 	KvGoBack(kv);
+	KvRewind(kv);
+	return true;
+}
+
+public int Native_PlayerSkills_FillBossSessionKeyValues(Handle plugin, int numParams)
+{
+	int sessionIndex = API_GetBossSessionIndexById(GetNativeCell(1));
+	Handle kv = GetNativeCell(2);
+
+	if (sessionIndex == -1 || kv == INVALID_HANDLE)
+	{
+		return false;
+	}
+
+	KvRewind(kv);
+	API_WriteBossSessionKeyValues(kv, sessionIndex);
 	KvRewind(kv);
 	return true;
 }

@@ -94,6 +94,14 @@ enum L4D2BossType
 	L4D2Boss_Witch
 }
 
+enum L4D2TankSessionEndReason
+{
+	L4D2TankSessionEnd_None = 0,
+	L4D2TankSessionEnd_Dead,
+	L4D2TankSessionEnd_Escaped,
+	L4D2TankSessionEnd_Wipe
+}
+
 /**
  * Player reference slot inside a boss session payload.
  */
@@ -247,6 +255,18 @@ forward Action PlayerSkills_OnBossDamageFinalized(int sessionId, L4D2BossType ty
 forward void PlayerSkills_OnBossDamageAnnounced(int sessionId, L4D2BossType type);
 
 /**
+ * @brief Called when a Tank session reaches its terminal close reason.
+ * @remarks Fires once per Tank session before the boss summary announce path.
+ * @remarks This is notification-only and does not suppress built-in flow.
+ *
+ * @param sessionId      Unique runtime identifier for the Tank session.
+ * @param reason         Semantic close reason for the Tank session.
+ *
+ * @noreturn
+ */
+forward void PlayerSkills_OnTankSessionClosed(int sessionId, L4D2TankSessionEndReason reason);
+
+/**
  * @brief Called whenever a round or half summary is finalized.
  * @remarks Fires after the runtime skill/boss state has been frozen into a compact
  *          summary snapshot and before the next round start resets runtime state.
@@ -281,6 +301,19 @@ native bool PlayerSkills_IsEventValid(int eventId);
  * @return               True on success, false if the event or handle is invalid.
  */
 native bool PlayerSkills_FillEventKeyValues(int eventId, Handle kv);
+
+/**
+ * @brief Fills a KeyValues handle with the structured payload of a boss session.
+ * @remarks The native rewinds the handle and writes a "boss_session" section.
+ * @remarks The payload includes common session data, relevant Tank/Witch substate
+ *          and the stored damage entries for the session.
+ *
+ * @param sessionId      Runtime boss session identifier.
+ * @param kv             KeyValues handle to populate.
+ *
+ * @return               True on success, false if the session or handle is invalid.
+ */
+native bool PlayerSkills_FillBossSessionKeyValues(int sessionId, Handle kv);
 
 /**
  * @brief Returns the type of a skill event.
@@ -738,6 +771,7 @@ public void __pl_l4d2_player_skills_SetNTVOptional()
 {
 	MarkNativeAsOptional("PlayerSkills_IsEventValid");
 	MarkNativeAsOptional("PlayerSkills_FillEventKeyValues");
+	MarkNativeAsOptional("PlayerSkills_FillBossSessionKeyValues");
 	MarkNativeAsOptional("PlayerSkills_GetEventType");
 	MarkNativeAsOptional("PlayerSkills_GetEventInt");
 	MarkNativeAsOptional("PlayerSkills_GetEventFloat");

@@ -96,6 +96,14 @@ enum L4D2BossState
 	L4D2BossState_Printed
 }
 
+enum L4D2TankSessionEndReason
+{
+	L4D2TankSessionEnd_None = 0,
+	L4D2TankSessionEnd_Dead,
+	L4D2TankSessionEnd_Escaped,
+	L4D2TankSessionEnd_Wipe
+}
+
 enum L4D2CarAlarmReason
 {
 	L4D2CarAlarm_Unknown = 0,
@@ -483,6 +491,26 @@ enum struct L4D2PlayerRef
 
 		return this.auth[0] != '\0' && strcmp(this.auth, auth) == 0;
 	}
+
+	bool IsSamePersistentRef(L4D2PlayerRef other)
+	{
+		if (this.bot || other.bot)
+		{
+			return this.bot
+				&& other.bot
+				&& this.character >= 0
+				&& this.character == other.character;
+		}
+
+		if (this.accountId > 0 && other.accountId > 0)
+		{
+			return this.accountId == other.accountId;
+		}
+
+		return this.auth[0] != '\0'
+			&& other.auth[0] != '\0'
+			&& strcmp(this.auth, other.auth) == 0;
+	}
 }
 
 /**
@@ -515,6 +543,7 @@ enum struct L4D2TankSessionData
 	int rocksHit;
 	bool inStasis;
 	L4D2PlayerRef pendingOwner;
+	L4D2TankSessionEndReason endReason;
 
 	void Reset()
 	{
@@ -522,6 +551,7 @@ enum struct L4D2TankSessionData
 		this.rocksHit = 0;
 		this.inStasis = false;
 		this.pendingOwner.Reset();
+		this.endReason = L4D2TankSessionEnd_None;
 	}
 }
 
@@ -589,6 +619,7 @@ enum struct L4D2BossSessionData
 	int			  lastHealth;
 	int			  totalDamage;
 	float		  startedAt;
+	float		  closedAt;
 	bool		  printed;
 	L4D2TankSessionData tank;
 	L4D2WitchSessionData witch;
@@ -611,6 +642,7 @@ enum struct L4D2BossSessionData
 		this.lastHealth  			= 0;
 		this.totalDamage 			= 0;
 		this.startedAt	  			= 0.0;
+		this.closedAt	  			= 0.0;
 		this.printed	  			= false;
 		this.tank.Reset();
 		this.witch.Reset();

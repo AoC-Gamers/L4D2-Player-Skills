@@ -24,6 +24,7 @@ También existen:
 forward void PlayerSkills_OnSkillAnnounced(int eventId, L4D2SkillType type);
 forward Action PlayerSkills_OnBossDamageFinalized(int sessionId, L4D2BossType type);
 forward void PlayerSkills_OnBossDamageAnnounced(int sessionId, L4D2BossType type);
+forward void PlayerSkills_OnTankSessionClosed(int sessionId, L4D2TankSessionEndReason reason);
 forward void PlayerSkills_OnSummaryFinalized(int summaryId);
 ```
 
@@ -35,6 +36,12 @@ Uso:
   - permite inspeccionar o suprimir el announce de `Tank/Witch`
 - `OnBossDamageAnnounced`
   - notifica que el resumen de boss ya fue impreso
+- `OnTankSessionClosed`
+  - notifica el cierre semántico de una sesión de `Tank`
+  - reasons actuales:
+    - `Dead`
+    - `Escaped`
+    - `Wipe`
 - `OnSummaryFinalized`
   - notifica que una mitad/ronda ya quedó congelada como snapshot compacto
 
@@ -145,6 +152,7 @@ summary
 
 ```sourcepawn
 native bool PlayerSkills_FillEventKeyValues(int eventId, Handle kv);
+native bool PlayerSkills_FillBossSessionKeyValues(int sessionId, Handle kv);
 ```
 
 Este native escribe los datos útiles del evento:
@@ -159,6 +167,22 @@ No incluye:
 
 - tablas completas de daño de boss
 - strings ya formateados para chat
+
+## Boss Session Native
+
+```sourcepawn
+native bool PlayerSkills_FillBossSessionKeyValues(int sessionId, Handle kv);
+```
+
+Este native escribe los datos estructurados de una sesión de boss:
+
+- metadata común de sesión
+- `owner` y `pending_owner`
+- subestado específico de `tank` o `witch`
+- tabla almacenada de `damage_entries`
+
+Sirve cuando el consumidor necesita el snapshot completo de una sesión de boss
+sin depender del announce o del runtime vivo.
 
 ## Summary Native
 
@@ -1346,10 +1370,56 @@ event
     {
         "rocks_thrown"  "5"
         "rocks_hit"     "2"
-        "incaps"        "3"
-        "kills"         "1"
-        "wipe"          "0"
         "alive_time"    "42.8"
+    }
+}
+```
+
+### Boss Session
+
+```text
+boss_session
+{
+    "id"                "12"
+    "type"              "1"
+    "state"             "2"
+    "max_health"        "4000"
+    "last_health"       "0"
+    "total_damage"      "4000"
+    "started_at"        "1200.50"
+    "closed_at"         "1243.30"
+    "alive_time"        "42.8"
+
+    "owner_userid"      "7"
+    "owner_accountid"   "123456"
+    "owner_name"        "Test-Subject"
+    "owner_bot"         "0"
+
+    "pending_owner_userid"      "0"
+    "pending_owner_accountid"   "0"
+    "pending_owner_name"        ""
+    "pending_owner_bot"         "0"
+
+    "tank_session"
+    {
+        "rocks_thrown"  "5"
+        "rocks_hit"     "2"
+        "in_stasis"     "0"
+        "end_reason"    "1"
+    }
+
+    "damage_entries_count" "3"
+    "damage_entries"
+    {
+        "0"
+        {
+            "userid"        "41"
+            "accountid"     "123456"
+            "name"          "Lechuga"
+            "bot"           "0"
+            "damage"        "4200"
+            "shots"         "14"
+        }
     }
 }
 ```
@@ -1530,8 +1600,14 @@ Notas de session payload:
   - expone hoy solo los datos que `PlayerSkills` considera propios del dominio de skills de boss:
     - `rocks_thrown`
     - `rocks_hit`
-    - `wipe`
     - `alive_time`
+- `boss_session`
+  - expone el snapshot completo de la sesión de boss:
+    - estado común
+    - `owner`
+    - `pending_owner`
+    - `damage_entries`
+    - subestado `tank` o `witch`
 - `witch_session`
   - expone el contexto de cierre relevante para `Witch`:
     - `alive_time`

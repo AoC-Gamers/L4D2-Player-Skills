@@ -66,6 +66,29 @@ La sesión de daño se finaliza aparte para el resumen de boss.
 Contexto adicional:
 
 - `tank_session`
+  - `rocks_thrown`
+  - `rocks_hit`
+  - `alive_time`
+- `boss_session`
+  - se puede inspeccionar completo con `PlayerSkills_FillBossSessionKeyValues(...)`
+  - incluye:
+    - estado común
+    - `damage_entries`
+    - `tank.end_reason`
+
+### Tank Session Close
+
+Forward disponible:
+
+```sourcepawn
+forward void PlayerSkills_OnTankSessionClosed(int sessionId, L4D2TankSessionEndReason reason);
+```
+
+Reasons actuales:
+
+- `Dead`
+- `Escaped`
+- `Wipe`
 
 ### Flow
 

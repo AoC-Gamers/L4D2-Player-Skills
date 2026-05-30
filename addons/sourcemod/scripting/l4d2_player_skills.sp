@@ -146,6 +146,7 @@ methodmap L4D2BossSession
 		g_BossSessions[index].maxHealth	 = maxHealth;
 		g_BossSessions[index].lastHealth = maxHealth;
 		g_BossSessions[index].startedAt	 = GetGameTime();
+		g_BossSessions[index].closedAt	 = 0.0;
 		g_BossSessions[index].printed	 = false;
 
 		int client						 = GetClientOfUserId(userid);

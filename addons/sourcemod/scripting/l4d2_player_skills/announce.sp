@@ -539,6 +539,30 @@ int Announce_CountSkillTypeForClient(int client, L4D2SkillType type)
 	return count;
 }
 
+int Announce_CountSkillTypeForPlayerRef(L4D2PlayerRef player, L4D2SkillType type)
+{
+	if (!Skills_IsSkillTypeEnabledInCurrentMode(type))
+	{
+		return 0;
+	}
+
+	int count = 0;
+	for (int index = 0; index < L4D2_SKILLS_MAX_EVENTS; index++)
+	{
+		if (g_SkillEvents[index].id <= 0
+			|| g_SkillEvents[index].type != type
+			|| !g_SkillEvents[index].actor.IsSamePersistentRef(player)
+			|| !Skills_IsSkillEventEnabledInCurrentMode(index))
+		{
+			continue;
+		}
+
+		count++;
+	}
+
+	return count;
+}
+
 int Announce_SumSkillAmountForClient(int client, L4D2SkillType type)
 {
 	if (!IsValidClient(client))
@@ -2154,22 +2178,50 @@ void Announce_TankDamage(int sessionIndex, bool tankAlive)
 
 	char bossName[64];
 	Announce_GetBossName(sessionIndex, bossName, sizeof(bossName));
+	char aliveTime[32];
+	FormatEx(aliveTime, sizeof(aliveTime), "%.1fs", GetGameTime() - g_BossSessions[sessionIndex].startedAt);
+	bool hasRockSection = g_BossSessions[sessionIndex].tank.rocksThrown > 0;
 
 	if (tankAlive)
 	{
 		if (Announce_HasMask(g_cvAnnounceTank, view_as<int>(PlayerSkillsAnnounceBoss_Damage)))
 		{
-			CPrintToChatAll("%t %t", "Tag", "BossTankHealthRemaining",
-				bossName,
-				g_BossSessions[sessionIndex].lastHealth);
+			if (hasRockSection)
+			{
+				CPrintToChatAll("%t %t", "Tag", "BossTankHealthRemainingTimeRocks",
+					bossName,
+					g_BossSessions[sessionIndex].lastHealth,
+					aliveTime,
+					g_BossSessions[sessionIndex].tank.rocksHit,
+					g_BossSessions[sessionIndex].tank.rocksThrown);
+			}
+			else
+			{
+				CPrintToChatAll("%t %t", "Tag", "BossTankHealthRemainingTime",
+					bossName,
+					g_BossSessions[sessionIndex].lastHealth,
+					aliveTime);
+			}
 		}
 	}
 	else
 	{
 		if (Announce_HasMask(g_cvAnnounceTank, view_as<int>(PlayerSkillsAnnounceBoss_Damage)))
 		{
-			CPrintToChatAll("%t %t", "Tag", "BossTankDamageTitle",
-				bossName);
+			if (hasRockSection)
+			{
+				CPrintToChatAll("%t %t", "Tag", "BossTankDamageTitleTimeRocks",
+					bossName,
+					aliveTime,
+					g_BossSessions[sessionIndex].tank.rocksHit,
+					g_BossSessions[sessionIndex].tank.rocksThrown);
+			}
+			else
+			{
+				CPrintToChatAll("%t %t", "Tag", "BossTankDamageTitleTime",
+					bossName,
+					aliveTime);
+			}
 		}
 	}
 
@@ -2221,10 +2273,22 @@ void Announce_TankDamage(int sessionIndex, bool tankAlive)
 
 		if (Announce_HasMask(g_cvAnnounceTank, view_as<int>(PlayerSkillsAnnounceBoss_Damage)))
 		{
-			CPrintToChatAll("%t", "BossDamageEntry",
-				damage,
-				percent,
-				g_BossDamage[sessionIndex][entry].player.name);
+			int rockSkeets = Announce_CountSkillTypeForPlayerRef(g_BossDamage[sessionIndex][entry].player, L4D2Skill_TankRockSkeet);
+			if (rockSkeets > 0)
+			{
+				CPrintToChatAll("%t", "BossDamageEntryRockSkeet",
+					damage,
+					percent,
+					g_BossDamage[sessionIndex][entry].player.name,
+					rockSkeets);
+			}
+			else
+			{
+				CPrintToChatAll("%t", "BossDamageEntry",
+					damage,
+					percent,
+					g_BossDamage[sessionIndex][entry].player.name);
+			}
 		}
 	}
 

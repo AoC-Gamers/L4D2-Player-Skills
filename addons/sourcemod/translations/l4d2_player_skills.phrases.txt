@@ -919,11 +919,39 @@
 		"es"		"{blue}Tank {default}({olive}{1}{default}) quedo con {green}{2}{default} de vida restante."
 	}
 
+	"BossTankHealthRemainingTime"
+	{
+		"#format"	"{1:s},{2:d},{3:s}"
+		"en"		"{blue}Tank {default}({olive}{1}{default}) had {green}{2}{default} health remaining {blue}[{green}{3}{blue}]{default}:"
+		"es"		"{blue}Tank {default}({olive}{1}{default}) quedo con {green}{2}{default} de vida restante {blue}[{green}{3}{blue}]{default}:"
+	}
+
+	"BossTankHealthRemainingTimeRocks"
+	{
+		"#format"	"{1:s},{2:d},{3:s},{4:d},{5:d}"
+		"en"		"{blue}Tank {default}({olive}{1}{default}) had {green}{2}{default} health remaining {blue}[{green}{3}{blue}] [{blue}Rocks {green}{4}/{5}{blue}]{default}:"
+		"es"		"{blue}Tank {default}({olive}{1}{default}) quedo con {green}{2}{default} de vida restante {blue}[{green}{3}{blue}] [{blue}Rocas {green}{4}/{5}{blue}]{default}:"
+	}
+
 	"BossTankDamageTitle"
 	{
 		"#format"	"{1:s}"
 		"en"		"{blue}Damage {default}dealt to {blue}Tank {default}({olive}{1}{default}):"
 		"es"		"{blue}Daño {default}hecho al {blue}Tank {default}({olive}{1}{default}):"
+	}
+
+	"BossTankDamageTitleTime"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"{blue}Damage {default}dealt to {blue}Tank {default}({olive}{1}{default}) {blue}[{green}{2}{blue}]{default}:"
+		"es"		"{blue}Daño {default}hecho al {blue}Tank {default}({olive}{1}{default}) {blue}[{green}{2}{blue}]{default}:"
+	}
+
+	"BossTankDamageTitleTimeRocks"
+	{
+		"#format"	"{1:s},{2:s},{3:d},{4:d}"
+		"en"		"{blue}Damage {default}dealt to {blue}Tank {default}({olive}{1}{default}) {blue}[{green}{2}{blue}] [{blue}Rocks {green}{3}/{4}{blue}]{default}:"
+		"es"		"{blue}Daño {default}hecho al {blue}Tank {default}({olive}{1}{default}) {blue}[{green}{2}{blue}] [{blue}Rocas {green}{3}/{4}{blue}]{default}:"
 	}
 
 	"BossWitchHealthRemaining"
@@ -951,6 +979,13 @@
 		"#format"	"{1:d},{2:d},{3:s}"
 		"en"		"{blue}[{default}{1}{blue}] ({default}{2}%%{blue}) {olive}{3}"
 		"es"		"{blue}[{default}{1}{blue}] ({default}{2}%%{blue}) {olive}{3}"
+	}
+
+	"BossDamageEntryRockSkeet"
+	{
+		"#format"	"{1:d},{2:d},{3:s},{4:d}"
+		"en"		"{blue}[{default}{1}{blue}] ({default}{2}%%{blue}) {olive}{3} {blue}[{green}Skeet-Rock {4}{blue}]"
+		"es"		"{blue}[{default}{1}{blue}] ({default}{2}%%{blue}) {olive}{3} {blue}[{green}Skeet-Rock {4}{blue}]"
 	}
 
 	"BossDamageEntryCrown"

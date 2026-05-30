@@ -24,14 +24,19 @@ void Boss_Init()
 
 void Boss_ResetAll()
 {
+	for (int client = 1; client <= MaxClients; client++)
+	{
+		if (IsValidClient(client))
+		{
+			SDKUnhook(client, SDKHook_OnTakeDamagePost, Boss_OnTankTakeDamagePost);
+		}
+
+		g_bBossTankDamageHooked[client] = false;
+	}
+
 	for (int index = 0; index < L4D2_SKILLS_MAX_BOSSES; index++)
 	{
 		L4D2BossSession(index).Reset();
-	}
-
-	for (int client = 1; client <= MaxClients; client++)
-	{
-		g_bBossTankDamageHooked[client] = false;
 	}
 }
 
@@ -308,6 +313,12 @@ void Boss_OnRoundEnd()
 		}
 
 		g_BossSessions[index].state = L4D2BossState_Escaped;
+		if (g_BossSessions[index].type == L4D2Boss_Tank)
+		{
+			g_BossSessions[index].tank.endReason = Boss_DidRoundEndInWipe()
+				? L4D2TankSessionEnd_Wipe
+				: L4D2TankSessionEnd_Escaped;
+		}
 
 		if (g_BossSessions[index].type == L4D2Boss_Tank)
 		{
@@ -424,6 +435,7 @@ void Boss_EventPlayerDeath(Event event)
 
 	g_BossSessions[sessionIndex].lastHealth = 0;
 	g_BossSessions[sessionIndex].state = L4D2BossState_Dead;
+	g_BossSessions[sessionIndex].tank.endReason = L4D2TankSessionEnd_Dead;
 	Boss_FinalizeSession(sessionIndex);
 }
 
@@ -776,7 +788,7 @@ int Boss_FindOrCreateDamageEntry(int sessionIndex, int attacker)
 			continue;
 		}
 
-		if (g_BossDamage[sessionIndex][entry].player.userid == GetClientUserId(attacker))
+		if (g_BossDamage[sessionIndex][entry].player.IsSamePersistentPlayer(attacker))
 		{
 			return entry;
 		}
@@ -791,6 +803,34 @@ int Boss_FindOrCreateDamageEntry(int sessionIndex, int attacker)
 	}
 
 	return -1;
+}
+
+void Boss_ConsolidateDamageEntries(int sessionIndex)
+{
+	for (int baseEntry = 0; baseEntry < L4D2_SKILLS_MAX_DAMAGE_ENTRIES; baseEntry++)
+	{
+		if (!g_BossDamage[sessionIndex][baseEntry].active || g_BossDamage[sessionIndex][baseEntry].damage <= 0)
+		{
+			continue;
+		}
+
+		for (int mergeEntry = baseEntry + 1; mergeEntry < L4D2_SKILLS_MAX_DAMAGE_ENTRIES; mergeEntry++)
+		{
+			if (!g_BossDamage[sessionIndex][mergeEntry].active || g_BossDamage[sessionIndex][mergeEntry].damage <= 0)
+			{
+				continue;
+			}
+
+			if (!g_BossDamage[sessionIndex][baseEntry].player.IsSamePersistentRef(g_BossDamage[sessionIndex][mergeEntry].player))
+			{
+				continue;
+			}
+
+			g_BossDamage[sessionIndex][baseEntry].damage += g_BossDamage[sessionIndex][mergeEntry].damage;
+			g_BossDamage[sessionIndex][baseEntry].shots += g_BossDamage[sessionIndex][mergeEntry].shots;
+			g_BossDamage[sessionIndex][mergeEntry].Reset();
+		}
+	}
 }
 
 // Session event creation and counters.
@@ -851,12 +891,9 @@ void Boss_OnTankRockConnected(int tank)
 	g_BossSessions[sessionIndex].tank.rocksHit++;
 }
 
-bool Boss_DidTankWipe(int sessionIndex)
+bool Boss_DidRoundEndInWipe()
 {
-	if (sessionIndex < 0 || sessionIndex >= L4D2_SKILLS_MAX_BOSSES)
-	{
-		return false;
-	}
+	bool foundAnySurvivor = false;
 
 	for (int client = 1; client <= MaxClients; client++)
 	{
@@ -865,13 +902,20 @@ bool Boss_DidTankWipe(int sessionIndex)
 			continue;
 		}
 
-		if (IsPlayerAlive(client))
+		foundAnySurvivor = true;
+
+		if (!IsPlayerAlive(client))
+		{
+			continue;
+		}
+
+		if (!L4D_IsPlayerIncapacitated(client) && !L4D_IsPlayerHangingFromLedge(client))
 		{
 			return false;
 		}
 	}
 
-	return true;
+	return foundAnySurvivor;
 }
 
 void Boss_FinalizeSession(int sessionIndex)
@@ -885,6 +929,19 @@ void Boss_FinalizeSession(int sessionIndex)
 	{
 		return;
 	}
+
+	if (g_BossSessions[sessionIndex].closedAt <= 0.0)
+	{
+		g_BossSessions[sessionIndex].closedAt = GetGameTime();
+	}
+
+	if (g_BossSessions[sessionIndex].type == L4D2Boss_Tank
+		&& g_BossSessions[sessionIndex].tank.endReason != L4D2TankSessionEnd_None)
+	{
+		API_FireTankSessionClosed(g_BossSessions[sessionIndex].id, g_BossSessions[sessionIndex].tank.endReason);
+	}
+
+	Boss_ConsolidateDamageEntries(sessionIndex);
 
 	if (g_BossSessions[sessionIndex].type == L4D2Boss_Witch)
 	{
@@ -1073,6 +1130,8 @@ void Boss_CreateWitchDeadEvent(int sessionIndex, int killer)
 		return;
 	}
 
+	Boss_ConsolidateDamageEntries(sessionIndex);
+
 	int killerTotalDamage = Boss_GetDamageEntryDamage(sessionIndex, killer);
 	int killerShots = Boss_GetDamageEntryShots(sessionIndex, killer);
 	int actualDamage = g_BossSessions[sessionIndex].witch.lastShotIsShotgun
@@ -1239,6 +1298,8 @@ int Boss_GetDamageEntryDamage(int sessionIndex, int client)
 		return 0;
 	}
 
+	int totalDamage = 0;
+
 	for (int entry = 0; entry < L4D2_SKILLS_MAX_DAMAGE_ENTRIES; entry++)
 	{
 		if (!g_BossDamage[sessionIndex][entry].active || !g_BossDamage[sessionIndex][entry].player.IsSamePersistentPlayer(client))
@@ -1246,10 +1307,10 @@ int Boss_GetDamageEntryDamage(int sessionIndex, int client)
 			continue;
 		}
 
-		return g_BossDamage[sessionIndex][entry].damage;
+		totalDamage += g_BossDamage[sessionIndex][entry].damage;
 	}
 
-	return 0;
+	return totalDamage;
 }
 
 int Boss_GetDamageEntryShots(int sessionIndex, int client)
@@ -1259,6 +1320,8 @@ int Boss_GetDamageEntryShots(int sessionIndex, int client)
 		return 0;
 	}
 
+	int totalShots = 0;
+
 	for (int entry = 0; entry < L4D2_SKILLS_MAX_DAMAGE_ENTRIES; entry++)
 	{
 		if (!g_BossDamage[sessionIndex][entry].active || !g_BossDamage[sessionIndex][entry].player.IsSamePersistentPlayer(client))
@@ -1266,16 +1329,15 @@ int Boss_GetDamageEntryShots(int sessionIndex, int client)
 			continue;
 		}
 
-		return g_BossDamage[sessionIndex][entry].shots;
+		totalShots += g_BossDamage[sessionIndex][entry].shots;
 	}
 
-	return 0;
+	return totalShots;
 }
 
 void Boss_FillWitchAssistData(int sessionIndex, int killer, int eventIndex)
 {
-	int topAssistEntry = -1;
-	int topAssistDamage = 0;
+	Boss_ConsolidateDamageEntries(sessionIndex);
 
 	for (int entry = 0; entry < L4D2_SKILLS_MAX_DAMAGE_ENTRIES; entry++)
 	{
@@ -1293,12 +1355,6 @@ void Boss_FillWitchAssistData(int sessionIndex, int killer, int eventIndex)
 			g_SkillEvents[eventIndex].assistDamage[assistIndex] = g_BossDamage[sessionIndex][entry].damage;
 			g_SkillEvents[eventIndex].assistShots[assistIndex] = g_BossDamage[sessionIndex][entry].shots > 0 ? g_BossDamage[sessionIndex][entry].shots : 1;
 			g_SkillEvents[eventIndex].assistsCount++;
-		}
-
-		if (g_BossDamage[sessionIndex][entry].damage > topAssistDamage)
-		{
-			topAssistDamage = g_BossDamage[sessionIndex][entry].damage;
-			topAssistEntry = entry;
 		}
 	}
 
@@ -1326,11 +1382,11 @@ void Boss_FillWitchAssistData(int sessionIndex, int killer, int eventIndex)
 		}
 	}
 
-	if (topAssistEntry != -1)
+	if (g_SkillEvents[eventIndex].assistsCount > 0)
 	{
-		g_SkillEvents[eventIndex].assister = g_BossDamage[sessionIndex][topAssistEntry].player;
-		g_SkillEvents[eventIndex].assisterDamage = g_BossDamage[sessionIndex][topAssistEntry].damage;
-		g_SkillEvents[eventIndex].assisterShots = g_BossDamage[sessionIndex][topAssistEntry].shots > 0 ? g_BossDamage[sessionIndex][topAssistEntry].shots : 1;
+		g_SkillEvents[eventIndex].assister = g_SkillEvents[eventIndex].assists[0];
+		g_SkillEvents[eventIndex].assisterDamage = g_SkillEvents[eventIndex].assistDamage[0];
+		g_SkillEvents[eventIndex].assisterShots = g_SkillEvents[eventIndex].assistShots[0];
 	}
 }
 
