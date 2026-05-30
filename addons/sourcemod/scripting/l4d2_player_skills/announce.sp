@@ -1257,8 +1257,10 @@ void Announce_Skill(int eventId)
 		{
 			char assistList[256];
 			char weaponName[64];
+			char actorStat[32];
 			Announce_FormatAssistList(eventIndex, assistList, sizeof(assistList));
 			Skills_GetWeaponDisplayName(g_SkillEvents[eventIndex].actorWeaponId, weaponName, sizeof(weaponName));
+			Format(actorStat, sizeof(actorStat), "%d/%d", g_SkillEvents[eventIndex].damage, g_SkillEvents[eventIndex].shots);
 
 			if (g_SkillEvents[eventIndex].grenadeLauncher || g_SkillEvents[eventIndex].sniper)
 			{
@@ -1266,24 +1268,24 @@ void Announce_Skill(int eventId)
 				{
 					if (g_SkillEvents[eventIndex].assistsCount > 0)
 					{
-						CPrintToChatAll("%s %t", tag, "HunterSkeetWeaponHeadshotAssist", actorName, victimName, weaponName, assistList);
+						CPrintToChatAll("%s %t", tag, "HunterSkeetWeaponHeadshotAssist", actorName, victimName, weaponName, actorStat, assistList);
 					}
 					else
 					{
-						CPrintToChatAll("%s %t", tag, "HunterSkeetWeaponHeadshot", actorName, victimName, weaponName);
+						CPrintToChatAll("%s %t", tag, "HunterSkeetWeaponHeadshot", actorName, victimName, weaponName, actorStat);
 					}
 				}
 				else if (g_SkillEvents[eventIndex].perfect)
 				{
-					CPrintToChatAll("%s %t", tag, "HunterSkeetWeaponPerfect", actorName, victimName, weaponName);
+					CPrintToChatAll("%s %t", tag, "HunterSkeetWeaponPerfect", actorName, victimName, weaponName, actorStat);
 				}
 				else if (g_SkillEvents[eventIndex].assistsCount > 0)
 				{
-					CPrintToChatAll("%s %t", tag, "HunterSkeetWeaponAssist", actorName, victimName, weaponName, assistList);
+					CPrintToChatAll("%s %t", tag, "HunterSkeetWeaponAssist", actorName, victimName, weaponName, actorStat, assistList);
 				}
 				else
 				{
-					CPrintToChatAll("%s %t", tag, "HunterSkeetWeapon", actorName, victimName, weaponName);
+					CPrintToChatAll("%s %t", tag, "HunterSkeetWeapon", actorName, victimName, weaponName, actorStat);
 				}
 			}
 			else if (g_SkillEvents[eventIndex].perfect)
