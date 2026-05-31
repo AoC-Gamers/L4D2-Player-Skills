@@ -1131,7 +1131,7 @@ stock void Skills_FormatEventPlayerRoleName(int eventIndex, int slot, char[] buf
 			{
 				zombieClass = L4D2ZombieClass_Charger;
 			}
-			case L4D2Skill_TankLedgeHang, L4D2Skill_TankDead:
+			case L4D2Skill_TankLedgeHang:
 			{
 				zombieClass = L4D2ZombieClass_Tank;
 			}

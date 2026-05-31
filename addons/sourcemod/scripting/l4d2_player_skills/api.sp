@@ -4,13 +4,9 @@
 #define _l4d2_player_skills_api_included
 
 Handle g_hForwardSkillDetected = INVALID_HANDLE;
-Handle g_hForwardSkillAnnounced = INVALID_HANDLE;
 Handle g_hForwardKillDetected = INVALID_HANDLE;
-Handle g_hForwardKillAnnounced = INVALID_HANDLE;
 Handle g_hForwardBossEventDetected = INVALID_HANDLE;
-Handle g_hForwardBossEventAnnounced = INVALID_HANDLE;
 Handle g_hForwardBossSessionFinalized = INVALID_HANDLE;
-Handle g_hForwardBossSessionAnnounced = INVALID_HANDLE;
 Handle g_hForwardTankSessionClosed = INVALID_HANDLE;
 Handle g_hForwardSkillSummaryFinalized = INVALID_HANDLE;
 Handle g_hForwardKillSummaryFinalized = INVALID_HANDLE;
@@ -18,13 +14,9 @@ Handle g_hForwardKillSummaryFinalized = INVALID_HANDLE;
 void API_CreateForwards()
 {
 	g_hForwardSkillDetected = CreateGlobalForward("PlayerSkills_OnSkillDetected", ET_Event, Param_Cell, Param_Cell);
-	g_hForwardSkillAnnounced = CreateGlobalForward("PlayerSkills_OnSkillAnnounced", ET_Ignore, Param_Cell, Param_Cell);
 	g_hForwardKillDetected = CreateGlobalForward("PlayerSkills_OnKillDetected", ET_Event, Param_Cell, Param_Cell);
-	g_hForwardKillAnnounced = CreateGlobalForward("PlayerSkills_OnKillAnnounced", ET_Ignore, Param_Cell, Param_Cell);
 	g_hForwardBossEventDetected = CreateGlobalForward("PlayerSkills_OnBossEventDetected", ET_Event, Param_Cell, Param_Cell);
-	g_hForwardBossEventAnnounced = CreateGlobalForward("PlayerSkills_OnBossEventAnnounced", ET_Ignore, Param_Cell, Param_Cell);
 	g_hForwardBossSessionFinalized = CreateGlobalForward("PlayerSkills_OnBossSessionFinalized", ET_Event, Param_Cell, Param_Cell);
-	g_hForwardBossSessionAnnounced = CreateGlobalForward("PlayerSkills_OnBossSessionAnnounced", ET_Ignore, Param_Cell, Param_Cell);
 	g_hForwardTankSessionClosed = CreateGlobalForward("PlayerSkills_OnTankSessionClosed", ET_Ignore, Param_Cell, Param_Cell);
 	g_hForwardSkillSummaryFinalized = CreateGlobalForward("PlayerSkills_OnSkillSummaryFinalized", ET_Ignore, Param_Cell);
 	g_hForwardKillSummaryFinalized = CreateGlobalForward("PlayerSkills_OnKillSummaryFinalized", ET_Ignore, Param_Cell);
@@ -266,29 +258,6 @@ Action API_FireFamilyDetected(Handle forwardHandle, int eventId, int publicTypeI
 	return result;
 }
 
-void API_FireFamilyAnnounced(Handle forwardHandle, int eventId, int publicTypeId, const char[] typeName, const char[] debugLabel)
-{
-	int eventIndex = Skills_GetEventIndex(eventId);
-	if (eventIndex != -1)
-	{
-		char actorName[64];
-		char victimName[64];
-		Skills_FormatEventPlayerRoleName(eventIndex, 0, actorName, sizeof(actorName));
-		Skills_FormatEventPlayerRoleName(eventIndex, 1, victimName, sizeof(victimName));
-		Skills_Debug(PlayerSkillsDebug_Announce, "%s announced. id=%d type=%s actor=%s victim=%s", debugLabel, eventId, typeName, actorName, victimName);
-	}
-
-	if (forwardHandle == INVALID_HANDLE)
-	{
-		return;
-	}
-
-	Call_StartForward(forwardHandle);
-	Call_PushCell(eventId);
-	Call_PushCell(publicTypeId);
-	Call_Finish();
-}
-
 Action API_FireSkillDetected(int eventId, L4D2SkillType type)
 {
 	switch (API_GetEventFamily(type))
@@ -321,36 +290,6 @@ Action API_FireSkillDetected(int eventId, L4D2SkillType type)
 	return Plugin_Continue;
 }
 
-void API_FireSkillAnnounced(int eventId, L4D2SkillType type)
-{
-	switch (API_GetEventFamily(type))
-	{
-		case L4D2ApiEventFamily_Skill:
-		{
-			L4D2ApiSkillType publicType = API_MapSkillType(type);
-			char typeName[48];
-			API_GetSkillTypeName(publicType, typeName, sizeof(typeName));
-			API_FireFamilyAnnounced(g_hForwardSkillAnnounced, eventId, view_as<int>(publicType), typeName, "Skill");
-		}
-
-		case L4D2ApiEventFamily_Kill:
-		{
-			L4D2ApiKillType publicType = API_MapKillType(type);
-			char typeName[48];
-			API_GetKillTypeName(publicType, typeName, sizeof(typeName));
-			API_FireFamilyAnnounced(g_hForwardKillAnnounced, eventId, view_as<int>(publicType), typeName, "Kill");
-		}
-
-		case L4D2ApiEventFamily_BossEvent:
-		{
-			L4D2ApiBossEventType publicType = API_MapBossEventType(type);
-			char typeName[48];
-			API_GetBossEventTypeName(publicType, typeName, sizeof(typeName));
-			API_FireFamilyAnnounced(g_hForwardBossEventAnnounced, eventId, view_as<int>(publicType), typeName, "Boss event");
-		}
-	}
-}
-
 Action API_FireBossDamageFinalized(int sessionId, L4D2BossType type)
 {
 	if (g_hForwardBossSessionFinalized == INVALID_HANDLE)
@@ -364,19 +303,6 @@ Action API_FireBossDamageFinalized(int sessionId, L4D2BossType type)
 	Call_PushCell(type);
 	Call_Finish(result);
 	return result;
-}
-
-void API_FireBossDamageAnnounced(int sessionId, L4D2BossType type)
-{
-	if (g_hForwardBossSessionAnnounced == INVALID_HANDLE)
-	{
-		return;
-	}
-
-	Call_StartForward(g_hForwardBossSessionAnnounced);
-	Call_PushCell(sessionId);
-	Call_PushCell(type);
-	Call_Finish();
 }
 
 void API_FireTankSessionClosed(int sessionId, L4D2TankSessionEndReason reason)
@@ -488,6 +414,11 @@ int API_GetBossDamageEntryCountByIndex(int sessionIndex)
 		{
 			count++;
 		}
+	}
+
+	if (Boss_GetOtherDamage(sessionIndex) > 0)
+	{
+		count++;
 	}
 
 	return count;
@@ -1038,6 +969,23 @@ void API_WriteBossDamageEntries(Handle kv, int sessionIndex)
 		KvGoBack(kv);
 	}
 
+	int otherDamage = Boss_GetOtherDamage(sessionIndex);
+	if (otherDamage > 0)
+	{
+		char entryKey[8];
+		IntToString(writeIndex++, entryKey, sizeof(entryKey));
+		if (KvJumpToKey(kv, entryKey, true))
+		{
+			KvSetNum(kv, "userid", 0);
+			KvSetNum(kv, "accountid", 0);
+			KvSetString(kv, "name", "Other");
+			KvSetNum(kv, "bot", 1);
+			KvSetNum(kv, "damage", otherDamage);
+			KvSetNum(kv, "shots", 0);
+			KvGoBack(kv);
+		}
+	}
+
 	KvGoBack(kv);
 }
 
@@ -1138,6 +1086,12 @@ void API_WriteBossSessionKeyValues(Handle kv, int sessionIndex)
 			{
 				KvSetNum(kv, "in_stasis", g_BossSessions[sessionIndex].tank.inStasis ? 1 : 0);
 				KvSetNum(kv, "end_reason", g_BossSessions[sessionIndex].tank.endReason);
+				KvSetNum(kv, "punches_hit", g_BossSessions[sessionIndex].tank.punchesHit);
+				KvSetNum(kv, "punch_damage", g_BossSessions[sessionIndex].tank.punchDamage);
+				KvSetNum(kv, "hittables_hit", g_BossSessions[sessionIndex].tank.hittablesHit);
+				KvSetNum(kv, "hittable_damage", g_BossSessions[sessionIndex].tank.hittableDamage);
+				KvSetNum(kv, "incaps", g_BossSessions[sessionIndex].tank.incaps);
+				KvSetNum(kv, "ledge_hangs", g_BossSessions[sessionIndex].tank.ledgeHangs);
 				KvGoBack(kv);
 			}
 

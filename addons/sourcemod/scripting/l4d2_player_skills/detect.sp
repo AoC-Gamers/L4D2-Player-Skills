@@ -2206,6 +2206,7 @@ void Detect_EventPlayerLedgeGrab(Event event)
 
 	if (IsValidTank(attacker))
 	{
+		Boss_RecordTankLedgeHang(attacker);
 		Detect_EmitGenericLedgeHang(L4D2Skill_TankLedgeHang, attacker, victim, L4D2ZombieClass_Tank);
 	}
 }

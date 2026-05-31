@@ -297,6 +297,7 @@ enum struct PlayerSkillsRuntimeState
 {
 	PlayerSkillsGameMode baseMode;
 	bool hasLeft4DHooks;
+	bool hasTankControlEq;
 	bool isLate;
 	bool roundLive;
 	int configuredSurvivorLimit;
@@ -313,6 +314,7 @@ enum struct PlayerSkillsRuntimeState
 	{
 		this.baseMode = PlayerSkillsGameMode_Unknown;
 		this.hasLeft4DHooks = false;
+		this.hasTankControlEq = false;
 		this.isLate = false;
 		this.roundLive = false;
 		this.configuredSurvivorLimit = 0;
@@ -463,6 +465,11 @@ enum struct L4D2PlayerRef
 				return false;
 			}
 
+			if (L4D_GetClientTeam(client) == L4DTeam_Infected)
+			{
+				return this.userid > 0 && GetClientUserId(client) == this.userid;
+			}
+
 			if (L4D_GetClientTeam(client) != L4DTeam_Survivor || this.character < 0)
 			{
 				return false;
@@ -490,10 +497,20 @@ enum struct L4D2PlayerRef
 	{
 		if (this.bot || other.bot)
 		{
-			return this.bot
-				&& other.bot
-				&& this.character >= 0
-				&& this.character == other.character;
+			if (!this.bot || !other.bot)
+			{
+				return false;
+			}
+
+			if (this.character >= 0 || other.character >= 0)
+			{
+				return this.character >= 0
+					&& this.character == other.character;
+			}
+
+			return this.userid > 0
+				&& other.userid > 0
+				&& this.userid == other.userid;
 		}
 
 		if (this.accountId > 0 && other.accountId > 0)
@@ -540,6 +557,7 @@ enum struct L4D2TankControlEntry
 	float startedAt;
 	float endedAt;
 	float controlTime;
+	int remainingHealth;
 	int rocksThrown;
 	int rocksHit;
 
@@ -552,6 +570,7 @@ enum struct L4D2TankControlEntry
 		this.startedAt = 0.0;
 		this.endedAt = 0.0;
 		this.controlTime = 0.0;
+		this.remainingHealth = 0;
 		this.rocksThrown = 0;
 		this.rocksHit = 0;
 	}
@@ -559,16 +578,36 @@ enum struct L4D2TankControlEntry
 
 enum struct L4D2TankSessionData
 {
+	int lifecycleId;
 	bool inStasis;
 	L4D2TankSessionEndReason endReason;
+	int punchesHit;
+	int punchDamage;
+	int hittablesHit;
+	int hittableDamage;
+	int incaps;
+	int ledgeHangs;
+	bool pendingBotControl;
+	int pendingBotUserid;
+	float pendingBotStartedAt;
 	L4D2TankControlEntry controls[L4D2_SKILLS_MAX_TANK_CONTROLS];
 	int controlCount;
 	int activeControlIndex;
 
 	void Reset()
 	{
+		this.lifecycleId = 0;
 		this.inStasis = false;
 		this.endReason = L4D2TankSessionEnd_None;
+		this.punchesHit = 0;
+		this.punchDamage = 0;
+		this.hittablesHit = 0;
+		this.hittableDamage = 0;
+		this.incaps = 0;
+		this.ledgeHangs = 0;
+		this.pendingBotControl = false;
+		this.pendingBotUserid = 0;
+		this.pendingBotStartedAt = 0.0;
 		this.controlCount = 0;
 		this.activeControlIndex = -1;
 

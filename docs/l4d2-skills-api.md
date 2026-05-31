@@ -72,13 +72,8 @@ Los bosses usan dos capas distintas:
 
 ```sourcepawn
 forward Action PlayerSkills_OnSkillDetected(int eventId, L4D2ApiSkillType type);
-forward void PlayerSkills_OnSkillAnnounced(int eventId, L4D2ApiSkillType type);
-
 forward Action PlayerSkills_OnKillDetected(int eventId, L4D2ApiKillType type);
-forward void PlayerSkills_OnKillAnnounced(int eventId, L4D2ApiKillType type);
-
 forward Action PlayerSkills_OnBossEventDetected(int eventId, L4D2ApiBossEventType type);
-forward void PlayerSkills_OnBossEventAnnounced(int eventId, L4D2ApiBossEventType type);
 ```
 
 Reglas:
@@ -86,23 +81,19 @@ Reglas:
 - `Detected`
   - ocurre antes del announce builtin
   - `Plugin_Handled` o mayor suprime el announce builtin de esa familia
-- `Announced`
-  - ocurre después de imprimir
-  - es notificación solamente
 
 ## Boss Session Forwards
 
 ```sourcepawn
 forward Action PlayerSkills_OnBossSessionFinalized(int sessionId, L4D2BossType type);
-forward void PlayerSkills_OnBossSessionAnnounced(int sessionId, L4D2BossType type);
 forward void PlayerSkills_OnTankSessionClosed(int sessionId, L4D2TankSessionEndReason reason);
 ```
 
 `PlayerSkills_OnTankSessionClosed(...)` usa:
 
-- `L4D2TankSessionEnd_Dead`
-- `L4D2TankSessionEnd_Escaped`
-- `L4D2TankSessionEnd_Wipe`
+- `L4D2TankSessionEnd_TankDead`
+- `L4D2TankSessionEnd_SurvivorsEscaped`
+- `L4D2TankSessionEnd_SurvivorsWiped`
 
 ## Round/Half Summary Forwards
 
@@ -159,6 +150,9 @@ Notas de shaping:
   - omite `actor_weaponid`
 - `boss_session` de `Tank`
   - usa `tank_control` como identidad pública del boss a lo largo de la sesión
+  - si `l4d_tank_control_eq` está cargado, `PlayerSkills` usa esa librería como fuente preferida para lifecycle y control changes del `Tank`
+  - si no está cargada, `PlayerSkills` cae a su tracking heurístico local
+  - en ese fallback local no intenta recuperar al mismo humano por identidad persistente; solo usa continuidad por `userid`, `client`, reclaim bot y takeover humano
   - `TankDead` no expone `victim_*`
 
 ### Event Examples

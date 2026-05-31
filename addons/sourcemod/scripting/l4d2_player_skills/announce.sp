@@ -2112,7 +2112,6 @@ void Announce_Skill(int eventId)
 		}
 	}
 
-	API_FireSkillAnnounced(eventId, g_SkillEvents[eventIndex].type);
 }
 
 // Boss announce flow.
@@ -2165,7 +2164,6 @@ void Announce_BossDamage(int sessionIndex)
 	g_BossSessions[sessionIndex].printed = true;
 	g_BossSessions[sessionIndex].state = L4D2BossState_Printed;
 
-	API_FireBossDamageAnnounced(g_BossSessions[sessionIndex].id, g_BossSessions[sessionIndex].type);
 }
 
 // Tank and Witch summary helpers.
@@ -2191,6 +2189,90 @@ void Announce_GetTankRockTotals(int sessionIndex, int &rocksThrown, int &rocksHi
 	}
 }
 
+static void Announce_GetTankControlName(int sessionIndex, int controlIndex, char[] buffer, int maxlen)
+{
+	if (sessionIndex < 0
+		|| sessionIndex >= L4D2_SKILLS_MAX_BOSSES
+		|| controlIndex < 0
+		|| controlIndex >= L4D2_SKILLS_MAX_TANK_CONTROLS
+		|| !g_BossSessions[sessionIndex].tank.controls[controlIndex].active)
+	{
+		strcopy(buffer, maxlen, "AI");
+		return;
+	}
+
+	if (g_BossSessions[sessionIndex].tank.controls[controlIndex].player.bot)
+	{
+		strcopy(buffer, maxlen, "IA");
+		return;
+	}
+
+	if (g_BossSessions[sessionIndex].tank.controls[controlIndex].player.name[0] != '\0')
+	{
+		strcopy(buffer, maxlen, g_BossSessions[sessionIndex].tank.controls[controlIndex].player.name);
+		return;
+	}
+
+	strcopy(buffer, maxlen, "Unknown");
+}
+
+static void Announce_PrintTankControlHeader(int sessionIndex, int controlIndex, bool tankAlive)
+{
+	if (sessionIndex < 0
+		|| sessionIndex >= L4D2_SKILLS_MAX_BOSSES
+		|| controlIndex < 0
+		|| controlIndex >= L4D2_SKILLS_MAX_TANK_CONTROLS
+		|| !g_BossSessions[sessionIndex].tank.controls[controlIndex].active)
+	{
+		return;
+	}
+
+	char bossName[64];
+	Announce_GetTankControlName(sessionIndex, controlIndex, bossName, sizeof(bossName));
+	char aliveTime[32];
+	FormatEx(aliveTime, sizeof(aliveTime), "%.1fs", g_BossSessions[sessionIndex].tank.controls[controlIndex].controlTime);
+	int rocksThrown = g_BossSessions[sessionIndex].tank.controls[controlIndex].rocksThrown;
+	int rocksHit = g_BossSessions[sessionIndex].tank.controls[controlIndex].rocksHit;
+	bool hasRockSection = rocksThrown > 0;
+
+	if (tankAlive)
+	{
+		if (hasRockSection)
+		{
+			CPrintToChatAll("%t %t", "Tag", "BossTankHealthRemainingTimeRocks",
+				bossName,
+				g_BossSessions[sessionIndex].tank.controls[controlIndex].remainingHealth,
+				aliveTime,
+				rocksHit,
+				rocksThrown);
+		}
+		else
+		{
+			CPrintToChatAll("%t %t", "Tag", "BossTankHealthRemainingTime",
+				bossName,
+				g_BossSessions[sessionIndex].tank.controls[controlIndex].remainingHealth,
+				aliveTime);
+		}
+	}
+	else
+	{
+		if (hasRockSection)
+		{
+			CPrintToChatAll("%t %t", "Tag", "BossTankDamageTitleTimeRocks",
+				bossName,
+				aliveTime,
+				rocksHit,
+				rocksThrown);
+		}
+		else
+		{
+			CPrintToChatAll("%t %t", "Tag", "BossTankDamageTitleTime",
+				bossName,
+				aliveTime);
+		}
+	}
+}
+
 void Announce_TankDamage(int sessionIndex, bool tankAlive)
 {
 	if (sessionIndex < 0 || sessionIndex >= L4D2_SKILLS_MAX_BOSSES || g_BossSessions[sessionIndex].id == 0)
@@ -2198,56 +2280,81 @@ void Announce_TankDamage(int sessionIndex, bool tankAlive)
 		return;
 	}
 
-	char bossName[64];
-	Announce_GetBossName(sessionIndex, bossName, sizeof(bossName));
-	char aliveTime[32];
-	float endTime = g_BossSessions[sessionIndex].closedAt > 0.0 ? g_BossSessions[sessionIndex].closedAt : GetGameTime();
-	FormatEx(aliveTime, sizeof(aliveTime), "%.1fs", endTime - g_BossSessions[sessionIndex].startedAt);
-	int rocksThrown = 0;
-	int rocksHit = 0;
-	Announce_GetTankRockTotals(sessionIndex, rocksThrown, rocksHit);
-	bool hasRockSection = rocksThrown > 0;
-
-	if (tankAlive)
+	int finalControlIndex = -1;
+	for (int entry = 0; entry < g_BossSessions[sessionIndex].tank.controlCount && entry < L4D2_SKILLS_MAX_TANK_CONTROLS; entry++)
 	{
-		if (Announce_HasMask(g_cvAnnounceTank, view_as<int>(PlayerSkillsAnnounceBoss_Damage)))
+		if (!g_BossSessions[sessionIndex].tank.controls[entry].active)
 		{
-			if (hasRockSection)
+			continue;
+		}
+
+		finalControlIndex = entry;
+	}
+
+	if (Announce_HasMask(g_cvAnnounceTank, view_as<int>(PlayerSkillsAnnounceBoss_Damage)))
+	{
+		if (finalControlIndex == -1)
+		{
+			char bossName[64];
+			Announce_GetBossName(sessionIndex, bossName, sizeof(bossName));
+			char aliveTime[32];
+			float endTime = g_BossSessions[sessionIndex].closedAt > 0.0 ? g_BossSessions[sessionIndex].closedAt : GetGameTime();
+			FormatEx(aliveTime, sizeof(aliveTime), "%.1fs", endTime - g_BossSessions[sessionIndex].startedAt);
+			int rocksThrown = 0;
+			int rocksHit = 0;
+			Announce_GetTankRockTotals(sessionIndex, rocksThrown, rocksHit);
+			bool hasRockSection = rocksThrown > 0;
+
+			if (tankAlive)
 			{
-				CPrintToChatAll("%t %t", "Tag", "BossTankHealthRemainingTimeRocks",
-					bossName,
-					g_BossSessions[sessionIndex].lastHealth,
-					aliveTime,
-					rocksHit,
-					rocksThrown);
+				if (hasRockSection)
+				{
+					CPrintToChatAll("%t %t", "Tag", "BossTankHealthRemainingTimeRocks",
+						bossName,
+						g_BossSessions[sessionIndex].lastHealth,
+						aliveTime,
+						rocksHit,
+						rocksThrown);
+				}
+				else
+				{
+					CPrintToChatAll("%t %t", "Tag", "BossTankHealthRemainingTime",
+						bossName,
+						g_BossSessions[sessionIndex].lastHealth,
+						aliveTime);
+				}
 			}
 			else
 			{
-				CPrintToChatAll("%t %t", "Tag", "BossTankHealthRemainingTime",
-					bossName,
-					g_BossSessions[sessionIndex].lastHealth,
-					aliveTime);
+				if (hasRockSection)
+				{
+					CPrintToChatAll("%t %t", "Tag", "BossTankDamageTitleTimeRocks",
+						bossName,
+						aliveTime,
+						rocksHit,
+						rocksThrown);
+				}
+				else
+				{
+					CPrintToChatAll("%t %t", "Tag", "BossTankDamageTitleTime",
+						bossName,
+						aliveTime);
+				}
 			}
 		}
-	}
-	else
-	{
-		if (Announce_HasMask(g_cvAnnounceTank, view_as<int>(PlayerSkillsAnnounceBoss_Damage)))
+		else
 		{
-			if (hasRockSection)
+			for (int entry = 0; entry < finalControlIndex; entry++)
 			{
-				CPrintToChatAll("%t %t", "Tag", "BossTankDamageTitleTimeRocks",
-					bossName,
-					aliveTime,
-					rocksHit,
-					rocksThrown);
+				if (!g_BossSessions[sessionIndex].tank.controls[entry].active)
+				{
+					continue;
+				}
+
+				Announce_PrintTankControlHeader(sessionIndex, entry, true);
 			}
-			else
-			{
-				CPrintToChatAll("%t %t", "Tag", "BossTankDamageTitleTime",
-					bossName,
-					aliveTime);
-			}
+
+			Announce_PrintTankControlHeader(sessionIndex, finalControlIndex, tankAlive);
 		}
 	}
 
@@ -2255,6 +2362,7 @@ void Announce_TankDamage(int sessionIndex, bool tankAlive)
 	int survivorCount = 0;
 	int totalPercent = 0;
 	int totalDamage = 0;
+	int otherDamage = Boss_GetOtherDamage(sessionIndex);
 
 	for (int entry = 0; entry < L4D2_SKILLS_MAX_DAMAGE_ENTRIES; entry++)
 	{
@@ -2266,6 +2374,12 @@ void Announce_TankDamage(int sessionIndex, bool tankAlive)
 		survivorEntries[survivorCount++] = entry;
 		totalDamage += g_BossDamage[sessionIndex][entry].damage;
 		totalPercent += Announce_GetDamagePercent(sessionIndex, g_BossDamage[sessionIndex][entry].damage);
+	}
+
+	if (otherDamage > 0)
+	{
+		totalDamage += otherDamage;
+		totalPercent += Announce_GetDamagePercent(sessionIndex, otherDamage);
 	}
 
 	g_iAnnounceSortSession = sessionIndex;
@@ -2318,10 +2432,24 @@ void Announce_TankDamage(int sessionIndex, bool tankAlive)
 		}
 	}
 
+	if (otherDamage > 0 && Announce_HasMask(g_cvAnnounceTank, view_as<int>(PlayerSkillsAnnounceBoss_Damage)))
+	{
+		int percent = Announce_GetDamagePercent(sessionIndex, otherDamage);
+		if (percentAdjustment != 0 && otherDamage > 0 && !Announce_IsExactPercent(sessionIndex, otherDamage))
+		{
+			int adjustedPercent = percent + percentAdjustment;
+			if (adjustedPercent <= lastPercent)
+			{
+				percent = adjustedPercent;
+				percentAdjustment = 0;
+			}
+		}
+
+		CPrintToChatAll("%t", "BossDamageEntry", otherDamage, percent, "Other");
+	}
+
 	g_BossSessions[sessionIndex].printed = true;
 	g_BossSessions[sessionIndex].state = L4D2BossState_Printed;
-
-	API_FireBossDamageAnnounced(g_BossSessions[sessionIndex].id, g_BossSessions[sessionIndex].type);
 }
 
 void Announce_WitchDamage(int sessionIndex, bool witchAlive, const char[] tagPhrase = "Tag")
@@ -2350,7 +2478,6 @@ void Announce_WitchDamage(int sessionIndex, bool witchAlive, const char[] tagPhr
 
 		g_BossSessions[sessionIndex].printed = true;
 		g_BossSessions[sessionIndex].state = L4D2BossState_Printed;
-		API_FireBossDamageAnnounced(g_BossSessions[sessionIndex].id, g_BossSessions[sessionIndex].type);
 		return;
 	}
 	else
@@ -2449,7 +2576,6 @@ void Announce_WitchDamage(int sessionIndex, bool witchAlive, const char[] tagPhr
 	g_BossSessions[sessionIndex].printed = true;
 	g_BossSessions[sessionIndex].state = L4D2BossState_Printed;
 
-	API_FireBossDamageAnnounced(g_BossSessions[sessionIndex].id, g_BossSessions[sessionIndex].type);
 }
 
 void Announce_WitchKilledByTank(int sessionIndex, int tank)

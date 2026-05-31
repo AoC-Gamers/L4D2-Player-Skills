@@ -40,6 +40,60 @@ enum L4D2ApiSkillType
 }
 
 /**
+ * Public lookup table for `L4D2ApiSkillType` names.
+ * Consumers may index this table directly with a valid enum value.
+ */
+static const char g_L4D2ApiSkillTypeInfo[L4D2ApiSkill_Size][32] =
+{
+	"None",
+	"HunterSkeet",
+	"HunterSkeetMelee",
+	"HunterDeadstop",
+	"BoomerPop",
+	"ChargerLevel",
+	"SmokerTongueCut",
+	"SmokerSelfClear",
+	"HunterHighPounce",
+	"JockeyHighPounce",
+	"SmokerLedgeHang",
+	"JockeyLedgeHang",
+	"ChargerInstaKill",
+	"ChargerDeathSetup",
+	"ChargerLedgeHang",
+	"ChargerBowl",
+	"SpecialPinClear",
+	"BoomerVomitLanded",
+	"BunnyHopStreak",
+	"CarAlarmTriggered",
+	"JockeyJumpStop",
+	"JockeySkeetMelee",
+	"JockeySkeet"
+};
+
+/**
+ * Resolves the stable public name for one `L4D2ApiSkillType`.
+ *
+ * @param type           Public skill type.
+ * @param buffer         Destination buffer.
+ * @param maxlen         Destination buffer size.
+ * @return               True on success, false if the type is out of range.
+ */
+stock bool PlayerSkills_GetApiSkillTypeName(L4D2ApiSkillType type, char[] buffer, int maxlen)
+{
+	if (type < L4D2ApiSkill_None || type >= L4D2ApiSkill_Size)
+	{
+		if (maxlen > 0)
+		{
+			buffer[0] = '\0';
+		}
+		return false;
+	}
+
+	strcopy(buffer, maxlen, g_L4D2ApiSkillTypeInfo[type]);
+	return true;
+}
+
+/**
  * Public kill event types emitted by the immediate `kills` pipeline.
  * These represent default Special Infected deaths that were not absorbed
  * by a higher-priority skill.
@@ -55,6 +109,44 @@ enum L4D2ApiKillType
 	L4D2ApiKill_ChargerKill,
 
 	L4D2ApiKill_Size
+}
+
+/**
+ * Public lookup table for `L4D2ApiKillType` names.
+ * Consumers may index this table directly with a valid enum value.
+ */
+static const char g_L4D2ApiKillTypeInfo[L4D2ApiKill_Size][32] =
+{
+	"None",
+	"SmokerKill",
+	"BoomerKill",
+	"HunterKill",
+	"SpitterKill",
+	"JockeyKill",
+	"ChargerKill"
+};
+
+/**
+ * Resolves the stable public name for one `L4D2ApiKillType`.
+ *
+ * @param type           Public kill type.
+ * @param buffer         Destination buffer.
+ * @param maxlen         Destination buffer size.
+ * @return               True on success, false if the type is out of range.
+ */
+stock bool PlayerSkills_GetApiKillTypeName(L4D2ApiKillType type, char[] buffer, int maxlen)
+{
+	if (type < L4D2ApiKill_None || type >= L4D2ApiKill_Size)
+	{
+		if (maxlen > 0)
+		{
+			buffer[0] = '\0';
+		}
+		return false;
+	}
+
+	strcopy(buffer, maxlen, g_L4D2ApiKillTypeInfo[type]);
+	return true;
 }
 
 /**
@@ -76,6 +168,45 @@ enum L4D2ApiBossEventType
 }
 
 /**
+ * Public lookup table for `L4D2ApiBossEventType` names.
+ * Consumers may index this table directly with a valid enum value.
+ */
+static const char g_L4D2ApiBossEventTypeInfo[L4D2ApiBossEvent_Size][32] =
+{
+	"None",
+	"TankDead",
+	"WitchDead",
+	"WitchIncap",
+	"TankRockSkeet",
+	"TankRockHit",
+	"TankLedgeHang",
+	"WitchCrown"
+};
+
+/**
+ * Resolves the stable public name for one `L4D2ApiBossEventType`.
+ *
+ * @param type           Public boss event type.
+ * @param buffer         Destination buffer.
+ * @param maxlen         Destination buffer size.
+ * @return               True on success, false if the type is out of range.
+ */
+stock bool PlayerSkills_GetApiBossEventTypeName(L4D2ApiBossEventType type, char[] buffer, int maxlen)
+{
+	if (type < L4D2ApiBossEvent_None || type >= L4D2ApiBossEvent_Size)
+	{
+		if (maxlen > 0)
+		{
+			buffer[0] = '\0';
+		}
+		return false;
+	}
+
+	strcopy(buffer, maxlen, g_L4D2ApiBossEventTypeInfo[type]);
+	return true;
+}
+
+/**
  * Boss session types tracked by the boss session API.
  */
 enum L4D2BossType
@@ -86,14 +217,48 @@ enum L4D2BossType
 }
 
 /**
+ * Public lookup table for `L4D2BossType` names.
+ * Consumers may index this table directly with a valid enum value.
+ */
+static const char g_L4D2BossTypeInfo[3][16] =
+{
+	"None",
+	"Tank",
+	"Witch"
+};
+
+/**
+ * Resolves the stable public name for one `L4D2BossType`.
+ *
+ * @param type           Public boss session type.
+ * @param buffer         Destination buffer.
+ * @param maxlen         Destination buffer size.
+ * @return               True on success, false if the type is out of range.
+ */
+stock bool PlayerSkills_GetBossTypeName(L4D2BossType type, char[] buffer, int maxlen)
+{
+	if (type < L4D2Boss_None || type > L4D2Boss_Witch)
+	{
+		if (maxlen > 0)
+		{
+			buffer[0] = '\0';
+		}
+		return false;
+	}
+
+	strcopy(buffer, maxlen, g_L4D2BossTypeInfo[type]);
+	return true;
+}
+
+/**
  * Terminal close reasons for a Tank boss session.
  */
 enum L4D2TankSessionEndReason
 {
 	L4D2TankSessionEnd_None = 0,
-	L4D2TankSessionEnd_Dead,
-	L4D2TankSessionEnd_Escaped,
-	L4D2TankSessionEnd_Wipe
+	L4D2TankSessionEnd_TankDead,
+	L4D2TankSessionEnd_SurvivorsEscaped,
+	L4D2TankSessionEnd_SurvivorsWiped
 }
 
 /**
@@ -107,14 +272,6 @@ enum L4D2TankSessionEndReason
 forward Action PlayerSkills_OnSkillDetected(int eventId, L4D2ApiSkillType type);
 
 /**
- * Called after a public `skills` event has been announced.
- *
- * @param eventId        Runtime identifier for the announced skill event.
- * @param type           Public skill event type.
- */
-forward void PlayerSkills_OnSkillAnnounced(int eventId, L4D2ApiSkillType type);
-
-/**
  * Called whenever a public `kills` event is detected.
  *
  * @param eventId        Runtime identifier for the detected kill event.
@@ -123,14 +280,6 @@ forward void PlayerSkills_OnSkillAnnounced(int eventId, L4D2ApiSkillType type);
  *                       Plugin_Handled or higher to suppress it.
  */
 forward Action PlayerSkills_OnKillDetected(int eventId, L4D2ApiKillType type);
-
-/**
- * Called after a public `kills` event has been announced.
- *
- * @param eventId        Runtime identifier for the announced kill event.
- * @param type           Public kill event type.
- */
-forward void PlayerSkills_OnKillAnnounced(int eventId, L4D2ApiKillType type);
 
 /**
  * Called whenever a public `boss events` event is detected.
@@ -143,14 +292,6 @@ forward void PlayerSkills_OnKillAnnounced(int eventId, L4D2ApiKillType type);
 forward Action PlayerSkills_OnBossEventDetected(int eventId, L4D2ApiBossEventType type);
 
 /**
- * Called after a public `boss events` event has been announced.
- *
- * @param eventId        Runtime identifier for the announced boss event.
- * @param type           Public boss event type.
- */
-forward void PlayerSkills_OnBossEventAnnounced(int eventId, L4D2ApiBossEventType type);
-
-/**
  * Called whenever a boss session is finalized before the builtin summary announce.
  *
  * @param sessionId      Runtime identifier for the finalized boss session.
@@ -159,14 +300,6 @@ forward void PlayerSkills_OnBossEventAnnounced(int eventId, L4D2ApiBossEventType
  *                       Plugin_Handled or higher to suppress it.
  */
 forward Action PlayerSkills_OnBossSessionFinalized(int sessionId, L4D2BossType type);
-
-/**
- * Called after a boss session summary has been announced.
- *
- * @param sessionId      Runtime identifier for the announced boss session.
- * @param type           Boss session type.
- */
-forward void PlayerSkills_OnBossSessionAnnounced(int sessionId, L4D2BossType type);
 
 /**
  * Called once when a Tank session reaches its terminal close reason.
@@ -300,7 +433,7 @@ native bool PlayerSkills_FillKillSummaryKeyValues(int summaryId, Handle kv);
 
 public SharedPlugin __pl_l4d2_player_skills =
 {
-	name = "LIBRARY_L4D2_PLAYER_SKILLS",
+	name = LIBRARY_L4D2_PLAYER_SKILLS,
 	file = "l4d2_player_skills.smx",
 #if defined REQUIRE_PLUGIN
 	required = 1,

@@ -32,6 +32,7 @@ Este documento resume los flujos actuales de skills y sesiones relacionadas con 
 
 - `g_BossSessions`
 - `g_BossDamage`
+- `g_Runtime.hasTankControlEq`
 - common session:
   - `maxHealth`
   - `lastHealth`
@@ -59,6 +60,21 @@ Regla de ownership:
 - la identidad pública del `Tank` vive en `tank_control`;
 - cualquier métrica nueva de `Tank` debe agregarse por sesión o por segmento de control, no como contador global;
 - el diseño actual admite múltiples `Tank` simultáneos siempre que el tracking siga resolviendo por `victim`, `userid`, `entity` o `rock owner`.
+
+Fuente de control:
+
+- si `l4d_tank_control_eq` está cargado
+  - `PlayerSkills` usa esa librería como fuente preferida de continuidad del `Tank`;
+  - consume:
+    - `TankControl_GetClientTankLifecycleId(...)`
+    - `TankControl_OnTankControlChanged(...)`
+  - y reduce sus heurísticas locales de reasignación;
+- si no está cargado
+  - `PlayerSkills` cae a su lógica local de recuperación:
+    - bot reclaim
+    - human takeover
+  - en este modo no intenta rehidratar al mismo humano por identidad persistente;
+  - si el flujo no matchea por `userid`, `client`, reclaim bot o takeover humano, se abre una sesión nueva.
 
 ### Emit
 
@@ -121,9 +137,9 @@ forward void PlayerSkills_OnTankSessionClosed(int sessionId, L4D2TankSessionEndR
 
 Reasons actuales:
 
-- `Dead`
-- `Escaped`
-- `Wipe`
+- `TankDead`
+- `SurvivorsEscaped`
+- `SurvivorsWiped`
 
 ### Flow
 
