@@ -6,9 +6,12 @@
 #include <sdktools>
 #include <console_table>
 #include <left4dhooks>
-#include <l4d_tank_control_eq>
 #include <l4d2util>
 #include <l4d2_player_skills>
+
+#undef REQUIRE_PLUGIN
+#include <l4d_tank_control_eq>
+#define REQUIRE_PLUGIN
 
 #define MAX_MESSAGE_LENGTH 512
 #include <colors>
@@ -911,7 +914,52 @@ bool Skills_HasTankControlEq()
 	return g_Runtime.hasTankControlEq;
 }
 
-public void TankControl_OnTankControlChanged(int lifecycleId, int oldClient, int newClient, bool oldWasBot, bool newWasBot)
+bool Skills_HasTankControlEqSubstituteApi()
+{
+	return Skills_HasTankControlEq()
+		&& GetFeatureStatus(FeatureType_Native, "TankControl_GetTankStartReason") == FeatureStatus_Available;
+}
+
+public void TankControl_OnTankStarted(int tankId, int client, bool isBot)
+{
+	if (Skills_HasTankControlEqSubstituteApi())
+	{
+		return;
+	}
+
+	if (!Skills_HasTankControlEq() || !IsValidClient(client) || !IsPlayerAlive(client))
+	{
+		return;
+	}
+
+	Skills_Debug(PlayerSkillsDebug_Boss,
+		"TankControl_OnTankStarted received. tank_id=%d client=%d bot=%d",
+		tankId,
+		client,
+		isBot);
+
+	Boss_EnsureTankSession(client);
+}
+
+public void TankControl_OnTankStartedEx(int tankId, int client, bool isBot, TankControlStartReason startReason, int parentTankId)
+{
+	if (!Skills_HasTankControlEq() || !IsValidClient(client) || !IsPlayerAlive(client))
+	{
+		return;
+	}
+
+	Skills_Debug(PlayerSkillsDebug_Boss,
+		"TankControl_OnTankStartedEx received. tank_id=%d client=%d bot=%d start=%d parent=%d",
+		tankId,
+		client,
+		isBot,
+		startReason,
+		parentTankId);
+
+	Boss_EnsureTankSession(client);
+}
+
+public void TankControl_OnTankControlChanged(int tankId, int oldClient, int newClient, bool oldWasBot, bool newWasBot)
 {
 	if (!Skills_HasTankControlEq() || !IsValidClient(newClient) || !IsPlayerAlive(newClient))
 	{
@@ -919,8 +967,8 @@ public void TankControl_OnTankControlChanged(int lifecycleId, int oldClient, int
 	}
 
 	Skills_Debug(PlayerSkillsDebug_Boss,
-		"TankControl_OnTankControlChanged received. lifecycle=%d old=%d new=%d oldBot=%d newBot=%d",
-		lifecycleId,
+		"TankControl_OnTankControlChanged received. tank_id=%d old=%d new=%d oldBot=%d newBot=%d",
+		tankId,
 		oldClient,
 		newClient,
 		oldWasBot,

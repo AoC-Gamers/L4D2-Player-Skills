@@ -150,7 +150,7 @@ Notas de shaping:
   - omite `actor_weaponid`
 - `boss_session` de `Tank`
   - usa `tank_control` como identidad pública del boss a lo largo de la sesión
-  - si `l4d_tank_control_eq` está cargado, `PlayerSkills` usa esa librería como fuente preferida para lifecycle y control changes del `Tank`
+  - si `l4d_tank_control_eq` está cargado, `PlayerSkills` usa esa librería como fuente preferida para `tankId` y control changes del `Tank`
   - si no está cargada, `PlayerSkills` cae a su tracking heurístico local
   - en ese fallback local no intenta recuperar al mismo humano por identidad persistente; solo usa continuidad por `userid`, `client`, reclaim bot y takeover humano
   - `TankDead` no expone `victim_*`

@@ -551,6 +551,7 @@ enum struct L4D2DamageEntry
 enum struct L4D2TankControlEntry
 {
 	bool active;
+	bool synthetic;
 	bool overflow;
 	int mergedControls;
 	L4D2PlayerRef player;
@@ -564,6 +565,7 @@ enum struct L4D2TankControlEntry
 	void Reset()
 	{
 		this.active = false;
+		this.synthetic = false;
 		this.overflow = false;
 		this.mergedControls = 0;
 		this.player.Reset();
@@ -579,6 +581,9 @@ enum struct L4D2TankControlEntry
 enum struct L4D2TankSessionData
 {
 	int lifecycleId;
+	TankControlStartReason startReason;
+	int parentTankId;
+	bool isSubstitute;
 	bool inStasis;
 	L4D2TankSessionEndReason endReason;
 	int punchesHit;
@@ -597,6 +602,9 @@ enum struct L4D2TankSessionData
 	void Reset()
 	{
 		this.lifecycleId = 0;
+		this.startReason = TankControlStart_Unknown;
+		this.parentTankId = 0;
+		this.isSubstitute = false;
 		this.inStasis = false;
 		this.endReason = L4D2TankSessionEnd_None;
 		this.punchesHit = 0;

@@ -2222,7 +2222,8 @@ static void Announce_PrintTankControlHeader(int sessionIndex, int controlIndex, 
 		|| sessionIndex >= L4D2_SKILLS_MAX_BOSSES
 		|| controlIndex < 0
 		|| controlIndex >= L4D2_SKILLS_MAX_TANK_CONTROLS
-		|| !g_BossSessions[sessionIndex].tank.controls[controlIndex].active)
+		|| !g_BossSessions[sessionIndex].tank.controls[controlIndex].active
+		|| g_BossSessions[sessionIndex].tank.controls[controlIndex].synthetic)
 	{
 		return;
 	}
@@ -2283,7 +2284,8 @@ void Announce_TankDamage(int sessionIndex, bool tankAlive)
 	int finalControlIndex = -1;
 	for (int entry = 0; entry < g_BossSessions[sessionIndex].tank.controlCount && entry < L4D2_SKILLS_MAX_TANK_CONTROLS; entry++)
 	{
-		if (!g_BossSessions[sessionIndex].tank.controls[entry].active)
+		if (!g_BossSessions[sessionIndex].tank.controls[entry].active
+			|| g_BossSessions[sessionIndex].tank.controls[entry].synthetic)
 		{
 			continue;
 		}
@@ -2346,7 +2348,8 @@ void Announce_TankDamage(int sessionIndex, bool tankAlive)
 		{
 			for (int entry = 0; entry < finalControlIndex; entry++)
 			{
-				if (!g_BossSessions[sessionIndex].tank.controls[entry].active)
+				if (!g_BossSessions[sessionIndex].tank.controls[entry].active
+					|| g_BossSessions[sessionIndex].tank.controls[entry].synthetic)
 				{
 					continue;
 				}

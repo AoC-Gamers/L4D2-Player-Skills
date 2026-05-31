@@ -66,7 +66,7 @@ Fuente de control:
 - si `l4d_tank_control_eq` está cargado
   - `PlayerSkills` usa esa librería como fuente preferida de continuidad del `Tank`;
   - consume:
-    - `TankControl_GetClientTankLifecycleId(...)`
+    - `TankControl_GetClientTankId(...)`
     - `TankControl_OnTankControlChanged(...)`
   - y reduce sus heurísticas locales de reasignación;
 - si no está cargado

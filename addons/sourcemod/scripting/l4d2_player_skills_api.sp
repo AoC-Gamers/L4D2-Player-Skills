@@ -16,7 +16,6 @@
 #define SKILLS_SUBDIR_TANK_SESSION "boss/tank_session_closed"
 #define SKILLS_SUBDIR_SKILL_SUMMARY "summary/skills"
 #define SKILLS_SUBDIR_KILL_SUMMARY "summary/kills"
-#define SKILLS_ROOT_TANK_SESSION "tank_session_closed"
 #define SKILLS_ROOT_DATA "data"
 #define SKILLS_FAMILY_TANK_SESSION "tank_session_closed"
 #define SKILLS_FAMILY_SKILL_SUMMARY "skill_summary"
@@ -86,8 +85,6 @@ public void OnPluginStart()
 	{
 		Runtime_SetHasL4D2PlayerSkills(LibraryExists(LIBRARY_L4D2_PLAYER_SKILLS), "late_start");
 	}
-
-	EnsureLogDirectory();
 }
 
 public void OnAllPluginsLoaded()
@@ -144,7 +141,7 @@ public void PlayerSkills_OnTankSessionClosed(int sessionId, L4D2TankSessionEndRe
 	char reasonName[32];
 	GetTankReasonName(reason, reasonName, sizeof(reasonName));
 
-	KeyValues kv = new KeyValues(SKILLS_ROOT_TANK_SESSION);
+	KeyValues kv = new KeyValues(SKILLS_ROOT_DATA);
 	WriteCommonMetadata(kv, SKILLS_FAMILY_TANK_SESSION);
 	kv.SetNum("session_id", sessionId);
 	kv.SetNum("reason", reason);
@@ -325,8 +322,8 @@ void EnsureLogDirectory()
 	BuildPath(Path_SM, basePath, sizeof(basePath), SKILLS_LOGDIR);
 	if (!DirExists(basePath))
 	{
-		bool created = CreateDirectory(basePath, 511);
-		Debug("EnsureLogDirectory path=%s created=%d exists_after=%d", basePath, created, DirExists(basePath));
+		EnsureDirectoryRecursive(basePath);
+		Debug("EnsureLogDirectory path=%s created=%d exists_after=%d", basePath, 1, DirExists(basePath));
 	}
 	else
 	{
@@ -336,25 +333,26 @@ void EnsureLogDirectory()
 
 void EnsureDirectoryRecursive(const char[] fullPath)
 {
-	char normalized[PLATFORM_MAX_PATH];
-	strcopy(normalized, sizeof(normalized), fullPath);
-	ReplaceString(normalized, sizeof(normalized), "/", "\\");
-
-	int length = strlen(normalized);
+	int length = strlen(fullPath);
 	for (int i = 0; i < length; i++)
 	{
-		if (normalized[i] != '\\')
+		if (fullPath[i] != '/' && fullPath[i] != '\\')
 		{
 			continue;
 		}
 
-		if (i < 3)
+		if (i == 0)
+		{
+			continue;
+		}
+
+		if (i == 2 && fullPath[1] == ':')
 		{
 			continue;
 		}
 
 		char partial[PLATFORM_MAX_PATH];
-		strcopy(partial, i + 1, normalized);
+		strcopy(partial, i + 1, fullPath);
 		if (!DirExists(partial))
 		{
 			bool created = CreateDirectory(partial, 511);
@@ -362,31 +360,19 @@ void EnsureDirectoryRecursive(const char[] fullPath)
 		}
 	}
 
-	if (!DirExists(normalized))
-	{
-		bool created = CreateDirectory(normalized, 511);
-		Debug("EnsureDirectoryRecursive final_path=%s created=%d exists_after=%d", normalized, created, DirExists(normalized));
-	}
-}
-
-void EnsureSubDirectory(const char[] subdir, char[] fullPath, int maxlen)
-{
-	BuildPath(Path_SM, fullPath, maxlen, "%s/%s", SKILLS_LOGDIR, subdir);
 	if (!DirExists(fullPath))
 	{
-		EnsureDirectoryRecursive(fullPath);
+		bool created = CreateDirectory(fullPath, 511);
+		Debug("EnsureDirectoryRecursive final_path=%s created=%d exists_after=%d", fullPath, created, DirExists(fullPath));
 	}
-	Debug("EnsureSubDirectory subdir=%s path=%s exists=%d", subdir, fullPath, DirExists(fullPath));
 }
 
 void BuildLogPath(const char[] subdir, const char[] typeName, char[] path, int maxlen)
 {
-	char dirPath[PLATFORM_MAX_PATH];
 	char mapName[64];
 	char timestamp[32];
 	int tick = GetGameTickCount();
 
-	EnsureSubDirectory(subdir, dirPath, sizeof(dirPath));
 	FormatTime(timestamp, sizeof(timestamp), "%Y%m%d_%H%M%S", GetTime());
 	GetCurrentMap(mapName, sizeof(mapName));
 
@@ -398,6 +384,38 @@ void BuildLogPath(const char[] subdir, const char[] typeName, char[] path, int m
 		mapName,
 		tick);
 	Debug("BuildLogPath subdir=%s type=%s path=%s", subdir, typeName, path);
+}
+
+void EnsureFilePathReady(const char[] filePath)
+{
+	EnsureLogDirectory();
+
+	char directoryPath[PLATFORM_MAX_PATH];
+	strcopy(directoryPath, sizeof(directoryPath), filePath);
+	int separator = FindCharInString(directoryPath, '\\', true);
+	if (separator == -1)
+	{
+		separator = FindCharInString(directoryPath, '/', true);
+	}
+
+	if (separator != -1)
+	{
+		directoryPath[separator] = '\0';
+		if (!DirExists(directoryPath))
+		{
+			EnsureDirectoryRecursive(directoryPath);
+		}
+	}
+
+	if (!FileExists(filePath))
+	{
+		File file = OpenFile(filePath, "w");
+		Debug("EnsureFilePathReady file=%s opened=%d", filePath, file != null);
+		if (file != null)
+		{
+			delete file;
+		}
+	}
 }
 
 void WriteCommonMetadata(KeyValues kv, const char[] family)
@@ -412,21 +430,7 @@ void WriteCommonMetadata(KeyValues kv, const char[] family)
 
 void ExportKvToFile(KeyValues kv, const char[] filePath, const char[] label)
 {
-	char directoryPath[PLATFORM_MAX_PATH];
-	strcopy(directoryPath, sizeof(directoryPath), filePath);
-	int separator = FindCharInString(directoryPath, '\\', true);
-	if (separator == -1)
-	{
-		separator = FindCharInString(directoryPath, '/', true);
-	}
-	if (separator != -1)
-	{
-		directoryPath[separator] = '\0';
-		if (!DirExists(directoryPath))
-		{
-			EnsureDirectoryRecursive(directoryPath);
-		}
-	}
+	EnsureFilePathReady(filePath);
 
 	bool ok = kv.ExportToFile(filePath);
 	Debug("ExportKvToFile label=%s path=%s ok=%d", label, filePath, ok);

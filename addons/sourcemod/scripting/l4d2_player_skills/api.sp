@@ -825,6 +825,22 @@ bool API_ShouldWriteEventVictimKeys(int eventIndex, L4D2ApiEventFamily family)
 	return true;
 }
 
+bool API_ShouldEmbedBossSessionInEvent(int eventIndex)
+{
+	switch (g_SkillEvents[eventIndex].type)
+	{
+		case L4D2Skill_TankDead:
+		{
+			// TankDead is emitted before the boss session reaches its terminal finalized state.
+			// Embedding the session snapshot here is misleading because end_reason/state still
+			// reflect a pre-finalization view.
+			return false;
+		}
+	}
+
+	return true;
+}
+
 void API_WriteEventSpecialRoles(Handle kv, int eventIndex, L4D2ApiEventFamily family)
 {
 	if (API_ShouldWriteEventVictimKeys(eventIndex, family)
@@ -1031,6 +1047,10 @@ void API_WriteBossTankControls(Handle kv, int sessionIndex)
 		KvSetNum(kv, "accountid", g_BossSessions[sessionIndex].tank.controls[entry].player.accountId);
 		KvSetString(kv, "name", g_BossSessions[sessionIndex].tank.controls[entry].player.name);
 		KvSetNum(kv, "bot", g_BossSessions[sessionIndex].tank.controls[entry].player.bot ? 1 : 0);
+		if (g_BossSessions[sessionIndex].tank.controls[entry].synthetic)
+		{
+			KvSetNum(kv, "synthetic", 1);
+		}
 
 		float controlTime = g_BossSessions[sessionIndex].tank.controls[entry].controlTime;
 		if (g_BossSessions[sessionIndex].tank.controls[entry].startedAt > 0.0)
@@ -1320,7 +1340,8 @@ bool API_WriteEventKeyValuesForFamily(Handle kv, int eventIndex, L4D2ApiEventFam
 
 	if (family == L4D2ApiEventFamily_BossEvent)
 	{
-		if (g_SkillEvents[eventIndex].actor2 > 0)
+		if (API_ShouldEmbedBossSessionInEvent(eventIndex)
+			&& g_SkillEvents[eventIndex].actor2 > 0)
 		{
 			int sessionIndex = API_GetBossSessionIndexById(g_SkillEvents[eventIndex].actor2);
 			if (sessionIndex != -1)
