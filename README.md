@@ -16,6 +16,8 @@ El proyecto consolida lógica que antes estaba repartida entre varios plugins y 
   - además imprime una tabla comparativa en la consola del usuario
   - sin argumentos: jugador actual
   - `sm_skills <player>`: objetivo explícito
+- `sm_skills_stats`
+  - imprime la tabla comparativa de skills por equipo
 
 ## Documentation Index
 
@@ -24,6 +26,7 @@ El proyecto consolida lógica que antes estaba repartida entre varios plugins y 
 - [Build System](./docs/build-system.md)
 - [L4D2 Skills API](./docs/l4d2-skills-api.md)
 - [Skill Interpretation](./docs/l4d2-skills-interpretation.md)
+- [L4D2 Player Skills Series](./docs/l4d2-player-skills-series.md)
 
 Flow documentation:
 
@@ -64,3 +67,11 @@ El plugin se apoya principalmente en:
 - `left4dhooks_stocks.inc`
 - `left4dhooks_silver.inc`
 - `left4dhooks_lux_library.inc`
+
+## Optional Companion Plugins
+
+- `addons/sourcemod/scripting/l4d2_player_skills_series.sp`
+  - `sm_skills_series`
+  - `sm_skills_series_stats`
+  - agrega histórico corto de `skill_summary` y `kill_summary`
+  - no forma parte del artefacto principal

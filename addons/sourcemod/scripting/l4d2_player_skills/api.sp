@@ -873,6 +873,60 @@ bool API_ShouldWriteActorWeaponId(int eventIndex)
 	return true;
 }
 
+int API_GetSuppressedKillTypeForSkillEvent(int eventIndex)
+{
+	switch (g_SkillEvents[eventIndex].type)
+	{
+		case L4D2Skill_HunterSkeet, L4D2Skill_HunterSkeetMelee:
+		{
+			return view_as<int>(L4D2ApiKill_HunterKill);
+		}
+
+		case L4D2Skill_BoomerPop:
+		{
+			return view_as<int>(L4D2ApiKill_BoomerKill);
+		}
+
+		case L4D2Skill_ChargerLevel:
+		{
+			return view_as<int>(L4D2ApiKill_ChargerKill);
+		}
+
+		case L4D2Skill_JockeySkeetMelee, L4D2Skill_JockeySkeet:
+		{
+			return view_as<int>(L4D2ApiKill_JockeyKill);
+		}
+
+		case L4D2Skill_SmokerSelfClear:
+		{
+			if (!g_SkillEvents[eventIndex].withShove)
+			{
+				return view_as<int>(L4D2ApiKill_SmokerKill);
+			}
+		}
+	}
+
+	return view_as<int>(L4D2ApiKill_None);
+}
+
+void API_WriteEventSkillConsequences(Handle kv, int eventIndex)
+{
+	int suppressedKillType = API_GetSuppressedKillTypeForSkillEvent(eventIndex);
+	if (suppressedKillType > view_as<int>(L4D2ApiKill_None))
+	{
+		char killTypeName[32];
+		API_GetKillTypeName(view_as<L4D2ApiKillType>(suppressedKillType), killTypeName, sizeof(killTypeName));
+		KvSetNum(kv, "implies_si_death", 1);
+		KvSetNum(kv, "suppressed_kill_type_id", suppressedKillType);
+		KvSetString(kv, "suppressed_kill_type", killTypeName);
+	}
+
+	if (g_SkillEvents[eventIndex].type == L4D2Skill_SmokerSelfClear)
+	{
+		KvSetString(kv, "clear_mode", g_SkillEvents[eventIndex].withShove ? "shove" : "kill");
+	}
+}
+
 void API_WriteEventSkillProperties(Handle kv, int eventIndex)
 {
 	if (!KvJumpToKey(kv, "properties", true))
@@ -947,6 +1001,11 @@ void API_WriteEventSkillProperties(Handle kv, int eventIndex)
 	if (g_SkillEvents[eventIndex].height > 0.0) KvSetFloat(kv, "height", g_SkillEvents[eventIndex].height);
 	if (g_SkillEvents[eventIndex].distance > 0.0) KvSetFloat(kv, "distance", g_SkillEvents[eventIndex].distance);
 	if (g_SkillEvents[eventIndex].maxVelocity > 0.0) KvSetFloat(kv, "max_velocity", g_SkillEvents[eventIndex].maxVelocity);
+
+	if (API_GetEventFamily(g_SkillEvents[eventIndex].type) == L4D2ApiEventFamily_Skill)
+	{
+		API_WriteEventSkillConsequences(kv, eventIndex);
+	}
 
 	KvGoBack(kv);
 }

@@ -134,6 +134,20 @@ Payload común:
 - `assists`
 - `properties`
 
+Notas para `skill_event.properties`:
+
+- `implies_si_death`
+  - `1` cuando la skill principal absorbió una muerte default de SI
+- `suppressed_kill_type_id`
+  - enum público `L4D2ApiKillType` de la muerte default suprimida
+- `suppressed_kill_type`
+  - nombre estable del kill type suprimido
+- `clear_mode`
+  - hoy solo aplica a `SmokerSelfClear`
+  - valores:
+    - `kill`
+    - `shove`
+
 `boss_event` además puede adjuntar:
 
 - `boss_session`
@@ -245,6 +259,35 @@ Notas de shaping:
 		"shots"		"1"
 		"headshot"		"1"
 		"rating"		"3"
+		"implies_si_death"		"1"
+		"suppressed_kill_type_id"		"3"
+		"suppressed_kill_type"		"HunterKill"
+	}
+}
+```
+
+`skill_event` (`SmokerSelfClear` por shove)
+
+```text
+"skill_event"
+{
+	"id"		"57"
+	"type_id"		"7"
+	"base_mode"		"2"
+
+	"actor_userid"		"9"
+	"actor_accountid"		"11223344"
+	"actor_name"		"survivor"
+	"actor_bot"		"0"
+
+	"victim_userid"		"11"
+	"victim_accountid"		"0"
+	"victim_name"		"Smoker"
+	"victim_bot"		"1"
+
+	"properties"
+	{
+		"clear_mode"		"shove"
 	}
 }
 ```
