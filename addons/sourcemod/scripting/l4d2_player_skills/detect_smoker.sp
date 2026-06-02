@@ -194,11 +194,12 @@ void Detect_EventChokeStopped(Event event)
 			g_SkillEvents[eventIndex].pinVictim.Capture(victim);
 
 			Skills_Debug(PlayerSkillsDebug_Detect,
-				"SpecialClear emit payload. clearer=%d pinner=%d class=%d pinvictim=%d withShove=0 timeA=%.3f timeB=%.3f source=choke_stopped",
+				"SpecialClear emit payload. clearer=%d pinner=%d class=%d pinvictim=%d withShove=0 headshot=%d timeA=%.3f timeB=%.3f source=choke_stopped",
 				stopper,
 				smoker,
 				L4D2ZombieClass_Smoker,
 				victim,
+				g_SkillEvents[eventIndex].headshot ? 1 : 0,
 				g_SkillEvents[eventIndex].timeA,
 				g_SkillEvents[eventIndex].timeB);
 
@@ -396,7 +397,7 @@ void Detect_ClearPinStateByAttacker(int attacker)
 		g_DetectPinRegistry.pinnerByVictim[victim] = 0;
 	}
 
-	if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
+	if (victim > 0 && Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
 	{
 		Skills_Debug(PlayerSkillsDebug_Detect,
 			"SpecialClear pin state cleared by attacker. attacker=%d victim=%d",
@@ -423,7 +424,7 @@ void Detect_ClearPinStateByVictim(int victim)
 		g_fDetectSpecialClearTimeB[attacker] = -1.0;
 	}
 
-	if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
+	if (attacker > 0 && Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
 	{
 		Skills_Debug(PlayerSkillsDebug_Detect,
 			"SpecialClear pin state cleared by victim. victim=%d attacker=%d",
@@ -564,7 +565,7 @@ bool Detect_IsValidTeamClear(int clearer, int pinner)
 	return true;
 }
 
-void Detect_EmitSpecialClear(int clearer, int pinner, bool withShove, bool fromKill = false)
+void Detect_EmitSpecialClear(int clearer, int pinner, bool withShove, bool fromKill = false, bool headshot = false)
 {
 	if (!Detect_IsPinnedClass(pinner))
 	{
@@ -635,19 +636,22 @@ void Detect_EmitSpecialClear(int clearer, int pinner, bool withShove, bool fromK
 	{
 		g_SkillEvents[eventIndex].damageScope = L4D2SkillDamageScope_SkillWindow;
 		g_SkillEvents[eventIndex].damage = Detect_GetSiLifeDamageByAttacker(pinner, clearer);
+		g_SkillEvents[eventIndex].actorDamage = g_SkillEvents[eventIndex].damage;
 		g_SkillEvents[eventIndex].shots = Detect_GetSiLifeShotsByAttacker(pinner, clearer);
-		g_SkillEvents[eventIndex].headshot = Detect_ResolveHeadshot(pinner, clearer, false);
+		g_SkillEvents[eventIndex].actorWeaponId = Detect_GetSiLifeWeaponIdByAttacker(pinner, clearer);
+		g_SkillEvents[eventIndex].headshot = Detect_ResolveHeadshot(pinner, clearer, headshot);
 	}
 
 	if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
 	{
 		Skills_Debug(PlayerSkillsDebug_Detect,
-			"SpecialClear emit payload. clearer=%d pinner=%d class=%d pinvictim=%d withShove=%d timeA=%.3f timeB=%.3f",
+			"SpecialClear emit payload. clearer=%d pinner=%d class=%d pinvictim=%d withShove=%d headshot=%d timeA=%.3f timeB=%.3f",
 			clearer,
 			pinner,
 			g_DetectPinRegistry.pinnedClassByAttacker[pinner],
 			pinvictim,
 			withShove ? 1 : 0,
+			g_SkillEvents[eventIndex].headshot ? 1 : 0,
 			g_SkillEvents[eventIndex].timeA,
 			g_SkillEvents[eventIndex].timeB);
 	}

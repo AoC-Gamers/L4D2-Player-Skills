@@ -34,9 +34,13 @@ void Detect_ResetHunterPounceState(int hunter)
 
 	for (int attacker = 1; attacker <= MaxClients; attacker++)
 	{
-		g_DetectSiLife[hunter].byAttacker[attacker].shotCounted = false;
-		g_fDetectHunterLastShove[hunter][attacker] = 0.0;
-		g_DetectHunterShotWindow[hunter].byAttacker[attacker].Reset();
+		int lifeSlot = Detect_FindSiLifeSlot(hunter, attacker);
+		if (lifeSlot != -1)
+		{
+			g_DetectSiLife[hunter].entries[lifeSlot].shotCounted = false;
+		}
+		Detect_ResetShoveWindowEntryByAttacker(g_DetectHunterLastShove[hunter], attacker);
+		Detect_ResetHunterShotWindowEntryByAttacker(hunter, attacker);
 	}
 }
 

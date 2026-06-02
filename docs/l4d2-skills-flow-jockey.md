@@ -173,6 +173,7 @@ Reglas:
 - `Grenade Launcher` puede calificar sin `headshot`;
 - `snipers` y `Magnum` solo califican cuando el remate final fue `Headshot`;
 - no existe variante `Perfecta` para `JockeySkeet`.
+- el announce de `JockeySkeet` es independiente de `JockeySkeetMelee`.
 
 ### Properties
 

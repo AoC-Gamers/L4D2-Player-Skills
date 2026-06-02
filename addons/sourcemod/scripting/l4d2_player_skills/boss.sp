@@ -111,6 +111,10 @@ void Boss_HookTankDamageClient(int client)
 	SDKHook(client, SDKHook_OnTakeDamagePost, Boss_OnTankTakeDamagePost);
 	SDKHook(client, SDKHook_OnTakeDamage, Boss_OnClientTakeDamage);
 	g_bBossTankDamageHooked[client] = true;
+	Skills_Debug(PlayerSkillsDebug_Boss,
+		"Hooked Tank damage callbacks. client=%d userid=%d",
+		client,
+		IsClientInGame(client) ? GetClientUserId(client) : 0);
 }
 
 void Boss_UnhookTankDamageClient(int client)
@@ -636,12 +640,6 @@ void Boss_OnTankTakeDamagePost(int victim, int attacker, int inflictor, float da
 		return;
 	}
 
-	int roundedDamage = RoundToFloor(damage);
-	if (roundedDamage <= 0)
-	{
-		return;
-	}
-
 	int sessionIndex = Boss_EnsureTankSession(victim);
 	if (sessionIndex == -1)
 	{
@@ -649,6 +647,31 @@ void Boss_OnTankTakeDamagePost(int victim, int attacker, int inflictor, float da
 	}
 
 	L4D2BossSession(sessionIndex).RefreshOwner(victim);
+
+	int previousHealth = g_BossSessions[sessionIndex].lastHealth;
+	int currentHealth = GetClientHealth(victim);
+	int healthDelta = previousHealth > 0 && currentHealth >= 0 ? previousHealth - currentHealth : 0;
+	int roundedDamage = RoundToFloor(damage);
+	if (roundedDamage <= 0)
+	{
+		if (healthDelta > 0)
+		{
+			Skills_Debug(PlayerSkillsDebug_Boss,
+				"Tank damage post mismatch. session=%d tank=%d attacker=%d inflictor=%d raw=%.1f rounded=%d prev_hp=%d current_hp=%d delta=%d total=%d",
+				g_BossSessions[sessionIndex].id,
+				victim,
+				attacker,
+				inflictor,
+				damage,
+				roundedDamage,
+				previousHealth,
+				currentHealth,
+				healthDelta,
+				g_BossSessions[sessionIndex].totalDamage);
+		}
+
+		return;
+	}
 
 	int maxHealth = g_BossSessions[sessionIndex].maxHealth;
 	if (maxHealth > 0 && g_BossSessions[sessionIndex].totalDamage + roundedDamage > maxHealth)
@@ -659,9 +682,21 @@ void Boss_OnTankTakeDamagePost(int victim, int attacker, int inflictor, float da
 	if (roundedDamage > 0)
 	{
 		L4D2BossSession(sessionIndex).AddDamage(attacker, roundedDamage);
+		Skills_Debug(PlayerSkillsDebug_Boss,
+			"Tank damage recorded. session=%d tank=%d attacker=%d inflictor=%d raw=%.1f added=%d prev_hp=%d current_hp=%d delta=%d total=%d",
+			g_BossSessions[sessionIndex].id,
+			victim,
+			attacker,
+			inflictor,
+			damage,
+			roundedDamage,
+			previousHealth,
+			currentHealth,
+			healthDelta,
+			g_BossSessions[sessionIndex].totalDamage);
 	}
 
-	g_BossSessions[sessionIndex].lastHealth = GetClientHealth(victim);
+	g_BossSessions[sessionIndex].lastHealth = currentHealth;
 }
 
 void Boss_EventPlayerHurt(Event event)
@@ -903,6 +938,16 @@ void Boss_RecordTankLedgeHang(int attacker)
 			return;
 		}
 
+	if (!IsValidSurvivor(killer))
+	{
+		Announce_WitchKilledByWorld(sessionIndex);
+		g_BossSessions[sessionIndex].printed = true;
+		g_BossSessions[sessionIndex].lastHealth = 0;
+		g_BossSessions[sessionIndex].state = L4D2BossState_Dead;
+		Boss_FinalizeSession(sessionIndex);
+		return;
+	}
+
 	g_BossSessions[sessionIndex].witch.pendingKillerUserid = GetClientUserId(killer);
 	g_BossSessions[sessionIndex].witch.pendingWitchOneShot = oneShot;
 	g_BossSessions[sessionIndex].witch.pendingWitchMeleeOnly = meleeOnly;
@@ -982,6 +1027,11 @@ Action Boss_TimerEvaluateWitchDeath(Handle timer, any data)
 // Session lookup and allocation helpers.
 int Boss_EnsureTankSession(int client)
 {
+	if (IsValidClient(client))
+	{
+		Boss_HookTankDamageClient(client);
+	}
+
 	int userid = GetClientUserId(client);
 	bool hasTankControlEq = Skills_HasTankControlEq();
 	int tankId = hasTankControlEq ? TankControl_GetClientTankId(client) : 0;
@@ -1936,6 +1986,40 @@ static void Boss_FinalizeSessionImmediate(int sessionIndex, bool allowAnnounce =
 	}
 
 	Boss_ConsolidateDamageEntries(sessionIndex);
+
+	if (g_BossSessions[sessionIndex].type == L4D2Boss_Tank)
+	{
+		int activeDamageEntries = 0;
+		for (int entry = 0; entry < L4D2_SKILLS_MAX_DAMAGE_ENTRIES; entry++)
+		{
+			if (!g_BossDamage[sessionIndex][entry].active || g_BossDamage[sessionIndex][entry].damage <= 0)
+			{
+				continue;
+			}
+
+			activeDamageEntries++;
+			Skills_Debug(PlayerSkillsDebug_Boss,
+				"Tank finalize damage entry. session=%d entry=%d userid=%d name=%s damage=%d shots=%d",
+				g_BossSessions[sessionIndex].id,
+				entry,
+				g_BossDamage[sessionIndex][entry].player.userid,
+				g_BossDamage[sessionIndex][entry].player.name,
+				g_BossDamage[sessionIndex][entry].damage,
+				g_BossDamage[sessionIndex][entry].shots);
+		}
+
+		Skills_Debug(PlayerSkillsDebug_Boss,
+			"Tank finalize summary. session=%d state=%d entity=%d lastHealth=%d total=%d entries=%d other=%d allowAnnounce=%d printed=%d",
+			g_BossSessions[sessionIndex].id,
+			g_BossSessions[sessionIndex].state,
+			g_BossSessions[sessionIndex].entity,
+			g_BossSessions[sessionIndex].lastHealth,
+			g_BossSessions[sessionIndex].totalDamage,
+			activeDamageEntries,
+			Boss_GetOtherDamage(sessionIndex),
+			allowAnnounce,
+			g_BossSessions[sessionIndex].printed);
+	}
 
 	if (g_BossSessions[sessionIndex].type == L4D2Boss_Witch)
 	{

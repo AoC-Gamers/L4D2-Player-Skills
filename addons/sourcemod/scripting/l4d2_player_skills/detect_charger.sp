@@ -19,6 +19,90 @@ void Detect_ResetCharger(int charger)
 	g_DetectChargerClaw[charger].Reset();
 }
 
+int Detect_GetChargerClawEntryCapacity()
+{
+	int slotCount = Skills_GetConfiguredSurvivorLimit();
+	if (slotCount < 1)
+	{
+		slotCount = L4D2_SKILLS_DEFAULT_SURVIVOR_LIMIT;
+	}
+	if (slotCount > (L4D2_SKILLS_MAX_TRACKED_SURVIVOR_ENTRIES - 1))
+	{
+		slotCount = L4D2_SKILLS_MAX_TRACKED_SURVIVOR_ENTRIES - 1;
+	}
+
+	return slotCount;
+}
+
+int Detect_GetChargerClawWildcardEntryIndex()
+{
+	return Detect_GetChargerClawEntryCapacity();
+}
+
+int Detect_FindChargerClawEntryByIdentity(int charger, int victim)
+{
+	if (charger < 1 || charger > MaxClients || !IsValidClient(victim))
+	{
+		return -1;
+	}
+
+	int userid = GetClientUserId(victim);
+	bool bot = IsFakeClient(victim);
+	int accountId = bot ? 0 : GetSteamAccountID(victim);
+	int survivorCharacter = Skills_GetClientSurvivorCharacter(victim);
+	int limit = g_DetectChargerClaw[charger].entryCount;
+	for (int i = 0; i < limit; i++)
+	{
+		if (!bot && accountId > 0 && g_DetectChargerClaw[charger].victimAccountIds[i] > 0 && g_DetectChargerClaw[charger].victimAccountIds[i] == accountId)
+		{
+			return i;
+		}
+
+		if (bot
+			&& g_DetectChargerClaw[charger].victimBots[i]
+			&& survivorCharacter != L4D2Util_SurvivorCharacter_Invalid
+			&& g_DetectChargerClaw[charger].victimSurvivorCharacters[i] == survivorCharacter)
+		{
+			return i;
+		}
+
+		if (g_DetectChargerClaw[charger].victimUserids[i] > 0 && g_DetectChargerClaw[charger].victimUserids[i] == userid)
+		{
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+int Detect_EnsureChargerClawEntry(int charger, int victim)
+{
+	if (charger < 1 || charger > MaxClients || !IsValidSurvivor(victim))
+	{
+		return -1;
+	}
+
+	int entry = Detect_FindChargerClawEntryByIdentity(charger, victim);
+	if (entry != -1)
+	{
+		return entry;
+	}
+
+	int capacity = Detect_GetChargerClawEntryCapacity();
+	if (g_DetectChargerClaw[charger].entryCount >= capacity)
+	{
+		return Detect_GetChargerClawWildcardEntryIndex();
+	}
+
+	entry = g_DetectChargerClaw[charger].entryCount++;
+	g_DetectChargerClaw[charger].victimUserids[entry] = GetClientUserId(victim);
+	g_DetectChargerClaw[charger].victimBots[entry] = IsFakeClient(victim);
+	g_DetectChargerClaw[charger].victimAccountIds[entry] = g_DetectChargerClaw[charger].victimBots[entry] ? 0 : GetSteamAccountID(victim);
+	g_DetectChargerClaw[charger].victimSurvivorCharacters[entry] = Skills_GetClientSurvivorCharacter(victim);
+	Skills_CaptureIdentityForClient(victim);
+	return entry;
+}
+
 void Detect_SetChargerCharging(int charger, bool state)
 {
 	if (charger < 1 || charger > MaxClients)
@@ -203,10 +287,16 @@ void Detect_RecordChargerClawHit(int charger, int victim, int damage)
 		return;
 	}
 
+	int entry = Detect_EnsureChargerClawEntry(charger, victim);
+	if (entry < 0)
+	{
+		return;
+	}
+
 	g_DetectChargerClaw[charger].totalHits++;
 	g_DetectChargerClaw[charger].totalDamage += damage;
-	g_DetectChargerClaw[charger].victimHits[victim]++;
-	g_DetectChargerClaw[charger].victimDamage[victim] += damage;
+	g_DetectChargerClaw[charger].victimHits[entry]++;
+	g_DetectChargerClaw[charger].victimDamage[entry] += damage;
 }
 
 void Detect_RecordChargerClawHitFromDamage(int victim, int attacker, int inflictor, float damage, int damagetype, int weaponId = WEPID_NONE)
@@ -246,7 +336,7 @@ void Detect_RecordChargerClawHitFromDamage(int victim, int attacker, int inflict
 
 	bool clawWeapon = weaponId == WEPID_CHARGER_CLAW;
 	bool meleeLikeDamage = (damagetype & DMG_CLUB) != 0 || (damagetype & DMG_SLASH) != 0;
-	if (!clawWeapon && !meleeLikeDamage && inflictor != attacker)
+	if (!clawWeapon && !meleeLikeDamage)
 	{
 		return;
 	}
@@ -278,7 +368,12 @@ int Detect_GetChargerClawTotalHits(int charger)
 
 int Detect_GetChargerClawVictimHits(int charger, int victim)
 {
-	if (charger < 1 || charger > MaxClients || victim < 1 || victim > MaxClients)
+	if (charger < 1 || charger > MaxClients)
+	{
+		return 0;
+	}
+
+	if (victim < 0 || victim >= L4D2_SKILLS_MAX_TRACKED_SURVIVOR_ENTRIES)
 	{
 		return 0;
 	}
@@ -288,12 +383,87 @@ int Detect_GetChargerClawVictimHits(int charger, int victim)
 
 int Detect_GetChargerClawVictimDamage(int charger, int victim)
 {
-	if (charger < 1 || charger > MaxClients || victim < 1 || victim > MaxClients)
+	if (charger < 1 || charger > MaxClients)
+	{
+		return 0;
+	}
+
+	if (victim < 0 || victim >= L4D2_SKILLS_MAX_TRACKED_SURVIVOR_ENTRIES)
 	{
 		return 0;
 	}
 
 	return g_DetectChargerClaw[charger].victimDamage[victim];
+}
+
+void Detect_GetChargerClawVictimName(int charger, int victim, char[] buffer, int maxlen)
+{
+	buffer[0] = '\0';
+
+	if (maxlen <= 0 || charger < 1 || charger > MaxClients)
+	{
+		return;
+	}
+
+	if (victim < 0 || victim >= L4D2_SKILLS_MAX_TRACKED_SURVIVOR_ENTRIES)
+	{
+		return;
+	}
+
+	Skills_TryResolveIdentityName(
+		g_DetectChargerClaw[charger].victimAccountIds[victim],
+		g_DetectChargerClaw[charger].victimBots[victim],
+		g_DetectChargerClaw[charger].victimSurvivorCharacters[victim],
+		g_DetectChargerClaw[charger].victimUserids[victim],
+		buffer,
+		maxlen);
+}
+
+bool Detect_TryResolveChargerClawEntryName(int charger, int entry, char[] buffer, int maxlen)
+{
+	buffer[0] = '\0';
+
+	if (maxlen <= 0 || charger < 1 || charger > MaxClients || entry < 0 || entry >= L4D2_SKILLS_MAX_TRACKED_SURVIVOR_ENTRIES)
+	{
+		return false;
+	}
+
+	int userid = g_DetectChargerClaw[charger].victimUserids[entry];
+	if (userid > 0 && !g_DetectChargerClaw[charger].victimBots[entry])
+	{
+		int client = GetClientOfUserId(userid);
+		if (IsValidSurvivor(client))
+		{
+			GetClientName(client, buffer, maxlen);
+			return true;
+		}
+	}
+
+	int accountId = g_DetectChargerClaw[charger].victimAccountIds[entry];
+	if (!g_DetectChargerClaw[charger].victimBots[entry] && accountId > 0)
+	{
+		for (int client = 1; client <= MaxClients; client++)
+		{
+			if (!IsValidSurvivor(client) || IsFakeClient(client))
+			{
+				continue;
+			}
+
+			if (GetSteamAccountID(client) == accountId)
+			{
+				GetClientName(client, buffer, maxlen);
+				return true;
+			}
+		}
+	}
+
+	return Skills_TryResolveIdentityName(
+		g_DetectChargerClaw[charger].victimAccountIds[entry],
+		g_DetectChargerClaw[charger].victimBots[entry],
+		g_DetectChargerClaw[charger].victimSurvivorCharacters[entry],
+		g_DetectChargerClaw[charger].victimUserids[entry],
+		buffer,
+		maxlen);
 }
 
 int Detect_GetChargerBowlImpactCount(int charger)
@@ -425,6 +595,7 @@ void Detect_RecordChargeVictim(int charger, int victim, bool wasCarried)
 	g_DetectChargeVictim[victim].charger = charger;
 	g_DetectChargeVictim[victim].assister = assister;
 	g_DetectChargeVictim[victim].wasCarried = wasCarried;
+	g_DetectChargeVictim[victim].slamResolved = false;
 	g_DetectChargeVictim[victim].setupEmitted = false;
 	g_DetectChargeVictim[victim].startTime = GetGameTime();
 	GetClientAbsOrigin(victim, g_DetectChargeVictim[victim].startOrigin);
@@ -563,29 +734,37 @@ void Detect_EmitChargerDeathSetup(int victim, bool incapped, bool ledgeHang)
 	}
 }
 
-Action Detect_TimerEmitChargerDeathSetup(Handle timer, any userid)
+void Detect_TryEmitPendingChargerDeathSetup(int victim)
 {
-	if (!Skills_IsRoundLive())
+	if (!Skills_IsRoundLive() || !IsValidSurvivor(victim))
 	{
-		return Plugin_Stop;
+		return;
 	}
 
-	int victim = GetClientOfUserId(userid);
-	if (!IsValidSurvivor(victim))
-	{
-		return Plugin_Stop;
-	}
-
-	g_DetectChargeVictim[victim].setupQueued = false;
 	if (g_DetectChargeVictim[victim].setupEmitted || !IsPlayerAlive(victim))
 	{
-		return Plugin_Stop;
+		return;
 	}
 
 	bool ledgeHang = (g_DetectChargeVictim[victim].flags & DCFLAG_LEDGE) != 0;
 	bool incapped = (g_DetectChargeVictim[victim].flags & DCFLAG_INCAP) != 0;
+	if (!incapped || ledgeHang || !g_DetectChargeVictim[victim].slamResolved)
+	{
+		return;
+	}
+
+	if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
+	{
+		Skills_Debug(PlayerSkillsDebug_Detect,
+			"Charger death setup emit check. victim=%d charger=%d slam_resolved=%d incapped=%d ledge=%d",
+			victim,
+			g_DetectChargeVictim[victim].charger,
+			g_DetectChargeVictim[victim].slamResolved ? 1 : 0,
+			incapped ? 1 : 0,
+			ledgeHang ? 1 : 0);
+	}
+
 	Detect_EmitChargerDeathSetup(victim, incapped, ledgeHang);
-	return Plugin_Stop;
 }
 
 void Detect_CheckChargerInstaKill(Event event, int victim)

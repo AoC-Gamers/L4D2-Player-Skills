@@ -19,6 +19,31 @@ El proyecto consolida lógica que antes estaba repartida entre varios plugins y 
 - `sm_skills_stats`
   - imprime la tabla comparativa de skills por equipo
 
+## Announcement Routing
+
+Los bitmasks `sm_skills_announce_*` siguen controlando qué tipos de announce están habilitados por clase.
+
+Además, existen cvars de routing para decidir dónde se imprimen algunas familias ruidosas:
+
+- `sm_skills_announce_kill_mode`
+  - `1 = console`
+  - `2 = chat`
+  - `3 = chat_headshot`
+- `sm_skills_announce_specialclear_mode`
+  - `1 = console`
+  - `2 = chat`
+  - `3 = chat_headshot`
+
+Semántica:
+
+- `console`
+  - imprime solo en la consola del actor del evento
+- `chat`
+  - imprime al chat global como announce normal
+- `chat_headshot`
+  - imprime al chat solo cuando `headshot = true`
+  - en otro caso imprime solo en la consola del actor
+
 ## Documentation Index
 
 ### Product Documentation

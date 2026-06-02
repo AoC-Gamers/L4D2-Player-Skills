@@ -44,9 +44,177 @@ stock bool Skills_IsRoundLive()
 	return Skills_IsEnabled() && g_Runtime.roundLive;
 }
 
+stock bool Skills_HasPlayerStats()
+{
+	return g_Runtime.hasPlayerStats;
+}
+
+stock bool Skills_UsesExternalLifecycle()
+{
+	return g_Runtime.usesExternalLifecycle;
+}
+
+stock bool Skills_CanUsePlayerStats()
+{
+	return Skills_HasPlayerStats()
+		&& GetFeatureStatus(FeatureType_Native, "PlayerStats_GetCurrentModeProperty") == FeatureStatus_Available
+		&& GetFeatureStatus(FeatureType_Native, "PlayerStats_IsRoundLive") == FeatureStatus_Available;
+}
+
+stock PlayerSkillsRoundStartSignalType Skills_MapStatsRoundStartSignal(int signal)
+{
+	switch (signal)
+	{
+		case 2:
+		{
+			return PlayerSkillsRoundStartSignal_ScavengeRoundStart;
+		}
+		case 1:
+		{
+			return PlayerSkillsRoundStartSignal_GenericRoundStart;
+		}
+	}
+
+	return PlayerSkillsRoundStartSignal_None;
+}
+
+stock PlayerSkillsRoundEndSignalType Skills_MapStatsRoundEndSignal(int signal)
+{
+	switch (signal)
+	{
+		case 2:
+		{
+			return PlayerSkillsRoundEndSignal_ScavengeRoundFinished;
+		}
+		case 1:
+		{
+			return PlayerSkillsRoundEndSignal_GenericRoundEnd;
+		}
+	}
+
+	return PlayerSkillsRoundEndSignal_None;
+}
+
+stock PlayerSkillsRoundLiveSignalType Skills_MapStatsRoundLiveSignal(int signal)
+{
+	switch (signal)
+	{
+		case 1:
+		{
+			return PlayerSkillsRoundLiveSignal_Immediate;
+		}
+		case 2, 3:
+		{
+			return PlayerSkillsRoundLiveSignal_SafeArea;
+		}
+	}
+
+	return PlayerSkillsRoundLiveSignal_None;
+}
+
 stock bool Skills_IsCompetitiveMode()
 {
 	return g_Runtime.baseMode == PlayerSkillsGameMode_Versus || g_Runtime.baseMode == PlayerSkillsGameMode_Scavenge;
+}
+
+/**
+ * @brief Returns the compact survivor-side capacity for short-lived interaction trackers.
+ * @remarks These trackers should size to the functional survivor space of the mode,
+ *          not to MAXPLAYERS. Examples: skill-window assists, hunter skeet shot windows,
+ *          charger claw summaries.
+ *
+ * @return               Survivor entry capacity clamped to the plugin maximum.
+ */
+stock int Skills_GetTrackedSurvivorEntryCapacity()
+{
+	int slotCount = Skills_GetConfiguredSurvivorLimit();
+	if (slotCount < 1)
+	{
+		slotCount = L4D2_SKILLS_DEFAULT_SURVIVOR_LIMIT;
+	}
+	slotCount++;
+	if (slotCount > L4D2_SKILLS_MAX_TRACKED_SURVIVOR_ENTRIES)
+	{
+		slotCount = L4D2_SKILLS_MAX_TRACKED_SURVIVOR_ENTRIES;
+	}
+
+	return slotCount;
+}
+
+/**
+ * @brief Returns the compact infected-side capacity for short-lived interaction trackers.
+ * @remarks Competitive infected windows should size to z_max_player_zombies when present,
+ *          not to MAXPLAYERS.
+ *
+ * @return               Infected entry capacity clamped to the plugin maximum.
+ */
+stock int Skills_GetTrackedInfectedEntryCapacity()
+{
+	int slotCount = Skills_GetConfiguredPlayerZombieLimit();
+	if (slotCount < 1)
+	{
+		slotCount = L4D2_SKILLS_DEFAULT_PLAYER_ZOMBIE_LIMIT;
+	}
+	if (slotCount > L4D2_SKILLS_MAX_TRACKED_INFECTED_ENTRIES)
+	{
+		slotCount = L4D2_SKILLS_MAX_TRACKED_INFECTED_ENTRIES;
+	}
+
+	return slotCount;
+}
+
+/**
+ * @brief Returns the compact same-class infected capacity for short-lived trackers.
+ * @remarks This is useful when a skill window can involve multiple infected of the
+ *          same class at once and the class-specific versus limit is more precise
+ *          than z_max_player_zombies.
+ *
+ * @param zombieClass    Target special infected class.
+ *
+ * @return               Class entry capacity clamped to the plugin maximum.
+ */
+stock int Skills_GetTrackedZombieClassEntryCapacity(L4D2ZombieClassType zombieClass)
+{
+	int slotCount = 0;
+
+	switch (zombieClass)
+	{
+		case L4D2ZombieClass_Smoker:
+		{
+			slotCount = g_cvVersusSmokerLimit != null ? g_cvVersusSmokerLimit.IntValue : 0;
+		}
+		case L4D2ZombieClass_Boomer:
+		{
+			slotCount = g_cvVersusBoomerLimit != null ? g_cvVersusBoomerLimit.IntValue : 0;
+		}
+		case L4D2ZombieClass_Hunter:
+		{
+			slotCount = g_cvVersusHunterLimit != null ? g_cvVersusHunterLimit.IntValue : 0;
+		}
+		case L4D2ZombieClass_Spitter:
+		{
+			slotCount = g_cvVersusSpitterLimit != null ? g_cvVersusSpitterLimit.IntValue : 0;
+		}
+		case L4D2ZombieClass_Jockey:
+		{
+			slotCount = g_cvVersusJockeyLimit != null ? g_cvVersusJockeyLimit.IntValue : 0;
+		}
+		case L4D2ZombieClass_Charger:
+		{
+			slotCount = g_cvVersusChargerLimit != null ? g_cvVersusChargerLimit.IntValue : 0;
+		}
+	}
+
+	if (slotCount < 1)
+	{
+		return Skills_GetTrackedInfectedEntryCapacity();
+	}
+	if (slotCount > L4D2_SKILLS_MAX_TRACKED_INFECTED_ENTRIES)
+	{
+		slotCount = L4D2_SKILLS_MAX_TRACKED_INFECTED_ENTRIES;
+	}
+
+	return slotCount;
 }
 
 stock void Skills_RefreshRoundLiveState()
@@ -54,6 +222,12 @@ stock void Skills_RefreshRoundLiveState()
 	if (!Skills_IsEnabled())
 	{
 		g_Runtime.roundLive = false;
+		return;
+	}
+
+	if (Skills_CanUsePlayerStats())
+	{
+		g_Runtime.roundLive = PlayerStats_IsRoundLive();
 		return;
 	}
 
@@ -274,6 +448,303 @@ stock int ResolveClientFromUserId(int userid)
 {
 	int client = GetClientOfUserId(userid);
 	return IsValidClient(client) ? client : 0;
+}
+
+stock int Skills_GetClientSurvivorCharacter(int client)
+{
+	if (!IsValidSurvivor(client))
+	{
+		return L4D2Util_SurvivorCharacter_Invalid;
+	}
+
+	int character = GetEntProp(client, Prop_Send, "m_survivorCharacter");
+	return (character >= 0 && character < L4D2Util_SurvivorCharacter_Size)
+		? character
+		: L4D2Util_SurvivorCharacter_Invalid;
+}
+
+stock void Skills_ResetIdentityCache()
+{
+	for (int i = 0; i <= MaxClients; i++)
+	{
+		g_IdentityCache[i].Reset();
+	}
+}
+
+stock int Skills_FindIdentityCacheSlotByAccountId(int accountId)
+{
+	if (accountId <= 0)
+	{
+		return -1;
+	}
+
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (g_IdentityCache[i].active && !g_IdentityCache[i].bot && g_IdentityCache[i].accountId == accountId)
+		{
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+stock int Skills_FindIdentityCacheSlotByBotCharacter(int survivorCharacter)
+{
+	if (survivorCharacter < 0)
+	{
+		return -1;
+	}
+
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (g_IdentityCache[i].active && g_IdentityCache[i].bot && g_IdentityCache[i].survivorCharacter == survivorCharacter)
+		{
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+stock int Skills_FindIdentityCacheSlotByUserId(int userid)
+{
+	if (userid <= 0)
+	{
+		return -1;
+	}
+
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (g_IdentityCache[i].active && g_IdentityCache[i].userid == userid)
+		{
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+stock int Skills_FindIdentityCacheSlotForClient(int client)
+{
+	if (!IsValidClient(client))
+	{
+		return -1;
+	}
+
+	if (!IsFakeClient(client))
+	{
+		return Skills_FindIdentityCacheSlotByAccountId(GetSteamAccountID(client));
+	}
+
+	int survivorCharacter = Skills_GetClientSurvivorCharacter(client);
+	if (survivorCharacter != L4D2Util_SurvivorCharacter_Invalid)
+	{
+		return Skills_FindIdentityCacheSlotByBotCharacter(survivorCharacter);
+	}
+
+	return Skills_FindIdentityCacheSlotByUserId(GetClientUserId(client));
+}
+
+stock int Skills_FindOrCreateIdentityCacheSlotForClient(int client)
+{
+	if (!IsValidClient(client))
+	{
+		return -1;
+	}
+
+	int slot = Skills_FindIdentityCacheSlotForClient(client);
+	if (slot != -1)
+	{
+		return slot;
+	}
+
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (!g_IdentityCache[i].active)
+		{
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+stock void Skills_CaptureIdentityForClient(int client)
+{
+	if (!IsValidClient(client))
+	{
+		return;
+	}
+
+	int slot = Skills_FindOrCreateIdentityCacheSlotForClient(client);
+	if (slot == -1)
+	{
+		return;
+	}
+
+	g_IdentityCache[slot].active = true;
+	g_IdentityCache[slot].userid = GetClientUserId(client);
+	g_IdentityCache[slot].bot = IsFakeClient(client);
+	g_IdentityCache[slot].accountId = g_IdentityCache[slot].bot ? 0 : GetSteamAccountID(client);
+	g_IdentityCache[slot].survivorCharacter = Skills_GetClientSurvivorCharacter(client);
+	GetClientName(client, g_IdentityCache[slot].name, sizeof(g_IdentityCache[slot].name));
+}
+
+stock void Skills_DetachIdentityClient(int client)
+{
+	if (client < 1 || client > MaxClients)
+	{
+		return;
+	}
+
+	int userid = GetClientUserId(client);
+	if (userid <= 0)
+	{
+		return;
+	}
+
+	int slot = Skills_FindIdentityCacheSlotByUserId(userid);
+	if (slot == -1)
+	{
+		return;
+	}
+
+	g_IdentityCache[slot].userid = 0;
+}
+
+stock bool Skills_TryResolveIdentityName(int accountId, bool bot, int survivorCharacter, int userid, char[] buffer, int maxlen)
+{
+	buffer[0] = '\0';
+
+	int slot = -1;
+	if (!bot && accountId > 0)
+	{
+		slot = Skills_FindIdentityCacheSlotByAccountId(accountId);
+	}
+	else if (bot && survivorCharacter != L4D2Util_SurvivorCharacter_Invalid)
+	{
+		slot = Skills_FindIdentityCacheSlotByBotCharacter(survivorCharacter);
+	}
+
+	if (slot == -1 && userid > 0)
+	{
+		slot = Skills_FindIdentityCacheSlotByUserId(userid);
+	}
+
+	if (slot == -1 || !g_IdentityCache[slot].active || g_IdentityCache[slot].name[0] == '\0')
+	{
+		return false;
+	}
+
+	strcopy(buffer, maxlen, g_IdentityCache[slot].name);
+	return true;
+}
+
+stock bool Skills_TryResolveIdentityClient(int accountId, bool bot, int survivorCharacter, int userid, int &client)
+{
+	client = 0;
+
+	if (!bot && accountId > 0)
+	{
+		for (int i = 1; i <= MaxClients; i++)
+		{
+			if (!IsValidClient(i) || IsFakeClient(i))
+			{
+				continue;
+			}
+
+			if (GetSteamAccountID(i) == accountId)
+			{
+				client = i;
+				return true;
+			}
+		}
+	}
+	else if (bot && survivorCharacter != L4D2Util_SurvivorCharacter_Invalid)
+	{
+		for (int i = 1; i <= MaxClients; i++)
+		{
+			if (!IsValidClient(i) || !IsFakeClient(i) || !IsValidSurvivor(i))
+			{
+				continue;
+			}
+
+			if (GetEntProp(i, Prop_Send, "m_survivorCharacter") == survivorCharacter)
+			{
+				client = i;
+				return true;
+			}
+		}
+	}
+
+	if (userid > 0)
+	{
+		client = ResolveClientFromUserId(userid);
+		return client > 0;
+	}
+
+	return false;
+}
+
+stock bool Skills_IsClientMatchingIdentity(int client, int accountId, bool bot, int survivorCharacter, int userid)
+{
+	if (!IsValidClient(client))
+	{
+		return false;
+	}
+
+	if (!bot && accountId > 0 && !IsFakeClient(client) && GetSteamAccountID(client) == accountId)
+	{
+		return true;
+	}
+
+	if (bot && IsFakeClient(client))
+	{
+		if (survivorCharacter != L4D2Util_SurvivorCharacter_Invalid
+			&& IsValidSurvivor(client)
+			&& GetEntProp(client, Prop_Send, "m_survivorCharacter") == survivorCharacter)
+		{
+			return true;
+		}
+
+		if (userid > 0 && GetClientUserId(client) == userid)
+		{
+			return true;
+		}
+	}
+
+	return userid > 0 && GetClientUserId(client) == userid;
+}
+
+stock bool Skills_TryBuildPlayerRefFromIdentity(int accountId, bool bot, int survivorCharacter, int userid, L4D2PlayerRef player)
+{
+	player.Reset();
+
+	int client = 0;
+	if (Skills_TryResolveIdentityClient(accountId, bot, survivorCharacter, userid, client))
+	{
+		player.Capture(client);
+		return true;
+	}
+
+	player.userid = userid;
+	player.accountId = accountId;
+	player.bot = bot;
+	player.character = survivorCharacter;
+
+	if (Skills_TryResolveIdentityName(accountId, bot, survivorCharacter, userid, player.name, sizeof(player.name)))
+	{
+		return true;
+	}
+
+	if (bot && survivorCharacter != L4D2Util_SurvivorCharacter_Invalid)
+	{
+		GetSurvivorNameByIndex(survivorCharacter, player.name, sizeof(player.name));
+		return true;
+	}
+
+	return player.userid > 0 || player.accountId > 0;
 }
 
 /**
@@ -764,7 +1235,7 @@ stock void Skills_GetLifecyclePolicyForContext(PlayerSkillsModeContextData conte
 	}
 }
 
-stock void Skills_RefreshModeContext()
+stock void Skills_RefreshModeContextLocal()
 {
 	PlayerSkillsModeContextData context;
 	PlayerSkillsLifecyclePolicyData policy;
@@ -781,6 +1252,40 @@ stock void Skills_RefreshModeContext()
 	g_Runtime.roundStartSignal = policy.roundStartSignal;
 	g_Runtime.roundEndSignal = policy.roundEndSignal;
 	g_Runtime.roundLiveSignal = policy.roundLiveSignal;
+}
+
+stock void Skills_RefreshModeContextFromStats()
+{
+	PlayerSkillsModeContextData localContext;
+	PlayerSkillsLifecyclePolicyData localPolicy;
+	Skills_BuildCurrentModeContext(localContext);
+	Skills_GetLifecyclePolicyForContext(localContext, localPolicy);
+
+	g_Runtime.baseMode = view_as<PlayerSkillsGameMode>(PlayerStats_GetCurrentModeProperty(StatsModeProperty_BaseMode));
+	g_Runtime.enabledSiClassCount = PlayerStats_GetCurrentModeProperty(StatsModeProperty_EnabledSiClassCount);
+	g_Runtime.versusTeamSize = PlayerStats_GetCurrentModeProperty(StatsModeProperty_VersusTeamSize);
+	g_Runtime.roundEndSignal = Skills_MapStatsRoundEndSignal(PlayerStats_GetCurrentModeProperty(StatsModeProperty_RoundEndSignal));
+	g_Runtime.roundStartSignal = localPolicy.roundStartSignal;
+	g_Runtime.roundLiveSignal = Skills_MapStatsRoundLiveSignal(PlayerStats_GetCurrentModeProperty(StatsModeProperty_RoundStartSignal));
+
+	g_Runtime.configuredSurvivorLimit = Skills_GetConfiguredSurvivorLimit();
+	g_Runtime.configuredPlayerZombieLimit = Skills_GetConfiguredPlayerZombieLimit();
+	g_Runtime.siPoolMask = Skills_GetEnabledSiPoolMask();
+	g_Runtime.versusContext = Skills_ClassifyVersusContext(
+		g_Runtime.configuredSurvivorLimit,
+		g_Runtime.configuredPlayerZombieLimit,
+		g_Runtime.enabledSiClassCount);
+}
+
+stock void Skills_RefreshModeContext()
+{
+	if (Skills_CanUsePlayerStats())
+	{
+		Skills_RefreshModeContextFromStats();
+		return;
+	}
+
+	Skills_RefreshModeContextLocal();
 }
 
 stock bool Skills_ShouldHandleRoundStartEvent(const char[] eventName)
@@ -1411,7 +1916,11 @@ stock int Skills_GetEventRating(int eventIndex)
 		}
 		case L4D2Skill_TankRockSkeet:
 		{
-			return 2;
+			return 1;
+		}
+		case L4D2Skill_TankRockHit:
+		{
+			return 1;
 		}
 		case L4D2Skill_CarAlarmTriggered:
 		{

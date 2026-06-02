@@ -8,9 +8,111 @@ int g_iAnnounceSortSession = -1;
 #define L4D2_SKILLS_SURVIVOR_TABLE_FAMILIES 17
 #define L4D2_SKILLS_INFECTED_TABLE_FAMILIES 18
 
+#define SKILLS_PRINT_MODE_CONSOLE 1
+#define SKILLS_PRINT_MODE_CHAT 2
+#define SKILLS_PRINT_MODE_CHAT_HEADSHOT 3
+
 bool Announce_HasMask(ConVar cvar, int bit)
 {
 	return cvar != null && (cvar.IntValue & bit) != 0;
+}
+
+int Announce_GetActorConsoleClient(int eventIndex)
+{
+	if (eventIndex < 0 || eventIndex >= L4D2_SKILLS_MAX_EVENTS)
+	{
+		return 0;
+	}
+
+	int client = g_SkillEvents[eventIndex].actor.ResolveClient();
+	return IsValidClient(client) ? client : 0;
+}
+
+bool Announce_ShouldPrintToChat(int mode, bool headshot)
+{
+	switch (mode)
+	{
+		case SKILLS_PRINT_MODE_CHAT:
+		{
+			return true;
+		}
+		case SKILLS_PRINT_MODE_CHAT_HEADSHOT:
+		{
+			return headshot;
+		}
+	}
+
+	return false;
+}
+
+void Announce_BuildChargerInstaKillQualifier(int eventIndex, char[] buffer, int maxlen)
+{
+	buffer[0] = '\0';
+
+	if (eventIndex < 0 || eventIndex >= L4D2_SKILLS_MAX_EVENTS || maxlen <= 0)
+	{
+		return;
+	}
+
+	char parts[3][64];
+	int partCount = 0;
+
+	if (!g_SkillEvents[eventIndex].wasCarried)
+	{
+		strcopy(parts[partCount++], sizeof(parts[]), "Impacto");
+	}
+
+	if (g_SkillEvents[eventIndex].deadlySlam)
+	{
+		strcopy(parts[partCount++], sizeof(parts[]), "Estrellado");
+	}
+	else if (g_SkillEvents[eventIndex].fatalFall)
+	{
+		strcopy(parts[partCount++], sizeof(parts[]), "Caida");
+	}
+
+	if (g_SkillEvents[eventIndex].height > 0.0)
+	{
+		FormatEx(parts[partCount++], sizeof(parts[]), "%.0f Altura", g_SkillEvents[eventIndex].height);
+	}
+
+	if (partCount <= 0)
+	{
+		return;
+	}
+
+	char joined[192];
+	joined[0] = '\0';
+	for (int i = 0; i < partCount; i++)
+	{
+		if (i > 0)
+		{
+			StrCat(joined, sizeof(joined), ", ");
+		}
+		StrCat(joined, sizeof(joined), parts[i]);
+	}
+
+	FormatEx(buffer, maxlen, "{blue}(%s){red}", joined);
+}
+
+void Announce_PrintRoutedActorLine(int eventIndex, const char[] chatTag, char[] line, bool headshot, int mode)
+{
+	if (Announce_ShouldPrintToChat(mode, headshot))
+	{
+		CPrintToChatAll("%s %s", chatTag, line);
+		return;
+	}
+
+	int actorClient = Announce_GetActorConsoleClient(eventIndex);
+	if (actorClient <= 0)
+	{
+		return;
+	}
+
+	char plainLine[1024];
+	strcopy(plainLine, sizeof(plainLine), line);
+	CRemoveTags(plainLine, sizeof(plainLine));
+	PrintToConsole(actorClient, "[Skill] %s", plainLine);
 }
 
 void Announce_ShoveAttempt(int actor, int entity)
@@ -133,16 +235,37 @@ void Announce_ChargerClawSummary(int charger)
 	char actorName[64];
 	Skills_FormatInfectedPlayerRefName(actor, L4D2ZombieClass_Charger, actorName, sizeof(actorName));
 
-	int victims[MAXPLAYERS + 1];
+	int capacity = Detect_GetChargerClawEntryCapacity();
+	int wildcard = Detect_GetChargerClawWildcardEntryIndex();
+	int victims[L4D2_SKILLS_MAX_TRACKED_SURVIVOR_ENTRIES];
 	int victimCount = 0;
-	for (int client = 1; client <= MaxClients; client++)
+	int otherHits = 0;
+	int otherDamage = 0;
+
+	for (int entry = 0; entry <= capacity && entry < L4D2_SKILLS_MAX_TRACKED_SURVIVOR_ENTRIES; entry++)
 	{
-		if (Detect_GetChargerClawVictimHits(charger, client) <= 0)
+		int hits = Detect_GetChargerClawVictimHits(charger, entry);
+		if (hits <= 0)
 		{
 			continue;
 		}
 
-		victims[victimCount++] = client;
+		if (entry == wildcard)
+		{
+			otherHits += hits;
+			otherDamage += Detect_GetChargerClawVictimDamage(charger, entry);
+			continue;
+		}
+
+		char resolvedName[64];
+		if (!Detect_TryResolveChargerClawEntryName(charger, entry, resolvedName, sizeof(resolvedName)))
+		{
+			otherHits += hits;
+			otherDamage += Detect_GetChargerClawVictimDamage(charger, entry);
+			continue;
+		}
+
+		victims[victimCount++] = entry;
 	}
 
 	for (int pass = 0; pass < victimCount - 1; pass++)
@@ -165,7 +288,11 @@ void Announce_ChargerClawSummary(int charger)
 	for (int i = 0; i < victimCount; i++)
 	{
 		char victimName[64];
-		GetClientName(victims[i], victimName, sizeof(victimName));
+		Detect_GetChargerClawVictimName(charger, victims[i], victimName, sizeof(victimName));
+		if (!Detect_TryResolveChargerClawEntryName(charger, victims[i], victimName, sizeof(victimName)) && victimName[0] == '\0')
+		{
+			strcopy(victimName, sizeof(victimName), "Desconectado");
+		}
 
 		char segment[96];
 		FormatEx(segment, sizeof(segment), "%s%s (%d/%d)",
@@ -173,6 +300,16 @@ void Announce_ChargerClawSummary(int charger)
 			victimName,
 			Detect_GetChargerClawVictimDamage(charger, victims[i]),
 			Detect_GetChargerClawVictimHits(charger, victims[i]));
+		StrCat(victimList, sizeof(victimList), segment);
+	}
+
+	if (otherHits > 0)
+	{
+		char segment[96];
+		FormatEx(segment, sizeof(segment), "%sOtros (%d/%d)",
+			victimCount > 0 ? ", " : "",
+			otherDamage,
+			otherHits);
 		StrCat(victimList, sizeof(victimList), segment);
 	}
 
@@ -305,7 +442,7 @@ bool Announce_ShouldAnnounceSkill(int eventIndex)
 		}
 		case L4D2Skill_JockeySkeet:
 		{
-			shouldAnnounce = Announce_HasMask(g_cvAnnounceJockey, view_as<int>(PlayerSkillsAnnounceJockey_SkeetMelee));
+			shouldAnnounce = Announce_HasMask(g_cvAnnounceJockey, view_as<int>(PlayerSkillsAnnounceJockey_Skeet));
 		}
 		case L4D2Skill_JockeyKill:
 		{
@@ -552,6 +689,35 @@ int Announce_CountSkillTypeForPlayerRef(L4D2PlayerRef player, L4D2SkillType type
 		if (g_SkillEvents[index].id <= 0
 			|| g_SkillEvents[index].type != type
 			|| !g_SkillEvents[index].actor.IsSamePersistentRef(player)
+			|| !Skills_IsSkillEventEnabledInCurrentMode(index))
+		{
+			continue;
+		}
+
+		count++;
+	}
+
+	return count;
+}
+
+int Announce_CountSkillTypeForVictimClient(int client, L4D2SkillType type)
+{
+	if (!IsValidClient(client))
+	{
+		return 0;
+	}
+
+	if (!Skills_IsSkillTypeEnabledInCurrentMode(type))
+	{
+		return 0;
+	}
+
+	int count = 0;
+	for (int index = 0; index < L4D2_SKILLS_MAX_EVENTS; index++)
+	{
+		if (g_SkillEvents[index].id <= 0
+			|| g_SkillEvents[index].type != type
+			|| !g_SkillEvents[index].victim.IsSamePersistentPlayer(client)
 			|| !Skills_IsSkillEventEnabledInCurrentMode(index))
 		{
 			continue;
@@ -1282,7 +1448,7 @@ void Announce_GetSkillTag(int eventIndex, char[] buffer, int maxlen)
 	FormatEx(buffer, maxlen, "%T", "Tag", LANG_SERVER);
 }
 
-void Announce_PrintSimpleKillLine(const char[] tag, char[] line, bool finalize = true, bool withTag = true)
+void Announce_PrintSimpleKillLine(int eventIndex, const char[] tag, char[] line, bool headshot, int mode, bool finalize = true, bool withTag = true)
 {
 	if (finalize)
 	{
@@ -1290,11 +1456,11 @@ void Announce_PrintSimpleKillLine(const char[] tag, char[] line, bool finalize =
 	}
 	if (withTag)
 	{
-		CPrintToChatAll("%s %s", tag, line);
+		Announce_PrintRoutedActorLine(eventIndex, tag, line, headshot, mode);
 		return;
 	}
 
-	CPrintToChatAll("%s", line);
+	Announce_PrintRoutedActorLine(eventIndex, "", line, headshot, mode);
 }
 
 void Announce_Skill(int eventId)
@@ -1560,15 +1726,19 @@ void Announce_Skill(int eventId)
 
 		case L4D2Skill_SpecialPinClear:
 		{
+			int printMode = g_cvAnnounceSpecialClearMode != null ? g_cvAnnounceSpecialClearMode.IntValue : SKILLS_PRINT_MODE_CHAT;
+			char line[512];
+
 			if (g_SkillEvents[eventIndex].damage > 0)
 			{
 				char actorStat[32];
 				Format(actorStat, sizeof(actorStat), "%d/%d", g_SkillEvents[eventIndex].damage, g_SkillEvents[eventIndex].shots);
-				CPrintToChatAll("%s %t", tag, "SpecialPinClearKill",
+				FormatEx(line, sizeof(line), "%T", g_SkillEvents[eventIndex].headshot ? "SpecialPinClearKillHeadshot" : "SpecialPinClearKill", LANG_SERVER,
 					actorName,
 					victimName,
 					actorStat,
 					pinVictimName);
+				Announce_PrintRoutedActorLine(eventIndex, tag, line, g_SkillEvents[eventIndex].headshot, printMode);
 			}
 			else if (g_SkillEvents[eventIndex].zombieClass == view_as<int>(L4D2ZombieClass_Smoker) && !g_SkillEvents[eventIndex].withShove)
 			{
@@ -1581,18 +1751,19 @@ void Announce_Skill(int eventId)
 					case 2, 3: strcopy(phrase, sizeof(phrase), "SmokerSpecialPinClearCut");
 				}
 
-				CPrintToChatAll("%s %t", tag, phrase,
+				FormatEx(line, sizeof(line), "%T", phrase, LANG_SERVER,
 					actorName,
 					victimName,
 					pinVictimName);
+				Announce_PrintRoutedActorLine(eventIndex, tag, line, g_SkillEvents[eventIndex].headshot, printMode);
 			}
 			else
 			{
-				CPrintToChatAll("%s %t", tag,
-					g_SkillEvents[eventIndex].withShove ? "SpecialPinClearShove" : "SpecialPinClear",
+				FormatEx(line, sizeof(line), "%T", g_SkillEvents[eventIndex].withShove ? "SpecialPinClearShove" : "SpecialPinClear", LANG_SERVER,
 					actorName,
 					victimName,
 					pinVictimName);
+				Announce_PrintRoutedActorLine(eventIndex, tag, line, g_SkillEvents[eventIndex].headshot, printMode);
 			}
 		}
 
@@ -1912,81 +2083,24 @@ void Announce_Skill(int eventId)
 
 		case L4D2Skill_ChargerInstaKill:
 		{
-			char phrase[48];
+			char qualifier[192];
+			char line[512];
 			char assistNames[256];
+			Announce_BuildChargerInstaKillQualifier(eventIndex, qualifier, sizeof(qualifier));
 			Announce_FormatAssistNames(eventIndex, assistNames, sizeof(assistNames));
-			if (g_SkillEvents[eventIndex].incapped)
-			{
-				strcopy(phrase, sizeof(phrase), "ChargerInstaKillIncapSimple");
-			}
-			else if (g_SkillEvents[eventIndex].wasCarried)
-			{
-				if (g_SkillEvents[eventIndex].deadlySlam)
-				{
-					strcopy(phrase, sizeof(phrase), "ChargerInstaKillCarryDeadly");
-				}
-				else if (g_SkillEvents[eventIndex].fatalFall)
-				{
-					strcopy(phrase, sizeof(phrase), "ChargerInstaKillCarryFatalFall");
-				}
-				else
-				{
-					strcopy(phrase, sizeof(phrase), "ChargerInstaKillCarry");
-				}
-			}
-			else
-			{
-				if (g_SkillEvents[eventIndex].deadlySlam)
-				{
-					strcopy(phrase, sizeof(phrase), "ChargerInstaKillImpactDeadly");
-				}
-				else if (g_SkillEvents[eventIndex].fatalFall)
-				{
-					strcopy(phrase, sizeof(phrase), "ChargerInstaKillImpactFatalFall");
-				}
-				else
-				{
-					strcopy(phrase, sizeof(phrase), "ChargerInstaKillImpact");
-				}
-			}
+
+			FormatEx(line, sizeof(line),
+				"{olive}%s {red}hizo un {green}InstaKill {red}a {olive}%s%s{red}.",
+				actorName,
+				victimName,
+				qualifier);
 
 			if (g_SkillEvents[eventIndex].assistsCount > 0)
 			{
-				if (g_SkillEvents[eventIndex].incapped)
-				{
-					CPrintToChatAll("%s %t %t", tag,
-						phrase,
-						actorName,
-						victimName,
-						"SkillAssistSuffix",
-						assistNames);
-				}
-				else
-				{
-					CPrintToChatAll("%s %t %t", tag,
-						phrase,
-						actorName,
-						victimName,
-						g_SkillEvents[eventIndex].height,
-						"SkillAssistSuffix",
-						assistNames);
-				}
+				Format(line, sizeof(line), "%s {blue}, asistido por {olive}%s{blue}.", line, assistNames);
 			}
-			else
-			{
-				if (g_SkillEvents[eventIndex].incapped)
-				{
-					CPrintToChatAll("%s %t", tag, phrase, actorName, victimName);
-				}
-				else
-				{
-					CPrintToChatAll("%s %t", tag,
-						phrase,
-						actorName,
-						victimName,
-						g_SkillEvents[eventIndex].height);
-				}
-			}
+
+			CPrintToChatAll("%s %s", tag, line);
 		}
 
 		case L4D2Skill_ChargerDeathSetup:
@@ -2051,16 +2165,29 @@ void Announce_Skill(int eventId)
 
 		case L4D2Skill_TankRockSkeet:
 		{
-			CPrintToChatAll("%s %t", tag, "TankRockSkeet",
-				actorName);
+			int rockSkeetCount = Announce_CountSkillTypeForClient(g_SkillEvents[eventIndex].actor.ResolveClient(), L4D2Skill_TankRockSkeet);
+			if (rockSkeetCount > 1)
+			{
+				CPrintToChatAll("%s %t", tag, "TankRockSkeetMulti", actorName, rockSkeetCount);
+			}
+			else
+			{
+				CPrintToChatAll("%s %t", tag, "TankRockSkeet", actorName);
+			}
 		}
 
 		case L4D2Skill_TankRockHit:
 		{
 			char line[192];
-			FormatEx(line, sizeof(line), "%T", "TankRockHit",
-				LANG_SERVER,
-				victimName);
+			int rockHitCount = Announce_CountSkillTypeForVictimClient(g_SkillEvents[eventIndex].victim.ResolveClient(), L4D2Skill_TankRockHit);
+			if (rockHitCount > 1)
+			{
+				FormatEx(line, sizeof(line), "%T", "TankRockHitMulti", LANG_SERVER, victimName, rockHitCount);
+			}
+			else
+			{
+				FormatEx(line, sizeof(line), "%T", "TankRockHit", LANG_SERVER, victimName);
+			}
 			CPrintToChatAll("%s %s", tag, line);
 		}
 
@@ -2074,6 +2201,7 @@ void Announce_Skill(int eventId)
 		case L4D2Skill_SmokerKill, L4D2Skill_BoomerKill, L4D2Skill_HunterKill, L4D2Skill_SpitterKill, L4D2Skill_JockeyKill, L4D2Skill_ChargerKill:
 		{
 			FormatEx(tag, sizeof(tag), "%T", "Tag1", LANG_SERVER);
+			int printMode = g_cvAnnounceKillMode != null ? g_cvAnnounceKillMode.IntValue : SKILLS_PRINT_MODE_CHAT;
 			char line[1024];
 			char actorStat[64];
 			Announce_FormatSimpleKillStat(
@@ -2108,7 +2236,7 @@ void Announce_Skill(int eventId)
 				StrCat(line, sizeof(line), assistSegment);
 			}
 
-			Announce_PrintSimpleKillLine(tag, line, true, true);
+			Announce_PrintSimpleKillLine(eventIndex, tag, line, g_SkillEvents[eventIndex].headshot, printMode, true, true);
 		}
 	}
 
@@ -2385,6 +2513,17 @@ void Announce_TankDamage(int sessionIndex, bool tankAlive)
 		totalPercent += Announce_GetDamagePercent(sessionIndex, otherDamage);
 	}
 
+	Skills_Debug(PlayerSkillsDebug_Boss,
+		"Tank announce summary. session=%d tankAlive=%d finalControlIndex=%d survivorCount=%d totalDamage=%d entryDamage=%d otherDamage=%d maxHealth=%d",
+		g_BossSessions[sessionIndex].id,
+		tankAlive,
+		finalControlIndex,
+		survivorCount,
+		g_BossSessions[sessionIndex].totalDamage,
+		totalDamage,
+		otherDamage,
+		g_BossSessions[sessionIndex].maxHealth);
+
 	g_iAnnounceSortSession = sessionIndex;
 	SortCustom1D(survivorEntries, survivorCount, Announce_SortByDamageDesc);
 
@@ -2598,6 +2737,19 @@ void Announce_WitchKilledByTank(int sessionIndex, int tank)
 	if (Announce_HasMask(g_cvAnnounceWitch, view_as<int>(PlayerSkillsAnnounceBoss_Misc)))
 	{
 		CPrintToChatAll("%t %t", "Tag", "WitchKilledByTank", tankName);
+	}
+}
+
+void Announce_WitchKilledByWorld(int sessionIndex)
+{
+	if (sessionIndex < 0 || sessionIndex >= L4D2_SKILLS_MAX_BOSSES)
+	{
+		return;
+	}
+
+	if (Announce_HasMask(g_cvAnnounceWitch, view_as<int>(PlayerSkillsAnnounceBoss_Misc)))
+	{
+		CPrintToChatAll("%t %t", "Tag", "WitchKilledByWorld");
 	}
 }
 

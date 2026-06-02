@@ -229,7 +229,7 @@ Action API_FireFamilyDetected(Handle forwardHandle, int eventId, int publicTypeI
 		Skills_FormatEventPlayerRoleName(eventIndex, 3, pinVictimName, sizeof(pinVictimName));
 
 		Skills_Debug(PlayerSkillsDebug_Core,
-			"%s detected. id=%d type=%s actor=%s victim=%s assister=%s pin=%s damage=%d shots=%d amount=%d reason=%d",
+			"%s detected. id=%d type=%s actor=%s victim=%s assister=%s pin=%s damage=%d shots=%d headshot=%d amount=%d reason=%d",
 			debugLabel,
 			eventId,
 			typeName,
@@ -239,6 +239,7 @@ Action API_FireFamilyDetected(Handle forwardHandle, int eventId, int publicTypeI
 			pinVictimName,
 			g_SkillEvents[eventIndex].damage,
 			g_SkillEvents[eventIndex].shots,
+			g_SkillEvents[eventIndex].headshot ? 1 : 0,
 			g_SkillEvents[eventIndex].amount,
 			g_SkillEvents[eventIndex].reason);
 	}

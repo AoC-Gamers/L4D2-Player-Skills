@@ -21,6 +21,8 @@
 #define L4D2_SKILLS_DEFAULT_WITCH_HEALTH 1000
 #define L4D2_SKILLS_DEFAULT_SURVIVOR_LIMIT 4
 #define L4D2_SKILLS_DEFAULT_PLAYER_ZOMBIE_LIMIT 4
+#define L4D2_SKILLS_MAX_TRACKED_SURVIVOR_ENTRIES 9
+#define L4D2_SKILLS_MAX_TRACKED_INFECTED_ENTRIES 9
 #define L4D2_SKILLS_DEFAULT_HUNTER_MAX_POUNCE_BONUS_DAMAGE 24.0
 #define L4D2_SKILLS_DEFAULT_HUNTER_HIGH_POUNCE_HEIGHT 400.0
 #define L4D2_SKILLS_DEFAULT_JOCKEY_HIGH_POUNCE_HEIGHT 300.0
@@ -163,7 +165,8 @@ enum PlayerSkillsAnnounceJockeyFlag
 	PlayerSkillsAnnounceJockey_Kill = 1 << 2,
 	PlayerSkillsAnnounceJockey_JumpStop = 1 << 3,
 	PlayerSkillsAnnounceJockey_SkeetMelee = 1 << 4,
-	PlayerSkillsAnnounceJockey_LedgeHang = 1 << 5
+	PlayerSkillsAnnounceJockey_LedgeHang = 1 << 5,
+	PlayerSkillsAnnounceJockey_Skeet = 1 << 6
 }
 
 enum PlayerSkillsAnnounceChargerFlag
@@ -298,6 +301,8 @@ enum struct PlayerSkillsRuntimeState
 	PlayerSkillsGameMode baseMode;
 	bool hasLeft4DHooks;
 	bool hasTankControlEq;
+	bool hasPlayerStats;
+	bool usesExternalLifecycle;
 	bool isLate;
 	bool roundLive;
 	int configuredSurvivorLimit;
@@ -315,6 +320,8 @@ enum struct PlayerSkillsRuntimeState
 		this.baseMode = PlayerSkillsGameMode_Unknown;
 		this.hasLeft4DHooks = false;
 		this.hasTankControlEq = false;
+		this.hasPlayerStats = false;
+		this.usesExternalLifecycle = false;
 		this.isLate = false;
 		this.roundLive = false;
 		this.configuredSurvivorLimit = 0;
@@ -521,6 +528,26 @@ enum struct L4D2PlayerRef
 		return this.auth[0] != '\0'
 			&& other.auth[0] != '\0'
 			&& strcmp(this.auth, other.auth) == 0;
+	}
+}
+
+enum struct PlayerSkillsIdentityEntry
+{
+	bool active;
+	int userid;
+	int accountId;
+	bool bot;
+	int survivorCharacter;
+	char name[MAX_NAME_LENGTH];
+
+	void Reset()
+	{
+		this.active = false;
+		this.userid = 0;
+		this.accountId = 0;
+		this.bot = false;
+		this.survivorCharacter = L4D2Util_SurvivorCharacter_Invalid;
+		this.name[0] = '\0';
 	}
 }
 

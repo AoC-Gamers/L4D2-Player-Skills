@@ -236,36 +236,36 @@
 	"HunterSkeetWeapon"
 	{
 		"#format"	"{1:s},{2:s},{3:s},{4:s}"
-		"en"		"{olive}{1} {blue}skeeted {olive}{2} {blue}with {green}{3} {blue}({olive}{4}{blue})."
-		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}con {green}{3} {blue}({olive}{4}{blue})."
+		"en"		"{olive}{1} {blue}skeeted {olive}{2} {blue}with {green}{3} {blue}({green}{4}{blue})."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}con {green}{3} {blue}({green}{4}{blue})."
 	}
 
 	"HunterSkeetWeaponPerfect"
 	{
 		"#format"	"{1:s},{2:s},{3:s},{4:s}"
-		"en"		"{olive}{1} {blue}landed a {green}Skeet Perfect {blue}on {olive}{2} {blue}with {green}{3} {blue}({olive}{4}{blue})."
-		"es"		"{olive}{1} {blue}hizo {green}Skeet Perfecto {blue}a {olive}{2} {blue}con {green}{3} {blue}({olive}{4}{blue})."
+		"en"		"{olive}{1} {blue}landed a {green}Skeet Perfect {blue}on {olive}{2} {blue}with {green}{3} {blue}({green}{4}{blue})."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet Perfecto {blue}a {olive}{2} {blue}con {green}{3} {blue}({green}{4}{blue})."
 	}
 
 	"HunterSkeetWeaponHeadshot"
 	{
 		"#format"	"{1:s},{2:s},{3:s},{4:s}"
-		"en"		"{olive}{1} {blue}landed a {green}Skeet Headshot {blue}on {olive}{2} {blue}with {green}{3} {blue}({olive}{4}{blue})."
-		"es"		"{olive}{1} {blue}hizo {green}Skeet Headshot {blue}a {olive}{2} {blue}con {green}{3} {blue}({olive}{4}{blue})."
+		"en"		"{olive}{1} {blue}landed a {green}Skeet Headshot {blue}on {olive}{2} {blue}with {green}{3} {blue}({green}{4}{blue})."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet Headshot {blue}a {olive}{2} {blue}con {green}{3} {blue}({green}{4}{blue})."
 	}
 
 	"HunterSkeetWeaponAssist"
 	{
 		"#format"	"{1:s},{2:s},{3:s},{4:s},{5:s}"
-		"en"		"{olive}{1} {blue}skeeted {olive}{2} {blue}with {green}{3} {blue}({olive}{4}{blue}), assisted by {olive}{5}{blue}."
-		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}con {green}{3} {blue}({olive}{4}{blue}), asistido por {olive}{5}{blue}."
+		"en"		"{olive}{1} {blue}skeeted {olive}{2} {blue}with {green}{3} {blue}({green}{4}{blue}), assisted by {olive}{5}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}con {green}{3} {blue}({green}{4}{blue}), asistido por {olive}{5}{blue}."
 	}
 
 	"HunterSkeetWeaponHeadshotAssist"
 	{
 		"#format"	"{1:s},{2:s},{3:s},{4:s},{5:s}"
-		"en"		"{olive}{1} {blue}landed a {green}Skeet Headshot {blue}on {olive}{2} {blue}with {green}{3} {blue}({olive}{4}{blue}), assisted by {olive}{5}{blue}."
-		"es"		"{olive}{1} {blue}hizo {green}Skeet Headshot {blue}a {olive}{2} {blue}con {green}{3} {blue}({olive}{4}{blue}), asistido por {olive}{5}{blue}."
+		"en"		"{olive}{1} {blue}landed a {green}Skeet Headshot {blue}on {olive}{2} {blue}with {green}{3} {blue}({green}{4}{blue}), assisted by {olive}{5}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet Headshot {blue}a {olive}{2} {blue}con {green}{3} {blue}({green}{4}{blue}), asistido por {olive}{5}{blue}."
 	}
 
 	"PerfectSkeetSingleShot"
@@ -285,8 +285,8 @@
 	"HunterDeadstop"
 	{
 		"#format"	"{1:s},{2:s}"
-		"en"		"{olive}{1} {blue}deadstopped {olive}{2}{blue}."
-		"es"		"{olive}{1} {blue}detuvo a {olive}{2} {blue}en el aire."
+		"en"		"{olive}{1} {blue}did a {green}Deadstop {blue}to {olive}{2}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Deadstop {blue}a {olive}{2}{blue}."
 	}
 
 	"HunterHighPounce"
@@ -320,8 +320,8 @@
 	"JockeyJumpStop"
 	{
 		"#format"	"{1:s},{2:s}"
-		"en"		"{olive}{1} {blue}deadstopped {olive}{2}{blue}."
-		"es"		"{olive}{1} {blue}detuvo a {olive}{2} {blue}en el aire."
+		"en"		"{olive}{1} {blue}did a {green}JumpStop {blue}to {olive}{2}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}JumpStop {blue}a {olive}{2}{blue}."
 	}
 
 	"JockeySkeetMelee"
@@ -334,78 +334,85 @@
 	"JockeySkeet"
 	{
 		"#format"	"{1:s},{2:s},{3:s}"
-		"en"		"{olive}{1} {blue}did a {green}Skeet {blue}to {olive}{2} {blue}({olive}{3}{blue})."
-		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}({olive}{3}{blue})."
+		"en"		"{olive}{1} {blue}did a {green}Skeet {blue}to {olive}{2} {blue}({green}{3}{blue})."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}({green}{3}{blue})."
 	}
 
 	"JockeySkeetAssist"
 	{
 		"#format"	"{1:s},{2:s},{3:s},{4:s}"
-		"en"		"{olive}{1} {blue}did a {green}Skeet {blue}to {olive}{2} {blue}({olive}{3}{blue}), assisted by {olive}{4}{blue}."
-		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}({olive}{3}{blue}), asistido por {olive}{4}{blue}."
+		"en"		"{olive}{1} {blue}did a {green}Skeet {blue}to {olive}{2} {blue}({green}{3}{blue}), assisted by {olive}{4}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}({green}{3}{blue}), asistido por {olive}{4}{blue}."
 	}
 
 	"JockeySkeetHeadshot"
 	{
 		"#format"	"{1:s},{2:s},{3:s}"
-		"en"		"{olive}{1} {blue}did a {green}Skeet Headshot {blue}to {olive}{2} {blue}({olive}{3}{blue})."
-		"es"		"{olive}{1} {blue}hizo {green}Skeet Headshot {blue}a {olive}{2} {blue}({olive}{3}{blue})."
+		"en"		"{olive}{1} {blue}did a {green}Skeet Headshot {blue}to {olive}{2} {blue}({green}{3}{blue})."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet Headshot {blue}a {olive}{2} {blue}({green}{3}{blue})."
 	}
 
 	"JockeySkeetHeadshotAssist"
 	{
 		"#format"	"{1:s},{2:s},{3:s},{4:s}"
-		"en"		"{olive}{1} {blue}did a {green}Skeet Headshot {blue}to {olive}{2} {blue}({olive}{3}{blue}), assisted by {olive}{4}{blue}."
-		"es"		"{olive}{1} {blue}hizo {green}Skeet Headshot {blue}a {olive}{2} {blue}({olive}{3}{blue}), asistido por {olive}{4}{blue}."
+		"en"		"{olive}{1} {blue}did a {green}Skeet Headshot {blue}to {olive}{2} {blue}({green}{3}{blue}), assisted by {olive}{4}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet Headshot {blue}a {olive}{2} {blue}({green}{3}{blue}), asistido por {olive}{4}{blue}."
 	}
 
 	"JockeySkeetWeapon"
 	{
 		"#format"	"{1:s},{2:s},{3:s},{4:s}"
-		"en"		"{olive}{1} {blue}did a {green}Skeet {blue}to {olive}{2} {blue}with {olive}{3} {blue}({olive}{4}{blue})."
-		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}con {olive}{3} {blue}({olive}{4}{blue})."
+		"en"		"{olive}{1} {blue}did a {green}Skeet {blue}to {olive}{2} {blue}with {green}{3} {blue}({green}{4}{blue})."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}con {green}{3} {blue}({green}{4}{blue})."
 	}
 
 	"JockeySkeetWeaponAssist"
 	{
 		"#format"	"{1:s},{2:s},{3:s},{4:s},{5:s}"
-		"en"		"{olive}{1} {blue}did a {green}Skeet {blue}to {olive}{2} {blue}with {olive}{3} {blue}({olive}{4}{blue}), assisted by {olive}{5}{blue}."
-		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}con {olive}{3} {blue}({olive}{4}{blue}), asistido por {olive}{5}{blue}."
+		"en"		"{olive}{1} {blue}did a {green}Skeet {blue}to {olive}{2} {blue}with {green}{3} {blue}({green}{4}{blue}), assisted by {olive}{5}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet {blue}a {olive}{2} {blue}con {green}{3} {blue}({green}{4}{blue}), asistido por {olive}{5}{blue}."
 	}
 
 	"JockeySkeetWeaponHeadshot"
 	{
 		"#format"	"{1:s},{2:s},{3:s},{4:s}"
-		"en"		"{olive}{1} {blue}did a {green}Skeet Headshot {blue}to {olive}{2} {blue}with {olive}{3} {blue}({olive}{4}{blue})."
-		"es"		"{olive}{1} {blue}hizo {green}Skeet Headshot {blue}a {olive}{2} {blue}con {olive}{3} {blue}({olive}{4}{blue})."
+		"en"		"{olive}{1} {blue}did a {green}Skeet Headshot {blue}to {olive}{2} {blue}with {green}{3} {blue}({green}{4}{blue})."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet Headshot {blue}a {olive}{2} {blue}con {green}{3} {blue}({green}{4}{blue})."
 	}
 
 	"JockeySkeetWeaponHeadshotAssist"
 	{
 		"#format"	"{1:s},{2:s},{3:s},{4:s},{5:s}"
-		"en"		"{olive}{1} {blue}did a {green}Skeet Headshot {blue}to {olive}{2} {blue}with {olive}{3} {blue}({olive}{4}{blue}), assisted by {olive}{5}{blue}."
-		"es"		"{olive}{1} {blue}hizo {green}Skeet Headshot {blue}a {olive}{2} {blue}con {olive}{3} {blue}({olive}{4}{blue}), asistido por {olive}{5}{blue}."
+		"en"		"{olive}{1} {blue}did a {green}Skeet Headshot {blue}to {olive}{2} {blue}with {green}{3} {blue}({green}{4}{blue}), assisted by {olive}{5}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}Skeet Headshot {blue}a {olive}{2} {blue}con {green}{3} {blue}({green}{4}{blue}), asistido por {olive}{5}{blue}."
 	}
 
 	"SpecialPinClear"
 	{
 		"#format"	"{1:s},{2:s},{3:s}"
-		"en"		"{olive}{1} {blue}cleared {olive}{2} {blue}off {olive}{3}{blue}."
-		"es"		"{olive}{1} {blue}libero a {olive}{3} {blue}de {olive}{2}{blue}."
+		"en"		"{olive}{1} {blue}did a {green}SpecialClear {blue}to {olive}{2}{blue}, freeing {olive}{3}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}SpecialClear {blue}a {olive}{2}{blue}, liberando a {olive}{3}{blue}."
 	}
 
 	"SpecialPinClearShove"
 	{
 		"#format"	"{1:s},{2:s},{3:s}"
-		"en"		"{olive}{1} {blue}shove-cleared {olive}{2} {blue}off {olive}{3}{blue}."
-		"es"		"{olive}{1} {blue}libero con empujón a {olive}{3} {blue}de {olive}{2}{blue}."
+		"en"		"{olive}{1} {blue}did a {green}SpecialClear-Shove {blue}to {olive}{2}{blue}, freeing {olive}{3}{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}SpecialClear-Shove {blue}a {olive}{2}{blue}, liberando a {olive}{3}{blue}."
 	}
 
 	"SpecialPinClearKill"
 	{
 		"#format"	"{1:s},{2:s},{3:s},{4:s}"
-		"en"		"{olive}{1} {blue}killed {olive}{2} {blue}({olive}{3}{blue}), freeing {olive}{4}{blue}."
-		"es"		"{olive}{1} {blue}mato a {olive}{2} {blue}({olive}{3}{blue}), liberando a {olive}{4}{blue}."
+		"en"		"{olive}{1} {blue}killed {olive}{2} {blue}({green}{3}{blue}), freeing {olive}{4}{blue}."
+		"es"		"{olive}{1} {blue}mato a {olive}{2} {blue}({green}{3}{blue}), liberando a {olive}{4}{blue}."
+	}
+
+	"SpecialPinClearKillHeadshot"
+	{
+		"#format"	"{1:s},{2:s},{3:s},{4:s}"
+		"en"		"{olive}{1} {blue}killed {olive}{2} {green}Headshot {blue}({green}{3}{blue}), freeing {olive}{4}{blue}."
+		"es"		"{olive}{1} {blue}mato a {olive}{2} {green}Headshot {blue}({green}{3}{blue}), liberando a {olive}{4}{blue}."
 	}
 
 	"SmokerSpecialPinClearShot"
@@ -544,15 +551,15 @@
 	"BoomerVomitLandedSingle"
 	{
 		"#format"	"{1:s},{2:d}"
-		"en"		"{olive}{1} {red}vomited on {olive}{2} {red}survivor."
-		"es"		"{olive}{1} {red}vomito a {olive}{2} {red}superviviente."
+		"en"		"{olive}{1} {red}vomited on {green}{2} {red}survivor."
+		"es"		"{olive}{1} {red}vomito a {green}{2} {red}superviviente."
 	}
 
 	"BoomerVomitLandedMulti"
 	{
 		"#format"	"{1:s},{2:d}"
-		"en"		"{olive}{1} {red}vomited on {olive}{2} {red}survivors."
-		"es"		"{olive}{1} {red}vomito a {olive}{2} {red}supervivientes."
+		"en"		"{olive}{1} {red}vomited on {green}{2} {red}survivors."
+		"es"		"{olive}{1} {red}vomito a {green}{2} {red}supervivientes."
 	}
 
 	"ChargerLevel"
@@ -651,55 +658,6 @@
 		"#format"	"{1:s},{2:d},{3:s}"
 		"en"		"{olive}{1} {blue}landed {green}{2} {blue}claw hits: {olive}{3}{blue}."
 		"es"		"{olive}{1} {blue}conecto {green}{2} {blue}golpes: {olive}{3}{blue}."
-	}
-
-	"ChargerInstaKillCarry"
-	{
-		"#format"	"{1:s},{2:s},{3:.0f}"
-		"en"		"{olive}{1} {red}landed a {green}InstaKill {red}on {olive}{2} {red}from {green}{3} {red}height."
-		"es"		"{olive}{1} {red}hizo un {green}InstaKill {red}a {olive}{2} {red}desde {green}{3} {red}de altura."
-	}
-
-	"ChargerInstaKillCarryDeadly"
-	{
-		"#format"	"{1:s},{2:s},{3:.0f}"
-		"en"		"{olive}{1} {red}landed an {green}InstaKill {red}on {olive}{2} {red}slamming them to death from {green}{3} {red}height."
-		"es"		"{olive}{1} {red}hizo un {green}InstaKill {red}a {olive}{2}{red}, estrellandolo hasta matarlo desde {green}{3} {red}de altura."
-	}
-
-	"ChargerInstaKillCarryFatalFall"
-	{
-		"#format"	"{1:s},{2:s},{3:.0f}"
-		"en"		"{olive}{1} {red}landed an {green}InstaKill {red}on {olive}{2} {red}dropping them to death from {green}{3} {red}height."
-		"es"		"{olive}{1} {red}hizo un {green}InstaKill {red}a {olive}{2}{red}, haciendolo caer hasta matarlo desde {green}{3} {red}de altura."
-	}
-
-	"ChargerInstaKillIncapSimple"
-	{
-		"#format"	"{1:s},{2:s}"
-		"en"		"{olive}{1} {red}landed an {green}InstaKill {red}on {olive}{2}{red}."
-		"es"		"{olive}{1} {red}hizo un {green}InstaKill {red}a {olive}{2}{red}."
-	}
-
-	"ChargerInstaKillImpact"
-	{
-		"#format"	"{1:s},{2:s},{3:.0f}"
-		"en"		"{olive}{1} {red}landed an impact {green}InstaKill {red}on {olive}{2} {red}from {green}{3} {red}height."
-		"es"		"{olive}{1} {red}hizo un {green}InstaKill {red}de impacto a {olive}{2} {red}desde {green}{3} {red}de altura."
-	}
-
-	"ChargerInstaKillImpactDeadly"
-	{
-		"#format"	"{1:s},{2:s},{3:.0f}"
-		"en"		"{olive}{1} {red}landed an impact {green}InstaKill {red}on {olive}{2} {red}slamming them to death from {green}{3} {red}height."
-		"es"		"{olive}{1} {red}hizo un {green}InstaKill {red}de impacto a {olive}{2}{red}, estrellandolo hasta matarlo desde {green}{3} {red}de altura."
-	}
-
-	"ChargerInstaKillImpactFatalFall"
-	{
-		"#format"	"{1:s},{2:s},{3:.0f}"
-		"en"		"{olive}{1} {red}landed an impact {green}InstaKill {red}on {olive}{2} {red}dropping them to death from {green}{3} {red}height."
-		"es"		"{olive}{1} {red}hizo un {green}InstaKill {red}de impacto a {olive}{2}{red}, haciendolo caer hasta matarlo desde {green}{3} {red}de altura."
 	}
 
 	"SkillAssistSuffix"
@@ -877,11 +835,25 @@
 		"es"		"{olive}{1} {blue}hizo {green}Skeet-Rock{blue}."
 	}
 
+	"TankRockSkeetMulti"
+	{
+		"#format"	"{1:s},{2:d}"
+		"en"		"{olive}{1} {blue}landed {green}[x{2}]{blue} {green}Skeet-Rocks{blue}."
+		"es"		"{olive}{1} {blue}hizo {green}[x{2}]{blue} {green}Skeet-Rocks{blue}."
+	}
+
 	"TankRockHit"
 	{
 		"#format"	"{1:s}"
 		"en"		"{olive}{1} {red}was hit by a Tank rock."
 		"es"		"{olive}{1} {red}recibio un impacto de roca."
+	}
+
+	"TankRockHitMulti"
+	{
+		"#format"	"{1:s},{2:d}"
+		"en"		"{olive}{1} {red}was hit by {green}[x{2}]{red} Tank rocks."
+		"es"		"{olive}{1} {red}recibio {green}[x{2}]{red} impacto de roca."
 	}
 
 	"SpecialInfectedKillLead"
@@ -957,15 +929,15 @@
 	"BossWitchHealthRemaining"
 	{
 		"#format"	"{1:d}"
-		"en"		"{blue}Witch {default}had {olive}{1}{default} health remaining."
-		"es"		"{blue}Witch {default}quedo con {olive}{1}{default} de vida restante."
+		"en"		"{blue}Witch {default}had {green}{1}{default} health remaining."
+		"es"		"{blue}Witch {default}quedo con {green}{1}{default} de vida restante."
 	}
 
 	"BossWitchHealthRemainingIncap"
 	{
 		"#format"	"{1:s},{2:d}"
-		"en"		"{blue}Witch {default}incapped {olive}{1}{default} and had {olive}{2}{default} health remaining."
-		"es"		"{blue}Witch {default}dejo a {olive}{1}{default} incapacitado y quedo con {olive}{2}{default} de vida restante."
+		"en"		"{blue}Witch {default}incapped {olive}{1}{default} and had {green}{2}{default} health remaining."
+		"es"		"{blue}Witch {default}dejo a {olive}{1}{default} incapacitado y quedo con {green}{2}{default} de vida restante."
 	}
 
 	"BossWitchDamageTitle"
@@ -977,29 +949,29 @@
 	"BossDamageEntry"
 	{
 		"#format"	"{1:d},{2:d},{3:s}"
-		"en"		"{blue}[{default}{1}{blue}] ({default}{2}%%{blue}) {olive}{3}"
-		"es"		"{blue}[{default}{1}{blue}] ({default}{2}%%{blue}) {olive}{3}"
+		"en"		"{blue}[{green}{1}{blue}] ({green}{2}%%{blue}) {olive}{3}"
+		"es"		"{blue}[{green}{1}{blue}] ({green}{2}%%{blue}) {olive}{3}"
 	}
 
 	"BossDamageEntryRockSkeet"
 	{
 		"#format"	"{1:d},{2:d},{3:s},{4:d}"
-		"en"		"{blue}[{default}{1}{blue}] ({default}{2}%%{blue}) {olive}{3} {blue}[{green}Skeet-Rock {4}{blue}]"
-		"es"		"{blue}[{default}{1}{blue}] ({default}{2}%%{blue}) {olive}{3} {blue}[{green}Skeet-Rock {4}{blue}]"
+		"en"		"{blue}[{green}{1}{blue}] ({green}{2}%%{blue}) {olive}{3} {blue}[{green}Skeet-Rock {4}{blue}]"
+		"es"		"{blue}[{green}{1}{blue}] ({green}{2}%%{blue}) {olive}{3} {blue}[{green}Skeet-Rock {4}{blue}]"
 	}
 
 	"BossDamageEntryCrown"
 	{
 		"#format"	"{1:d},{2:d},{3:s}"
-		"en"		"{blue}[{default}{1}{blue}] ({default}{2}%%{blue}) {olive}{3} {green}(Crown){default}"
-		"es"		"{blue}[{default}{1}{blue}] ({default}{2}%%{blue}) {olive}{3} {green}(Crown){default}"
+		"en"		"{blue}[{green}{1}{blue}] ({green}{2}%%{blue}) {olive}{3} {green}(Crown){default}"
+		"es"		"{blue}[{green}{1}{blue}] ({green}{2}%%{blue}) {olive}{3} {green}(Crown){default}"
 	}
 
 	"BossWitchDamageCombined"
 	{
 		"#format"	"{1:d},{2:d},{3:s}"
-		"en"		"{blue}[{default}{1}{blue}] ({default}{2}%%{blue}) {green}{3}"
-		"es"		"{blue}[{default}{1}{blue}] ({default}{2}%%{blue}) {green}{3}"
+		"en"		"{blue}[{green}{1}{blue}] ({green}{2}%%{blue}) {green}{3}"
+		"es"		"{blue}[{green}{1}{blue}] ({green}{2}%%{blue}) {green}{3}"
 	}
 
 	"BossWitchDamageCombinedName"
@@ -1013,5 +985,11 @@
 		"#format"	"{1:s}"
 		"en"		"{olive}Tank {red}({olive}{1}{red}) killed the {olive}Witch{default}."
 		"es"		"{olive}Tank {red}({olive}{1}{red}) mato a la {olive}Witch{default}."
+	}
+
+	"WitchKilledByWorld"
+	{
+		"en"		"The {olive}Witch {default}died to map damage."
+		"es"		"La {olive}Witch {default}murio por daño del mapa."
 	}
 }

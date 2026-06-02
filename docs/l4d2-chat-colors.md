@@ -6,6 +6,10 @@ Esta guía define una convención práctica para usar `<colors>` en plugins de L
 
 `<colors>` es una librería multi-juego. Eso no significa que todos los tags funcionen igual en L4D2.
 
+Además, L4D2 no manifiesta la paleta exactamente igual que otros juegos Source.
+En práctica, varios tokens terminan renderizando con un color visible distinto al
+que su nombre sugiere.
+
 La documentación general de AlliedModders recuerda que los colores reales dependen del mod o juego, no solo de SourceMod:
 
 - AlliedModders Wiki, `Scripting FAQ (SourceMod)`: https://wiki.alliedmods.net/index.php?title=Scripting_FAQ_%28SourceMod%29
@@ -25,6 +29,50 @@ Referencias útiles:
 
 Hay dos niveles de compatibilidad que conviene distinguir.
 
+### Token vs color visible
+
+En este repo conviene distinguir:
+
+- `token de código`
+- `color visible en L4D2`
+
+La diferencia importante es esta:
+
+- `{olive}` se ve verde en L4D2
+- `{green}` se ve amarillo en L4D2
+
+Eso significa que leer el nombre del token no alcanza para inferir el color
+real que verá el jugador.
+
+Por eso, para discutir estilo visual del chat, conviene usar nombres
+canónicos de color visible y luego mapearlos al token real.
+
+### Colores canónicos
+
+Convención recomendada para este repo:
+
+- `canon_green`
+  - color visible: verde
+  - token preferido en L4D2: `{olive}`
+- `canon_yellow`
+  - color visible: amarillo
+  - token preferido en L4D2: `{green}`
+- `canon_default`
+  - color visible: color normal del chat
+  - token: `{default}`
+- `canon_survivor`
+  - color visible: color de survivor
+  - token: `{blue}`
+- `canon_infected`
+  - color visible: color de infected
+  - token: `{red}`
+
+La idea no es crear una capa técnica nueva dentro de `<colors>`, sino una
+forma consistente de pensar y documentar los mensajes:
+
+- el código usa tokens reales
+- la documentación y revisión de copy pueden hablar en colores visibles
+
 ### Colores seguros por defecto
 
 Los más estables para mensajes de sistema son:
@@ -38,10 +86,18 @@ Nota importante para L4D2:
 
 - `{yellow}` no debe tratarse como un color independiente confiable
 - en la práctica, el valor visual útil es `{olive}`
+- `{olive}` no debe interpretarse como “amarillo oliva” visual; en L4D2 suele
+  funcionar como verde visible
+- `{green}` no debe interpretarse como “verde” visual; en L4D2 suele funcionar
+  como amarillo visible
 
-Por eso, dentro de este repo, cuando se quiera un acento amarillo, se debe usar `{olive}`.
+Por eso, dentro de este repo:
 
-`{olive}` es especialmente útil para tags, porque no depende de equipo.
+- si se quiere `canon_green`, usar `{olive}`
+- si se quiere `canon_yellow`, usar `{green}`
+
+`{olive}` es especialmente útil para tags porque no depende de equipo y además
+da el verde visible que ya quedó muy asociado a la identidad del plugin.
 
 ### Colores de equipo
 
@@ -68,17 +124,22 @@ También hay observaciones de la comunidad para L4D2 indicando que `red` y `blue
 
 - usar `{olive}` para tags
 - volver a `{default}` inmediatamente después del tag
-- usar `{green}`, `{lightgreen}` o `{olive}` para énfasis neutro
+- usar `{olive}`, `{green}` o `{lightgreen}` según el color visible buscado
 - usar `{blue}` y `{red}` solo cuando la distinción supervivientes/infectados aporte significado real
 - no usar `teamcolor` como opción por defecto para mensajes de sistema
 
 ## Convención Recomendada
 
-- Tag: `{olive}`
+- Tag: `{olive}` (`canon_green`)
 - Texto normal: `{default}`
-- Números o valores importantes: `{green}` o `{olive}`
+- Números o valores importantes:
+  - `{green}` si se quiere `canon_yellow`
+  - `{olive}` si se quiere `canon_green`
 - Supervivientes: `{blue}` cuando aporte contexto real
 - Infectados: `{red}` cuando aporte contexto real
+
+En la práctica actual de `skills`, muchos `dmg/shots`, tiempos y counts usan
+`{green}` porque el objetivo visual suele ser amarillo destacado.
 
 ## Ejemplos
 

@@ -10,6 +10,7 @@
 #include <l4d2_player_skills>
 
 #undef REQUIRE_PLUGIN
+#include <l4d2_player_stats>
 #include <l4d_tank_control_eq>
 #define REQUIRE_PLUGIN
 
@@ -27,6 +28,7 @@ L4D2DamageEntry		g_BossDamage[L4D2_SKILLS_MAX_BOSSES][L4D2_SKILLS_MAX_DAMAGE_ENT
 L4D2SkillEventData	g_SkillEvents[L4D2_SKILLS_MAX_EVENTS];
 L4D2ApiSkillSummaryData g_SkillSummaries[L4D2_SKILLS_MAX_SUMMARIES];
 L4D2ApiKillSummaryData g_KillSummaries[L4D2_SKILLS_MAX_SUMMARIES];
+PlayerSkillsIdentityEntry g_IdentityCache[MAXPLAYERS + 1];
 PlayerSkillsRuntimeState g_Runtime;
 
 int	g_iBossSerial		= 0;
@@ -49,6 +51,8 @@ ConVar	g_cvAnnounceSpitter		 = null;
 ConVar	g_cvAnnounceJockey		 = null;
 ConVar	g_cvAnnounceCharger		 = null;
 ConVar	g_cvAnnounceOther		 = null;
+ConVar	g_cvAnnounceKillMode		 = null;
+ConVar	g_cvAnnounceSpecialClearMode = null;
 ConVar	g_cvShoveAttempt		 = null;
 ConVar	g_cvBoomerVomitMinTargets = null;
 ConVar	g_cvBoomerHealth		 = null;
@@ -461,6 +465,19 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 #include "l4d2_player_skills/announce.sp"
 #include "l4d2_player_skills/boss.sp"
 #include "l4d2_player_skills/detect.sp"
+
+void Skills_RefreshExternalLifecycleAvailability()
+{
+	g_Runtime.hasPlayerStats = LibraryExists(LIBRARY_L4D2PLAYERSTATS);
+	g_Runtime.usesExternalLifecycle = Skills_CanUsePlayerStats();
+}
+
+void Skills_SyncLifecycleState()
+{
+	Skills_RefreshExternalLifecycleAvailability();
+	Skills_RefreshModeContext();
+	Skills_RefreshRoundLiveState();
+}
 #include "l4d2_player_skills/detect_hunter.sp"
 #include "l4d2_player_skills/detect_charger.sp"
 #include "l4d2_player_skills/detect_caralarm.sp"
@@ -481,17 +498,19 @@ public void OnPluginStart()
 	g_smDetectCarPendingInfected = new StringMap();
 	g_smDetectCarPendingFlags = new StringMap();
 
-	g_cvDebug			   		= CreateConVar("sm_skills_debug", "255", "Debug bitmask for l4d2_player_skills. 0=None 1=Core 2=Event 4=Detect 8=Boss 16=Pin 32=Physics 64=Api 128=Announce 255=all.");
-	g_cvEnable			   		= CreateConVar("sm_skills_enable", "1", "Enable the l4d2_player_skills plugin.");
-	g_cvAnnounceWitch			= CreateConVar("sm_skills_announce_witch", "7", "Bitmask for Witch announcements. 1=damage 2=misc 4=crown 7=all.");
-	g_cvAnnounceTank			= CreateConVar("sm_skills_announce_tank", "15", "Bitmask for Tank announcements. 1=damage 2=rock_skeet 4=rock_hit 8=ledge_hang 15=all.");
-	g_cvAnnounceHunter			= CreateConVar("sm_skills_announce_hunter", "63", "Bitmask for Hunter announcements. 1=skeet 2=skeet_melee 4=deadstop 8=high_pounce 16=special_clear 32=kill 63=all.");
-	g_cvAnnounceSmoker			= CreateConVar("sm_skills_announce_smoker", "31", "Bitmask for Smoker announcements. 1=tongue_cut 2=self_clear 4=special_clear 8=kill 16=ledge_hang 31=all.");
-	g_cvAnnounceBoomer			= CreateConVar("sm_skills_announce_boomer", "7", "Bitmask for Boomer announcements. 1=pop 2=vomit 4=kill 7=all.");
-	g_cvAnnounceSpitter			= CreateConVar("sm_skills_announce_spitter", "1", "Bitmask for Spitter announcements. 1=kill 1=all.");
-	g_cvAnnounceJockey			= CreateConVar("sm_skills_announce_jockey", "63", "Bitmask for Jockey announcements. 1=high_pounce 2=special_clear 4=kill 8=jump_stop 16=skeet_melee 32=ledge_hang 63=all.");
-	g_cvAnnounceCharger			= CreateConVar("sm_skills_announce_charger", "63", "Bitmask for Charger announcements. 1=level 2=insta_kill 4=death_setup 8=special_clear 16=kill 32=bowl 63=all.");
-	g_cvAnnounceOther			= CreateConVar("sm_skills_announce_other", "3", "Bitmask for other announcements. 1=bunnyhop 2=car_alarm 3=all.");
+	g_cvDebug			   			= CreateConVar("sm_skills_debug", "255", "Debug bitmask for l4d2_player_skills. 0=None 1=Core 2=Event 4=Detect 8=Boss 16=Pin 32=Physics 64=Api 128=Announce 255=all.");
+	g_cvEnable			   			= CreateConVar("sm_skills_enable", "1", "Enable the l4d2_player_skills plugin.");
+	g_cvAnnounceWitch				= CreateConVar("sm_skills_announce_witch", "7", "Bitmask for Witch announcements. 1=damage 2=misc 4=crown 7=all.");
+	g_cvAnnounceTank				= CreateConVar("sm_skills_announce_tank", "15", "Bitmask for Tank announcements. 1=damage 2=rock_skeet 4=rock_hit 8=ledge_hang 15=all.");
+	g_cvAnnounceHunter				= CreateConVar("sm_skills_announce_hunter", "63", "Bitmask for Hunter announcements. 1=skeet 2=skeet_melee 4=deadstop 8=high_pounce 16=special_clear 32=kill 63=all.");
+	g_cvAnnounceSmoker				= CreateConVar("sm_skills_announce_smoker", "31", "Bitmask for Smoker announcements. 1=tongue_cut 2=self_clear 4=special_clear 8=kill 16=ledge_hang 31=all.");
+	g_cvAnnounceBoomer				= CreateConVar("sm_skills_announce_boomer", "7", "Bitmask for Boomer announcements. 1=pop 2=vomit 4=kill 7=all.");
+	g_cvAnnounceSpitter				= CreateConVar("sm_skills_announce_spitter", "1", "Bitmask for Spitter announcements. 1=kill 1=all.");
+	g_cvAnnounceJockey				= CreateConVar("sm_skills_announce_jockey", "127", "Bitmask for Jockey announcements. 1=high_pounce 2=special_clear 4=kill 8=jump_stop 16=skeet_melee 32=ledge_hang 64=skeet 127=all.");
+	g_cvAnnounceCharger				= CreateConVar("sm_skills_announce_charger", "63", "Bitmask for Charger announcements. 1=level 2=insta_kill 4=death_setup 8=special_clear 16=kill 32=bowl 63=all.");
+	g_cvAnnounceOther				= CreateConVar("sm_skills_announce_other", "3", "Bitmask for other announcements. 1=bunnyhop 2=car_alarm 3=all.");
+	g_cvAnnounceKillMode			= CreateConVar("sm_skills_announce_kill_mode", "3", "Output mode for kill announcements. 1=console 2=chat 3=chat_headshot.");
+	g_cvAnnounceSpecialClearMode	= CreateConVar("sm_skills_announce_specialclear_mode", "3", "Output mode for SpecialClear announcements. 1=console 2=chat 3=chat_headshot.");
 
 	g_cvShoveAttempt			= CreateConVar("sm_skills_shove_attempt", "7", "Bitmask for shove-attempt announcements. 1=charger 2=tank 4=witch 7=all.");
 	g_cvBoomerVomitMinTargets	= CreateConVar("sm_skills_boomer_vomit_min_targets", "3", "Minimum number of vomited survivors required to announce BoomerVomitLanded. 0=disabled.");
@@ -582,14 +601,26 @@ public void OnPluginStart()
 
 	g_Runtime.hasLeft4DHooks = LibraryExists(LIBRARY_LEFT4DHOOKS);
 	g_Runtime.hasTankControlEq = LibraryExists(LIBRARY_L4D_TANK_CONTROL_EQ);
-	Skills_RefreshModeContext();
-	Skills_RefreshRoundLiveState();
+	Skills_SyncLifecycleState();
+
+	for (int client = 1; client <= MaxClients; client++)
+	{
+		if (!IsClientInGame(client))
+		{
+			continue;
+		}
+
+		Skills_CaptureIdentityForClient(client);
+		Boss_OnClientPutInServer(client);
+		Detect_OnClientPutInServer(client);
+	}
 }
 
 public void OnAllPluginsLoaded()
 {
 	g_Runtime.hasLeft4DHooks = LibraryExists(LIBRARY_LEFT4DHOOKS);
 	g_Runtime.hasTankControlEq = LibraryExists(LIBRARY_L4D_TANK_CONTROL_EQ);
+	Skills_SyncLifecycleState();
 }
 
 public void OnLibraryAdded(const char[] name)
@@ -597,14 +628,20 @@ public void OnLibraryAdded(const char[] name)
 	if (strcmp(name, LIBRARY_LEFT4DHOOKS) == 0)
 	{
 		g_Runtime.hasLeft4DHooks = true;
-		Skills_RefreshModeContext();
-		Skills_RefreshRoundLiveState();
+		Skills_SyncLifecycleState();
 		return;
 	}
 
 	if (strcmp(name, LIBRARY_L4D_TANK_CONTROL_EQ) == 0)
 	{
 		g_Runtime.hasTankControlEq = true;
+		return;
+	}
+
+	if (strcmp(name, LIBRARY_L4D2PLAYERSTATS) == 0)
+	{
+		Skills_SyncLifecycleState();
+		Skills_Debug(PlayerSkillsDebug_Core, "PlayerStats available. Using external lifecycle=%d", Skills_UsesExternalLifecycle() ? 1 : 0);
 		return;
 	}
 }
@@ -614,8 +651,7 @@ public void OnLibraryRemoved(const char[] name)
 	if (strcmp(name, LIBRARY_LEFT4DHOOKS) == 0)
 	{
 		g_Runtime.hasLeft4DHooks = false;
-		Skills_RefreshModeContext();
-		Skills_RefreshRoundLiveState();
+		Skills_SyncLifecycleState();
 		return;
 	}
 
@@ -624,11 +660,19 @@ public void OnLibraryRemoved(const char[] name)
 		g_Runtime.hasTankControlEq = false;
 		return;
 	}
+
+	if (strcmp(name, LIBRARY_L4D2PLAYERSTATS) == 0)
+	{
+		Skills_SyncLifecycleState();
+		Skills_Debug(PlayerSkillsDebug_Core, "PlayerStats unavailable. Falling back to standalone lifecycle.");
+		return;
+	}
 }
 
 public void OnMapStart()
 {
 	g_Runtime.roundLive = false;
+	Skills_ResetIdentityCache();
 	Skills_ResetEvents();
 	Boss_ResetAll();
 	Detect_ResetAll();
@@ -637,6 +681,7 @@ public void OnMapStart()
 public void OnMapEnd()
 {
 	g_Runtime.roundLive = false;
+	Skills_ResetIdentityCache();
 	Skills_ResetEvents();
 	Boss_ResetAll();
 	Detect_ResetAll();
@@ -644,15 +689,13 @@ public void OnMapEnd()
 
 public void OnConfigsExecuted()
 {
-	Skills_RefreshModeContext();
-	Skills_RefreshRoundLiveState();
+	Skills_SyncLifecycleState();
 }
 
 public void L4D_OnGameModeChange(int gamemode)
 {
 	Skills_Debug(PlayerSkillsDebug_Event, "[L4D_OnGameModeChange] gamemode=%d", gamemode);
-	Skills_RefreshModeContext();
-	Skills_RefreshRoundLiveState();
+	Skills_SyncLifecycleState();
 }
 
 public void OnPluginEnd()
@@ -666,7 +709,7 @@ public void L4D_OnFirstSurvivorLeftSafeArea_Post(int client)
 {
 	Skills_Debug(PlayerSkillsDebug_Event, "[L4D_OnFirstSurvivorLeftSafeArea_Post] client=%d", client);
 
-	if (!Skills_IsEnabled() || g_Runtime.roundLive || g_Runtime.roundLiveSignal != PlayerSkillsRoundLiveSignal_SafeArea)
+	if (!Skills_IsEnabled() || Skills_UsesExternalLifecycle() || g_Runtime.roundLive || g_Runtime.roundLiveSignal != PlayerSkillsRoundLiveSignal_SafeArea)
 	{
 		return;
 	}
@@ -674,16 +717,48 @@ public void L4D_OnFirstSurvivorLeftSafeArea_Post(int client)
 	g_Runtime.roundLive = true;
 }
 
+public void PlayerStats_OnRoundLive(int roundId)
+{
+	if (!Skills_UsesExternalLifecycle())
+	{
+		return;
+	}
+
+	Skills_Debug(PlayerSkillsDebug_Event, "[PlayerStats_OnRoundLive] round=%d", roundId);
+	g_Runtime.roundLive = true;
+}
+
+public void PlayerStats_OnRoundEnded(int roundId, StatsEndType endType, int endReason)
+{
+	if (!Skills_UsesExternalLifecycle())
+	{
+		return;
+	}
+
+	Skills_Debug(PlayerSkillsDebug_Event, "[PlayerStats_OnRoundEnded] round=%d type=%d reason=%d", roundId, endType, endReason);
+	Boss_OnRoundEnd();
+	API_FinalizeSummaryFromCurrentState();
+	Detect_OnRoundEnd();
+	g_Runtime.roundLive = false;
+}
+
 public void OnClientPutInServer(int client)
 {
+	Skills_CaptureIdentityForClient(client);
 	Boss_OnClientPutInServer(client);
 	Detect_OnClientPutInServer(client);
 }
 
 public void OnClientDisconnect(int client)
 {
+	Skills_DetachIdentityClient(client);
 	Boss_OnClientDisconnect(client);
 	Detect_OnClientDisconnect(client);
+}
+
+public void OnClientSettingsChanged(int client)
+{
+	Skills_CaptureIdentityForClient(client);
 }
 
 public void OnEntityCreated(int entity, const char[] classname)
@@ -903,7 +978,7 @@ void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 	Boss_OnRoundStart();
 	Detect_OnRoundStart();
 
-	if (g_Runtime.roundLiveSignal == PlayerSkillsRoundLiveSignal_Immediate)
+	if (!Skills_UsesExternalLifecycle() && g_Runtime.roundLiveSignal == PlayerSkillsRoundLiveSignal_Immediate)
 	{
 		g_Runtime.roundLive = true;
 	}
@@ -988,6 +1063,11 @@ void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 		return;
 	}
 
+	if (Skills_UsesExternalLifecycle())
+	{
+		return;
+	}
+
 	if (!Skills_ShouldHandleRoundEndEvent(name))
 	{
 		return;
@@ -1003,7 +1083,7 @@ public void L4D2_OnEndVersusModeRound_Post()
 {
 	Skills_Debug(PlayerSkillsDebug_Event, "[L4D2_OnEndVersusModeRound_Post]");
 
-	if (g_Runtime.baseMode != PlayerSkillsGameMode_Versus)
+	if (g_Runtime.baseMode != PlayerSkillsGameMode_Versus || Skills_UsesExternalLifecycle())
 	{
 		return;
 	}

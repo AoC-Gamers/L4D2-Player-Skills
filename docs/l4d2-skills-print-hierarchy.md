@@ -8,6 +8,11 @@ La regla general es:
 - suprimir el announce default si ya existe una skill que explique la secuencia;
 - permitir dos announces solo cuando describen momentos distintos y no compiten por la misma resolución.
 
+Nota de routing:
+
+- la jerarquía decide qué evento sobrevive como announce visible;
+- las cvars `sm_skills_announce_kill_mode` y `sm_skills_announce_specialclear_mode` deciden si ese announce ganador va a `chat` o `console`.
+
 ---
 
 ## Propiedades compartidas

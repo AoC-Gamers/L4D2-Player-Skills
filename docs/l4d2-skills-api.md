@@ -147,6 +147,16 @@ Notas para `skill_event.properties`:
   - valores:
     - `kill`
     - `shove`
+- algunos skills publican contexto adicional de resolución:
+  - `incapped`
+  - `ledge_hang`
+  - `fatal_fall`
+  - `deadly_slam`
+  - `height`
+- `ChargerInstaKill`
+  - usa esas propiedades para describir el tipo de muerte y la altura del desenlace
+  - `fatal_fall` y `deadly_slam` son mutuamente excluyentes en la práctica
+  - `height` se expone solo cuando el runtime tiene una caída/altura útil para reportar
 
 `boss_event` además puede adjuntar:
 
@@ -288,6 +298,34 @@ Notas de shaping:
 	"properties"
 	{
 		"clear_mode"		"shove"
+	}
+}
+```
+
+`skill_event` (`ChargerInstaKill`)
+
+```text
+"skill_event"
+{
+	"id"		"91"
+	"type_id"		"12"
+	"base_mode"		"2"
+
+	"actor_userid"		"14"
+	"actor_accountid"		"99887766"
+	"actor_name"		"Charger"
+	"actor_bot"		"1"
+
+	"victim_userid"		"5"
+	"victim_accountid"		"12345678"
+	"victim_name"		"Rochelle"
+	"victim_bot"		"0"
+
+	"properties"
+	{
+		"rating"		"3"
+		"fatal_fall"		"1"
+		"height"		"89.0"
 	}
 }
 ```
