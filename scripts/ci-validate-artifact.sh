@@ -61,7 +61,6 @@ validate_manifest_tree(source_root, artifact_root, artifact_manifest)
 
 for path in (
     os.path.join(artifact_dir, "README.md"),
-    os.path.join(artifact_dir, "plugin-package-map.json"),
     os.path.join(artifact_dir, "compile.log"),
 ):
     assert_exists(path)

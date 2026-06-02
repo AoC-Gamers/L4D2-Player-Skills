@@ -29,7 +29,6 @@ La compilacion real vive en scripts Python compartidos, y `make` actua como orqu
 4. `package-smx` arma el paquete intermedio en `.build/package-smx`.
 5. `stage-artifact.py` copia ese build a `dist/sourcemod/artifact` y agrega:
    - `README.md`
-   - `plugin-package-map.json`
    - `docs/`
    - `compile.log`
 6. `release` empaqueta `dist/sourcemod/artifact` en un ZIP final.
@@ -95,5 +94,4 @@ Jobs:
 - los `.smx` declarados en `build.plugins`
 - el arbol publicado por `artifact.addons.sourcemod`
 - `README.md`
-- `plugin-package-map.json`
 - `compile.log`

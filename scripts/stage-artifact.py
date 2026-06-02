@@ -30,7 +30,6 @@ def main() -> int:
 
     copy_if_exists(build_dir / "addons", output_dir / "addons")
     copy_if_exists(root_dir / "README.md", output_dir / "README.md")
-    copy_if_exists(root_dir / "plugin-package-map.json", output_dir / "plugin-package-map.json")
     copy_if_exists(root_dir / "docs", output_dir / "docs")
     copy_if_exists(compile_log, output_dir / "compile.log")
 
