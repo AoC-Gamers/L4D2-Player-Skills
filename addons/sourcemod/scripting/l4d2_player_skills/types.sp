@@ -25,7 +25,7 @@
 #define L4D2_SKILLS_MAX_TRACKED_INFECTED_ENTRIES 9
 #define L4D2_SKILLS_DEFAULT_HUNTER_MAX_POUNCE_BONUS_DAMAGE 24.0
 #define L4D2_SKILLS_DEFAULT_HUNTER_HIGH_POUNCE_HEIGHT 400.0
-#define L4D2_SKILLS_DEFAULT_JOCKEY_HIGH_POUNCE_HEIGHT 300.0
+#define L4D2_SKILLS_DEFAULT_JOCKEY_HIGH_LEAP_HEIGHT 300.0
 
 enum L4D2SkillType
 {
@@ -43,7 +43,7 @@ enum L4D2SkillType
 	L4D2Skill_TankRockSkeet,
 	L4D2Skill_TankRockHit,
 	L4D2Skill_HunterHighPounce,
-	L4D2Skill_JockeyHighPounce,
+	L4D2Skill_JockeyHighLeap,
 	L4D2Skill_SmokerLedgeHang,
 	L4D2Skill_JockeyLedgeHang,
 	L4D2Skill_ChargerInstaKill,

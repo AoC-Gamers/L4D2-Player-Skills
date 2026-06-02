@@ -73,7 +73,7 @@ ConVar	g_cvVersusSpitterLimit	 = null;
 ConVar	g_cvVersusJockeyLimit	 = null;
 ConVar	g_cvVersusChargerLimit	 = null;
 ConVar	g_cvHunterHighPounceHeight = null;
-ConVar	g_cvJockeyHighPounceHeight = null;
+ConVar	g_cvJockeyHighLeapHeight = null;
 ConVar	g_cvWitchPrintMaxEntries = null;
 ConVar	g_cvChargerClawPrintMinHits = null;
 bool	g_bWitchPrintOnIncap	 = true;
@@ -517,7 +517,7 @@ public void OnPluginStart()
 	g_cvWitchPrintMaxEntries	= CreateConVar("sm_skills_witch_print_max_entries", "4", "Maximum number of Witch damage entries to print before combining the rest as others.");
 	
 	g_cvHunterHighPounceHeight	= CreateConVar("sm_skills_hunter_high_pounce_height", "400", "Minimum vertical height for HunterHighPounce.");
-	g_cvJockeyHighPounceHeight	= CreateConVar("sm_skills_jockey_high_pounce_height", "300", "Minimum vertical height for JockeyHighPounce.");
+	g_cvJockeyHighLeapHeight	= CreateConVar("sm_skills_jockey_high_leap_height", "300", "Minimum vertical height for JockeyHighLeap.");
 
 	g_cvDetectInstaKillHeight	= CreateConVar("sm_skills_charger_instakill_height", "400", "Minimum vertical drop for ChargerInstaKill.");
 	g_cvDetectDeathSetupHeight	= CreateConVar("sm_skills_charger_death_setup_height", "100", "Minimum vertical drop for ChargerDeathSetup incap classification.");
@@ -1521,7 +1521,7 @@ Action Command_Skills(int client, int args)
 
 			Announce_PrintSkillsSummaryLine(client, counts,
 				L4D2Skill_HunterHighPounce, "SkillsLabelHunterHighPounce",
-				L4D2Skill_JockeyHighPounce, "SkillsLabelJockeyHighPounce",
+				L4D2Skill_JockeyHighLeap, "SkillsLabelJockeyHighLeap",
 				L4D2Skill_JockeyJumpStop, "SkillsLabelJumpStop",
 				L4D2Skill_JockeySkeetMelee, "SkillsLabelJockeySkeetMelee",
 				L4D2Skill_JockeySkeet, "SkillsLabelJockeySkeet",

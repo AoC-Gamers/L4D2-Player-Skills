@@ -107,7 +107,7 @@ Consecuencia practica:
 | `JockeySkeetMelee` | `3` | skill de melee en ventana de leap, siempre de prestigio alto |
 | `ChargerLevel` | `2-3` | `2` si el Charger estaba chipeado, `3` si es `PerfectLevel` |
 | `HunterHighPounce` | `1-3` | depende del daño real del pounce |
-| `JockeyHighPounce` | `1-3` | depende de la altura real del ride |
+| `JockeyHighLeap` | `1-3` | depende de la altura real del ride |
 | `BoomerVomitLanded` | `0-2` | depende de la cantidad de vomitados |
 | `BunnyHopStreak` | `1` | fija |
 
@@ -248,13 +248,13 @@ Direccion de implementacion actual:
 - usar el `damage` real guardado en el evento
 - usar `z_hunter_max_pounce_bonus_damage` como baseline del maximo total
 
-### JockeyHighPounce
+### JockeyHighLeap
 
-`JockeyHighPounce` deberia depender de la altura real del ride.
+`JockeyHighLeap` deberia depender de la altura real del ride.
 
 La referencia base es:
 
-- `l4d2_player_skills_jockey_high_pounce_height`
+- `sm_skills_jockey_high_leap_height`
 
 Regla acordada actual:
 

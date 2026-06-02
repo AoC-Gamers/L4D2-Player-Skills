@@ -236,7 +236,15 @@ Se emite `HunterHighPounce` cuando:
 
 - el `Hunter` conecta el `pounce`,
 - existe origen de salto válido,
+- la víctima no está incapacitada,
 - y la altura supera el umbral configurado.
+
+Si la víctima ya estaba incapacitada:
+
+- no se crea `HunterHighPounce`;
+- no entra a summary ni API como skill;
+- pero puede imprimirse una línea informativa de announce si la altura fue
+  suficiente.
 
 ### Properties
 
@@ -245,7 +253,6 @@ Se emite `HunterHighPounce` cuando:
 - `height`
 - `distance`
 - `reported_high`
-- `incapped`
 
 ### Flow
 
@@ -254,7 +261,18 @@ flowchart TD
     A[player_jump_apex] --> B[Store leap origin]
     B --> C[L4D_OnPouncedOnSurvivor_Post]
     C --> D[Calculate height and distance]
-    D --> E{Height >= threshold}
-    E -->|no| F[Stop]
-    E -->|yes| G[Emit HunterHighPounce]
+    D --> E{Victim incapped}
+    E -->|yes| F[Optional info announce only]
+    E -->|no| G{Height >= threshold}
+    G -->|no| H[Stop]
+    G -->|yes| I[Emit HunterHighPounce]
 ```
+
+### Informational Announce
+
+Cuando el survivor ya estaba incapacitado y el `Hunter` igual conecta desde
+altura relevante, el announce actual usa wording informativo:
+
+- `Hunter (X) intento un HighPounce a Y pero se encontraba incapacitado (11 Dmg, 512 Altura).`
+
+Esa línea no representa una skill válida.

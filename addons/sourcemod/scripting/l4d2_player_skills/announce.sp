@@ -161,6 +161,29 @@ void Announce_ShoveAttempt(int actor, int entity)
 	CPrintToChatAll("%s %t", tag, "ShoveAttempt", actorName, targetName);
 }
 
+void Announce_HunterIncapPounce(int hunter, int victim, int damage, float height)
+{
+	if (!IsValidZombieClass(hunter, L4D2ZombieClass_Hunter)
+		|| !IsValidSurvivor(victim)
+		|| !Announce_HasMask(g_cvAnnounceHunter, view_as<int>(PlayerSkillsAnnounceHunter_HighPounce)))
+	{
+		return;
+	}
+
+	L4D2PlayerRef actor;
+	actor.Capture(hunter);
+
+	char actorName[64];
+	Skills_FormatInfectedPlayerRefName(actor, L4D2ZombieClass_Hunter, actorName, sizeof(actorName));
+
+	char victimName[64];
+	GetClientName(victim, victimName, sizeof(victimName));
+
+	char tag[32];
+	FormatEx(tag, sizeof(tag), "%T", "Tag", LANG_SERVER);
+	CPrintToChatAll("%s %t", tag, "HunterIncapPounce", actorName, victimName, damage, height);
+}
+
 void Announce_FormatSimpleKillStat(int damage, int count, char[] buffer, int maxlen)
 {
 	FormatEx(buffer, maxlen, "%d/%d", damage, count);
@@ -425,7 +448,7 @@ bool Announce_ShouldAnnounceSkill(int eventIndex)
 		{
 			shouldAnnounce = Announce_HasMask(g_cvAnnounceHunter, view_as<int>(PlayerSkillsAnnounceHunter_Kill));
 		}
-		case L4D2Skill_JockeyHighPounce:
+		case L4D2Skill_JockeyHighLeap:
 		{
 			shouldAnnounce = Announce_HasMask(g_cvAnnounceJockey, view_as<int>(PlayerSkillsAnnounceJockey_HighPounce));
 		}
@@ -917,7 +940,7 @@ int Announce_MapInfectedTableFamily(L4D2SkillType type)
 	switch (type)
 	{
 		case L4D2Skill_HunterHighPounce: return 0;
-		case L4D2Skill_JockeyHighPounce: return 2;
+		case L4D2Skill_JockeyHighLeap: return 2;
 		case L4D2Skill_BoomerVomitLanded: return 4;
 		case L4D2Skill_SmokerLedgeHang: return 8;
 		case L4D2Skill_JockeyLedgeHang: return 9;
@@ -1025,8 +1048,8 @@ bool Announce_IsInfectedTableFamilyVisible(int family)
 	{
 		case 0: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_HunterHighPounce);
 		case 1: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_HunterHighPounce);
-		case 2: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_JockeyHighPounce);
-		case 3: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_JockeyHighPounce);
+		case 2: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_JockeyHighLeap);
+		case 3: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_JockeyHighLeap);
 		case 4, 5, 6, 7: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_BoomerVomitLanded);
 		case 8: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_SmokerLedgeHang);
 		case 9: return Skills_IsSkillTypeEnabledInCurrentMode(L4D2Skill_JockeyLedgeHang);
@@ -1082,8 +1105,8 @@ int Announce_CountInfectedTableFamilyForClient(int client, int family)
 	{
 		case 0: return Announce_CountSkillTypeForClient(client, L4D2Skill_HunterHighPounce);
 		case 1: return Announce_MaxSkillHeightForClient(client, L4D2Skill_HunterHighPounce);
-		case 2: return Announce_CountSkillTypeForClient(client, L4D2Skill_JockeyHighPounce);
-		case 3: return Announce_MaxSkillHeightForClient(client, L4D2Skill_JockeyHighPounce);
+		case 2: return Announce_CountSkillTypeForClient(client, L4D2Skill_JockeyHighLeap);
+		case 3: return Announce_MaxSkillHeightForClient(client, L4D2Skill_JockeyHighLeap);
 		case 4: return Announce_CountSkillTypeForClient(client, L4D2Skill_BoomerVomitLanded);
 		case 5: return Announce_SumSkillAmountForClient(client, L4D2Skill_BoomerVomitLanded);
 		case 6: return Announce_CountPerfectSkillTypeForClient(client, L4D2Skill_BoomerVomitLanded);
@@ -1155,7 +1178,7 @@ int Announce_CountTableFamilyForBots(L4DTeam team, int family)
 			continue;
 		}
 
-		if (team == L4DTeam_Infected && g_SkillEvents[index].type == L4D2Skill_JockeyHighPounce)
+		if (team == L4DTeam_Infected && g_SkillEvents[index].type == L4D2Skill_JockeyHighLeap)
 		{
 			if (family == 2)
 			{
@@ -1644,9 +1667,9 @@ void Announce_Skill(int eventId)
 				g_SkillEvents[eventIndex].height);
 		}
 
-		case L4D2Skill_JockeyHighPounce:
+		case L4D2Skill_JockeyHighLeap:
 		{
-			CPrintToChatAll("%s %t", tag, "JockeyHighPounce",
+			CPrintToChatAll("%s %t", tag, "JockeyHighLeap",
 				actorName,
 				victimName,
 				g_SkillEvents[eventIndex].height);

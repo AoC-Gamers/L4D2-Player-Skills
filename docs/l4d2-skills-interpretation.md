@@ -266,7 +266,7 @@ Ejemplo actual:
 - `HunterSkeetMelee` vive como skill propia, porque matar un Hunter en pounce con melee es una jugada distinta al `HunterSkeet` de disparo.
 - `HunterDeadstop` vive como skill propia, porque cortar un pounce con shove es una jugada mecánicamente distinta a matar al Hunter.
 - `HunterHighPounce` vive como skill propia, porque el valor de la jugada está en la geometría del ataque y no solo en el daño final.
-- `JockeyHighPounce` vive como skill propia por la misma razón.
+- `JockeyHighLeap` vive como skill propia por la misma razón.
 - `BoomerVomitLanded` vive como skill propia, porque mide el resultado efectivo del vomit stream del Boomer.
 - `ChargerInstaKill` vive como skill propia, porque la jugada se define por desplazar al survivor hacia una muerte ambiental o de caída.
 - `ChargerDeathSetup` vive como skill propia, porque representa el resultado no letal pero determinante del Charger cuando deja a un survivor colgando o incapacitado.

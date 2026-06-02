@@ -552,6 +552,25 @@ int Detect_GetCurrentPinnedAttacker(int survivor)
 	return IsValidInfected(attacker) ? attacker : 0;
 }
 
+void Detect_AttachPinnedInfectedAssistToEvent(int eventIndex, int actor, int survivor)
+{
+	if (eventIndex < 0 || eventIndex >= L4D2_SKILLS_MAX_EVENTS || !IsValidSurvivor(survivor))
+	{
+		return;
+	}
+
+	int assister = Detect_GetCurrentPinnedAttacker(survivor);
+	if (!IsValidInfected(assister) || assister == actor || g_SkillEvents[eventIndex].assistsCount > 0)
+	{
+		return;
+	}
+
+	g_SkillEvents[eventIndex].assistScope = L4D2SkillAssistScope_SkillWindow;
+	g_SkillEvents[eventIndex].assists[0].Capture(assister);
+	g_SkillEvents[eventIndex].assistsCount = 1;
+	g_SkillEvents[eventIndex].assister = g_SkillEvents[eventIndex].assists[0];
+}
+
 bool g_bDetectHunterPouncing[MAXPLAYERS + 1];
 float g_fDetectHunterPounceSeenAt[MAXPLAYERS + 1];
 bool g_bDetectJockeyLeaping[MAXPLAYERS + 1];
@@ -2499,6 +2518,16 @@ void Detect_OnPouncedOnSurvivorPost(int victim, int attacker)
 	float distance = Detect_GetLeapDistance(attacker, victim);
 	float calculatedDamage = Detect_CalculateHunterPounceDamage(distance);
 	bool incapped = L4D_IsPlayerIncapacitated(victim);
+	if (incapped)
+	{
+		if (height >= threshold)
+		{
+			Announce_HunterIncapPounce(attacker, victim, RoundToFloor(calculatedDamage), height);
+		}
+		Detect_SetHunterPouncing(attacker, false);
+		g_DetectLeap[attacker].Reset();
+		return;
+	}
 	bool reportedHigh = height >= threshold;
 
 	if (reportedHigh)
@@ -2517,6 +2546,7 @@ void Detect_OnPouncedOnSurvivorPost(int victim, int attacker)
 			g_SkillEvents[eventIndex].height = height;
 			g_SkillEvents[eventIndex].reportedHigh = true;
 			g_SkillEvents[eventIndex].incapped = incapped;
+			Detect_AttachPinnedInfectedAssistToEvent(eventIndex, attacker, victim);
 
 			Action result = API_FireSkillDetected(eventId, L4D2Skill_HunterHighPounce);
 			if (result < Plugin_Handled)

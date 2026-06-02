@@ -1053,13 +1053,13 @@ stock float Skills_GetHunterHighPounceHeightThreshold()
 }
 
 /**
- * @brief Returns the configured minimum vertical height for JockeyHighPounce.
+ * @brief Returns the configured minimum vertical height for JockeyHighLeap.
  *
- * @return               Configured Jockey high-pounce threshold.
+ * @return               Configured Jockey high-leap threshold.
  */
-stock float Skills_GetJockeyHighPounceHeightThreshold()
+stock float Skills_GetJockeyHighLeapHeightThreshold()
 {
-	return g_cvJockeyHighPounceHeight != null ? g_cvJockeyHighPounceHeight.FloatValue : L4D2_SKILLS_DEFAULT_JOCKEY_HIGH_POUNCE_HEIGHT;
+	return g_cvJockeyHighLeapHeight != null ? g_cvJockeyHighLeapHeight.FloatValue : L4D2_SKILLS_DEFAULT_JOCKEY_HIGH_LEAP_HEIGHT;
 }
 
 /**
@@ -1452,7 +1452,7 @@ stock void Skills_GetSkillTypeName(L4D2SkillType type, char[] buffer, int maxlen
 		case L4D2Skill_TankRockSkeet: strcopy(buffer, maxlen, "TankRockSkeet");
 		case L4D2Skill_TankRockHit: strcopy(buffer, maxlen, "TankRockHit");
 		case L4D2Skill_HunterHighPounce: strcopy(buffer, maxlen, "HunterHighPounce");
-		case L4D2Skill_JockeyHighPounce: strcopy(buffer, maxlen, "JockeyHighPounce");
+		case L4D2Skill_JockeyHighLeap: strcopy(buffer, maxlen, "JockeyHighLeap");
 		case L4D2Skill_SmokerLedgeHang: strcopy(buffer, maxlen, "SmokerLedgeHang");
 		case L4D2Skill_JockeyLedgeHang: strcopy(buffer, maxlen, "JockeyLedgeHang");
 		case L4D2Skill_ChargerInstaKill: strcopy(buffer, maxlen, "ChargerInstaKill");
@@ -1598,7 +1598,7 @@ stock void Skills_FormatEventPlayerRoleName(int eventIndex, int slot, char[] buf
 			{
 				zombieClass = L4D2ZombieClass_Hunter;
 			}
-			case L4D2Skill_JockeyHighPounce:
+			case L4D2Skill_JockeyHighLeap:
 			{
 				zombieClass = L4D2ZombieClass_Jockey;
 			}
@@ -1703,7 +1703,7 @@ stock bool Skills_IsSkillTypeEnabledInCurrentMode(L4D2SkillType type)
 		{
 			return Skills_IsZombieClassEnabledInCurrentContext(L4D2ZombieClass_Smoker);
 		}
-		case L4D2Skill_JockeyHighPounce, L4D2Skill_JockeyJumpStop, L4D2Skill_JockeySkeetMelee, L4D2Skill_JockeySkeet, L4D2Skill_JockeyLedgeHang:
+		case L4D2Skill_JockeyHighLeap, L4D2Skill_JockeyJumpStop, L4D2Skill_JockeySkeetMelee, L4D2Skill_JockeySkeet, L4D2Skill_JockeyLedgeHang:
 		{
 			return Skills_IsZombieClassEnabledInCurrentContext(L4D2ZombieClass_Jockey);
 		}
@@ -1838,9 +1838,9 @@ stock int Skills_GetEventRating(int eventIndex)
 
 			return 1;
 		}
-		case L4D2Skill_JockeyHighPounce:
+		case L4D2Skill_JockeyHighLeap:
 		{
-			float threshold = Skills_GetJockeyHighPounceHeightThreshold();
+			float threshold = Skills_GetJockeyHighLeapHeightThreshold();
 			float height = g_SkillEvents[eventIndex].height;
 
 			if (height >= (threshold + 350.0))

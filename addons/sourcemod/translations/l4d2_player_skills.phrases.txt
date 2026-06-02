@@ -122,10 +122,10 @@
 		"es"		"HunterHP"
 	}
 
-	"SkillsLabelJockeyHighPounce"
+	"SkillsLabelJockeyHighLeap"
 	{
-		"en"		"JockeyHP"
-		"es"		"JockeyHP"
+		"en"		"JockeyHL"
+		"es"		"JockeyHL"
 	}
 
 	"SkillsLabelVomit"
@@ -292,15 +292,22 @@
 	"HunterHighPounce"
 	{
 		"#format"	"{1:s},{2:s},{3:d},{4:.0f}"
-		"en"		"{olive}{1} {red}landed a {green}HighPounce {red}on {olive}{2} {red}for {green}{3} {red}damage from {green}{4} {red}height."
-		"es"		"{olive}{1} {red}hizo {green}HighPounce {red}a {olive}{2} {red}por {green}{3} {red}de daño desde {green}{4} {red}de altura."
+		"en"		"{olive}{1} {red}landed a {green}HighPounce {red}on {olive}{2} {red}({green}{3} Dmg{red}, {green}{4} Altura{red})."
+		"es"		"{olive}{1} {red}hizo {green}HighPounce {red}a {olive}{2} {red}({green}{3} Dmg{red}, {green}{4} Altura{red})."
 	}
 
-	"JockeyHighPounce"
+	"HunterIncapPounce"
+	{
+		"#format"	"{1:s},{2:s},{3:d},{4:.0f}"
+		"en"		"{olive}{1} {red}attempted a {green}HighPounce {red}on {olive}{2}{red}, but the target was already incapacitated {red}({green}{3} Dmg{red}, {green}{4} Altura{red})."
+		"es"		"{olive}{1} {red}intento un {green}HighPounce {red}a {olive}{2} {red}pero se encontraba incapacitado {red}({green}{3} Dmg{red}, {green}{4} Altura{red})."
+	}
+
+	"JockeyHighLeap"
 	{
 		"#format"	"{1:s},{2:s},{3:.0f}"
-		"en"		"{olive}{1} {red}landed a {green}HighPounce {red}on {olive}{2} {red}from {green}{3} {red}height."
-		"es"		"{olive}{1} {red}hizo {green}HighPounce {red}a {olive}{2} {red}desde {green}{3} {red}de altura."
+		"en"		"{olive}{1} {red}landed a {green}HighLeap {red}on {olive}{2} {red}({green}{3} Altura{red})."
+		"es"		"{olive}{1} {red}hizo {green}HighLeap {red}a {olive}{2} {red}({green}{3} Altura{red})."
 	}
 
 	"SmokerLedgeHang"

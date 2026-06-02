@@ -4,7 +4,7 @@ Este documento resume los flujos actuales de skills relacionadas con `Jockey`.
 
 ## Skills
 
-- `JockeyHighPounce`
+- `JockeyHighLeap`
 - `JockeyJumpStop`
 - `JockeySkeetMelee`
 - `JockeySkeet`
@@ -30,7 +30,7 @@ Estado relevante:
 - `g_DetectLeap`
 - `g_fDetectJockeyLastShove`
 
-## JockeyHighPounce
+## JockeyHighLeap
 
 ### Sources
 
@@ -47,7 +47,7 @@ Estado relevante:
 
 ### Emit
 
-Se emite `JockeyHighPounce` cuando:
+Se emite `JockeyHighLeap` cuando:
 
 - el `Jockey` conecta el `ride`,
 - existe origen de salto válido,
@@ -58,7 +58,14 @@ Se emite `JockeyHighPounce` cuando:
 - `height`
 - `distance`
 - `reported_high`
-- `incapped`
+
+### Visible Announce
+
+El wording visible actual usa:
+
+- `Jockey (X) hizo HighLeap a Y (348 Altura).`
+
+La skill sigue siendo `JockeyHighLeap`; `HighLeap` es solo la etiqueta visible del announce.
 
 ### Flow
 
@@ -69,7 +76,7 @@ flowchart TD
     C --> D[Calculate height and distance]
     D --> E{Height >= threshold}
     E -->|no| F[Stop]
-    E -->|yes| G[Emit JockeyHighPounce]
+    E -->|yes| G[Emit JockeyHighLeap]
 ```
 
 ## JockeyJumpStop

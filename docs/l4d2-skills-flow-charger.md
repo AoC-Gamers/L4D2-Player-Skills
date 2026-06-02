@@ -85,6 +85,7 @@ flowchart TD
 - `L4D2_OnStartCarryingVictim_Post`
 - `charger_impact`
 - `L4D2_OnSlammedSurvivor_Post`
+- `L4D2_OnPummelVictim_Post`
 - `L4D_OnFatalFalling`
 - `L4D_OnFalling`
 - `L4D_OnIncapacitated_Post`
@@ -103,6 +104,8 @@ flowchart TD
 - `g_iDetectChargeMapDamage`
 - `g_fDetectChargeLastMapDamageTime`
 - `g_fDetectChargeIncapTime`
+- `g_bDetectChargeSlamResolved`
+- `g_DetectChargeAssister`
 
 Flags relevantes:
 
@@ -127,12 +130,14 @@ Se emite `ChargerInstaKill` cuando:
 
 No se emite si otro SI se vuelve el causante principal de la muerte.
 
+Si existe un infected distinto del `Charger` que estaba dominando o pinneando a
+la víctima al abrirse la secuencia, esa identidad puede quedar como `assist` del
+`ChargerInstaKill`.
+
 ### Properties
 
-- `zombie_class`
 - `height`
 - `distance`
-- `was_carried`
 - `damage`
 - `incapped`
 - `fatal_fall`
@@ -148,11 +153,21 @@ Estos conceptos deben mantenerse como nombres tecnicos en codigo y API:
   - el survivor muere por el golpe/estrellon de la carga
 - `fatal_fall`
   - el survivor muere por la caida posterior al desplazamiento del Charger
+- `was_carried`
+  - la víctima principal fue la cargada por el `Charger`
+  - no forma parte del contrato público actual, pero sí se usa para el wording del announce
 
 En chat no hace falta exponer esos nombres literalmente. El announce debe priorizar el resultado visible:
 
-- `deadly_slam` -> "estrellandolo hasta matarlo"
-- `fatal_fall` -> "haciendolo caer hasta matarlo"
+- `deadly_slam` -> `Estrellado`
+- `fatal_fall` -> `Caida`
+- `!was_carried` -> `Impacto`
+
+El announce actual compone un sufijo corto, por ejemplo:
+
+- `Charger (X) hizo un InstaKill a Rochelle (89 Altura).`
+- `Charger (X) hizo un InstaKill a Coach (Impacto, 103 Altura).`
+- `Charger (X) hizo un InstaKill a Ellis (Caida, 90 Altura), asistido por Smoker (Y).`
 
 `ledge_hang` ya no forma parte de `ChargerInstaKill`; hoy vive como skill separada
 en `ChargerLedgeHang`.
@@ -232,6 +247,15 @@ Se emite `ChargerDeathSetup` cuando el `Charger` deja a un survivor:
 
 sin mezclar ese resultado con una muerte confirmada.
 
+El flujo actual no usa un timer arbitrario para decidirlo.  
+Primero exige que la secuencia haya resuelto físicamente la charge:
+
+- `L4D2_OnSlammedSurvivor_Post`
+- o `L4D2_OnPummelVictim_Post`
+
+Solo después, si la víctima quedó incapacitada y no terminó en `InstaKill`, se
+emite `ChargerDeathSetup`.
+
 ### Properties
 
 - `zombie_class`
@@ -249,11 +273,12 @@ Para `ChargerDeathSetup`:
 
 ```mermaid
 flowchart TD
-    A[Charge flow active on survivor] --> B{Ledge grab or incap}
-    B -->|no| C[Stop]
-    B -->|yes| D{Already emitted for this victim}
-    D -->|yes| C
-    D -->|no| E[Emit ChargerDeathSetup]
+    A[Charge flow active on survivor] --> B[Slam or pummel resolves charge]
+    B --> C{Victim incapped and not ledge}
+    C -->|no| D[Stop]
+    C -->|yes| E{Already emitted for this victim}
+    E -->|yes| D
+    E -->|no| F[Emit ChargerDeathSetup]
 ```
 
 ## ChargerClawSummary

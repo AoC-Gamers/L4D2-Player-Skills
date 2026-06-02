@@ -26,7 +26,7 @@ Eventos semánticos competitivos que no son kills default ni bosses:
 - `SmokerTongueCut`
 - `SmokerSelfClear`
 - `HunterHighPounce`
-- `JockeyHighPounce`
+- `JockeyHighLeap`
 - `SmokerLedgeHang`
 - `JockeyLedgeHang`
 - `ChargerInstaKill`
@@ -156,6 +156,12 @@ Notas:
   - `damage`
   - `shots`
   - `weaponid`
+
+Nota:
+
+- `assists[]` es la fuente canónica de asistencia enriquecida
+- hoy no existe una rama pública separada `assister_*`
+- para casos como `ChargerInstaKill` con apoyo de otro SI, el tipo (`zombie_class`) del assister viaja dentro de `assists[0]`
 
 Notas para `skill_event.properties`:
 

@@ -27,7 +27,7 @@ static const L4D2ApiEventFamily g_ApiEventFamilyBySkill[L4D2Skill_Size] =
 	L4D2ApiEventFamily_BossEvent, // L4D2Skill_TankRockSkeet
 	L4D2ApiEventFamily_BossEvent, // L4D2Skill_TankRockHit
 	L4D2ApiEventFamily_Skill,     // L4D2Skill_HunterHighPounce
-	L4D2ApiEventFamily_Skill,     // L4D2Skill_JockeyHighPounce
+	L4D2ApiEventFamily_Skill,     // L4D2Skill_JockeyHighLeap
 	L4D2ApiEventFamily_Skill,     // L4D2Skill_SmokerLedgeHang
 	L4D2ApiEventFamily_Skill,     // L4D2Skill_JockeyLedgeHang
 	L4D2ApiEventFamily_Skill,     // L4D2Skill_ChargerInstaKill
@@ -67,7 +67,7 @@ static const int g_ApiPublicTypeIdBySkill[L4D2Skill_Size] =
 	view_as<int>(L4D2ApiBossEvent_TankRockSkeet),
 	view_as<int>(L4D2ApiBossEvent_TankRockHit),
 	view_as<int>(L4D2ApiSkill_HunterHighPounce),
-	view_as<int>(L4D2ApiSkill_JockeyHighPounce),
+	view_as<int>(L4D2ApiSkill_JockeyHighLeap),
 	view_as<int>(L4D2ApiSkill_SmokerLedgeHang),
 	view_as<int>(L4D2ApiSkill_JockeyLedgeHang),
 	view_as<int>(L4D2ApiSkill_ChargerInstaKill),
@@ -377,7 +377,7 @@ L4DTeam API_GetSummaryActorTeam(int eventIndex)
 	switch (g_SkillEvents[eventIndex].type)
 	{
 		case L4D2Skill_HunterHighPounce,
-			L4D2Skill_JockeyHighPounce,
+			L4D2Skill_JockeyHighLeap,
 			L4D2Skill_SmokerLedgeHang,
 			L4D2Skill_JockeyLedgeHang,
 			L4D2Skill_ChargerInstaKill,

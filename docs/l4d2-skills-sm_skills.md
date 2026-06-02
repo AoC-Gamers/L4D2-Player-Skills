@@ -317,13 +317,13 @@ Incluye:
 
 Incluye:
 
-- `JockeyHighPounce`
+- `JockeyHighLeap`
 
 #### JockeyPounceBest
 
 Incluye:
 
-- mejor altura (`height`) alcanzada por `JockeyHighPounce`
+- mejor altura (`height`) alcanzada por `JockeyHighLeap`
 
 #### BoomerVomit
 
@@ -357,20 +357,22 @@ Incluye:
 
 Incluye:
 
-- `ChargerInstaKillCarry`
-- `ChargerInstaKillCarryDeadly`
-- `ChargerInstaKillCarryFatalFall`
-- `ChargerInstaKillCarryIncap`
-- `ChargerInstaKillImpact`
-- `ChargerInstaKillImpactDeadly`
-- `ChargerInstaKillImpactFatalFall`
-- `ChargerInstaKillImpactIncap`
+- `ChargerInstaKill`
+
+La salida visible puede variar por propiedades:
+
+- `Impacto`
+- `Caida`
+- `Estrellado`
+- `Altura`
+
+pero la skill contada sigue siendo una sola: `ChargerInstaKill`.
 
 #### ChargerDeathSetups
 
 Incluye:
 
-- `ChargerDeathSetupIncap`
+- `ChargerDeathSetup`
 
 #### ChargerLedgeHangs
 

@@ -226,7 +226,7 @@ void Detect_EventJockeyRide(Event event)
 	}
 
 	float height = Detect_GetLeapHeight(jockey, survivor);
-	float threshold = g_cvJockeyHighPounceHeight != null ? g_cvJockeyHighPounceHeight.FloatValue : L4D2_SKILLS_DEFAULT_JOCKEY_HIGH_POUNCE_HEIGHT;
+	float threshold = g_cvJockeyHighLeapHeight != null ? g_cvJockeyHighLeapHeight.FloatValue : L4D2_SKILLS_DEFAULT_JOCKEY_HIGH_LEAP_HEIGHT;
 	bool reportedHigh = height >= threshold;
 	if (!reportedHigh)
 	{
@@ -235,7 +235,7 @@ void Detect_EventJockeyRide(Event event)
 		return;
 	}
 
-	int eventId = Skills_CreateEvent(L4D2Skill_JockeyHighPounce);
+	int eventId = Skills_CreateEvent(L4D2Skill_JockeyHighLeap);
 	int eventIndex = Skills_GetEventIndex(eventId);
 	if (eventIndex != -1)
 	{
@@ -243,8 +243,9 @@ void Detect_EventJockeyRide(Event event)
 		g_SkillEvents[eventIndex].victim.Capture(survivor);
 		g_SkillEvents[eventIndex].height = height;
 		g_SkillEvents[eventIndex].reportedHigh = true;
+		Detect_AttachPinnedInfectedAssistToEvent(eventIndex, jockey, survivor);
 
-		Action result = API_FireSkillDetected(eventId, L4D2Skill_JockeyHighPounce);
+		Action result = API_FireSkillDetected(eventId, L4D2Skill_JockeyHighLeap);
 		if (result < Plugin_Handled)
 		{
 			Announce_Skill(eventId);
