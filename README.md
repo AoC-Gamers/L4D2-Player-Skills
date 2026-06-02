@@ -49,6 +49,7 @@ Semántica:
 ### Product Documentation
 
 - [Build System](./docs/build-system.md)
+- [Skills Commands](./docs/l4d2-skills-cmd.md)
 - [L4D2 Skills API](./docs/l4d2-skills-api.md)
 - [Skill Interpretation](./docs/l4d2-skills-interpretation.md)
 - [L4D2 Player Skills Series](./docs/l4d2-player-skills-series.md)

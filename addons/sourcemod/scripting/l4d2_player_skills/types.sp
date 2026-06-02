@@ -160,7 +160,7 @@ enum PlayerSkillsAnnounceSpitterFlag
 enum PlayerSkillsAnnounceJockeyFlag
 {
 	PlayerSkillsAnnounceJockey_None = 0,
-	PlayerSkillsAnnounceJockey_HighPounce = 1 << 0,
+	PlayerSkillsAnnounceJockey_HighLeap = 1 << 0,
 	PlayerSkillsAnnounceJockey_SpecialClear = 1 << 1,
 	PlayerSkillsAnnounceJockey_Kill = 1 << 2,
 	PlayerSkillsAnnounceJockey_JumpStop = 1 << 3,

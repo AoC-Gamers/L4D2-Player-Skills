@@ -44,6 +44,16 @@ enum ConsoleTableCellType
 }
 
 /**
+ * @brief Logical render mode for one committed table row.
+ */
+enum ConsoleTableRowType
+{
+	ConsoleTableRowType_Data = 0,
+	ConsoleTableRowType_Separator,
+	ConsoleTableRowType_FullWidth
+}
+
+/**
  * @brief Static schema for one column in the body table.
  */
 enum struct ConsoleTableColumn
@@ -71,7 +81,9 @@ enum struct ConsoleTableCell
  */
 enum struct ConsoleTableRow
 {
+	ConsoleTableRowType type;
 	int cellCount;
+	char fullWidthText[CONSOLE_TABLE_MAX_CELL_TEXT];
 	ConsoleTableCell cells[CONSOLE_TABLE_MAX_COLUMNS];
 }
 
@@ -268,7 +280,9 @@ stock bool ConsoleTable_BeginRow(ConsoleTable table)
 		return false;
 	}
 
+	table.rows[table.rowCount].type = ConsoleTableRowType_Data;
 	table.rows[table.rowCount].cellCount = 0;
+	table.rows[table.rowCount].fullWidthText[0] = '\0';
 	table.buildingRow = true;
 	return true;
 }
@@ -287,6 +301,49 @@ stock bool ConsoleTable_EndRow(ConsoleTable table)
 	}
 
 	table.buildingRow = false;
+	table.rowCount++;
+	return true;
+}
+
+/**
+ * @brief Appends one full-width separator row between logical blocks.
+ *
+ * @param table		Table instance to modify.
+ * @return			True if the row was appended, false otherwise.
+ */
+stock bool ConsoleTable_AddSeparatorRow(ConsoleTable table)
+{
+	if (table.buildingRow || table.rowCount >= CONSOLE_TABLE_MAX_ROWS)
+	{
+		return false;
+	}
+
+	table.rows[table.rowCount].type = ConsoleTableRowType_Separator;
+	table.rows[table.rowCount].cellCount = 0;
+	table.rows[table.rowCount].fullWidthText[0] = '\0';
+	table.rowCount++;
+	return true;
+}
+
+/**
+ * @brief Appends one full-width text row inside the table body.
+ *
+ * Useful for block labels such as `[Hunter]` or `[Boomer]`.
+ *
+ * @param table		Table instance to modify.
+ * @param text		Full-width line content.
+ * @return			True if the row was appended, false otherwise.
+ */
+stock bool ConsoleTable_AddFullWidthRow(ConsoleTable table, const char[] text)
+{
+	if (table.buildingRow || table.rowCount >= CONSOLE_TABLE_MAX_ROWS)
+	{
+		return false;
+	}
+
+	table.rows[table.rowCount].type = ConsoleTableRowType_FullWidth;
+	table.rows[table.rowCount].cellCount = 0;
+	strcopy(table.rows[table.rowCount].fullWidthText, CONSOLE_TABLE_MAX_CELL_TEXT, text);
 	table.rowCount++;
 	return true;
 }
@@ -938,8 +995,22 @@ stock void ConsolePanel_RenderToClient(ConsolePanel panel, int client)
 		{
 			for (int rowIndex = 0; rowIndex < panel.table.rowCount; rowIndex++)
 			{
-				ConsoleTable_BuildRow(panel, rowIndex, row, sizeof(row));
-				ConsolePanel_PrintLine(panel, client, row);
+				switch (panel.table.rows[rowIndex].type)
+				{
+					case ConsoleTableRowType_Separator:
+					{
+						ConsolePanel_PrintBorder(panel, client);
+					}
+					case ConsoleTableRowType_FullWidth:
+					{
+						ConsolePanel_PrintLine(panel, client, panel.table.rows[rowIndex].fullWidthText);
+					}
+					default:
+					{
+						ConsoleTable_BuildRow(panel, rowIndex, row, sizeof(row));
+						ConsolePanel_PrintLine(panel, client, row);
+					}
+				}
 			}
 		}
 
