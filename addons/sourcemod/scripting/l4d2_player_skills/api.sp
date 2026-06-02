@@ -11,6 +11,86 @@ Handle g_hForwardTankSessionClosed = INVALID_HANDLE;
 Handle g_hForwardSkillSummaryFinalized = INVALID_HANDLE;
 Handle g_hForwardKillSummaryFinalized = INVALID_HANDLE;
 
+static const L4D2ApiEventFamily g_ApiEventFamilyBySkill[L4D2Skill_Size] =
+{
+	L4D2ApiEventFamily_None,      // L4D2Skill_None
+	L4D2ApiEventFamily_Skill,     // L4D2Skill_HunterSkeet
+	L4D2ApiEventFamily_Skill,     // L4D2Skill_HunterSkeetMelee
+	L4D2ApiEventFamily_Skill,     // L4D2Skill_HunterDeadstop
+	L4D2ApiEventFamily_Skill,     // L4D2Skill_BoomerPop
+	L4D2ApiEventFamily_Skill,     // L4D2Skill_ChargerLevel
+	L4D2ApiEventFamily_BossEvent, // L4D2Skill_TankDead
+	L4D2ApiEventFamily_BossEvent, // L4D2Skill_WitchDead
+	L4D2ApiEventFamily_BossEvent, // L4D2Skill_WitchIncap
+	L4D2ApiEventFamily_Skill,     // L4D2Skill_SmokerTongueCut
+	L4D2ApiEventFamily_Skill,     // L4D2Skill_SmokerSelfClear
+	L4D2ApiEventFamily_BossEvent, // L4D2Skill_TankRockSkeet
+	L4D2ApiEventFamily_BossEvent, // L4D2Skill_TankRockHit
+	L4D2ApiEventFamily_Skill,     // L4D2Skill_HunterHighPounce
+	L4D2ApiEventFamily_Skill,     // L4D2Skill_JockeyHighPounce
+	L4D2ApiEventFamily_Skill,     // L4D2Skill_SmokerLedgeHang
+	L4D2ApiEventFamily_Skill,     // L4D2Skill_JockeyLedgeHang
+	L4D2ApiEventFamily_Skill,     // L4D2Skill_ChargerInstaKill
+	L4D2ApiEventFamily_Skill,     // L4D2Skill_ChargerDeathSetup
+	L4D2ApiEventFamily_Skill,     // L4D2Skill_ChargerLedgeHang
+	L4D2ApiEventFamily_Skill,     // L4D2Skill_ChargerBowl
+	L4D2ApiEventFamily_BossEvent, // L4D2Skill_TankLedgeHang
+	L4D2ApiEventFamily_Skill,     // L4D2Skill_SpecialPinClear
+	L4D2ApiEventFamily_Skill,     // L4D2Skill_BoomerVomitLanded
+	L4D2ApiEventFamily_Skill,     // L4D2Skill_BunnyHopStreak
+	L4D2ApiEventFamily_Skill,     // L4D2Skill_CarAlarmTriggered
+	L4D2ApiEventFamily_Kill,      // L4D2Skill_SmokerKill
+	L4D2ApiEventFamily_Kill,      // L4D2Skill_BoomerKill
+	L4D2ApiEventFamily_Kill,      // L4D2Skill_HunterKill
+	L4D2ApiEventFamily_Kill,      // L4D2Skill_SpitterKill
+	L4D2ApiEventFamily_Kill,      // L4D2Skill_JockeyKill
+	L4D2ApiEventFamily_Kill,      // L4D2Skill_ChargerKill
+	L4D2ApiEventFamily_Skill,     // L4D2Skill_JockeyJumpStop
+	L4D2ApiEventFamily_Skill,     // L4D2Skill_JockeySkeetMelee
+	L4D2ApiEventFamily_Skill,     // L4D2Skill_JockeySkeet
+	L4D2ApiEventFamily_BossEvent  // L4D2Skill_WitchCrown
+};
+
+static const int g_ApiPublicTypeIdBySkill[L4D2Skill_Size] =
+{
+	0,                                  // L4D2Skill_None
+	view_as<int>(L4D2ApiSkill_HunterSkeet),
+	view_as<int>(L4D2ApiSkill_HunterSkeetMelee),
+	view_as<int>(L4D2ApiSkill_HunterDeadstop),
+	view_as<int>(L4D2ApiSkill_BoomerPop),
+	view_as<int>(L4D2ApiSkill_ChargerLevel),
+	view_as<int>(L4D2ApiBossEvent_TankDead),
+	view_as<int>(L4D2ApiBossEvent_WitchDead),
+	view_as<int>(L4D2ApiBossEvent_WitchIncap),
+	view_as<int>(L4D2ApiSkill_SmokerTongueCut),
+	view_as<int>(L4D2ApiSkill_SmokerSelfClear),
+	view_as<int>(L4D2ApiBossEvent_TankRockSkeet),
+	view_as<int>(L4D2ApiBossEvent_TankRockHit),
+	view_as<int>(L4D2ApiSkill_HunterHighPounce),
+	view_as<int>(L4D2ApiSkill_JockeyHighPounce),
+	view_as<int>(L4D2ApiSkill_SmokerLedgeHang),
+	view_as<int>(L4D2ApiSkill_JockeyLedgeHang),
+	view_as<int>(L4D2ApiSkill_ChargerInstaKill),
+	view_as<int>(L4D2ApiSkill_ChargerDeathSetup),
+	view_as<int>(L4D2ApiSkill_ChargerLedgeHang),
+	view_as<int>(L4D2ApiSkill_ChargerBowl),
+	view_as<int>(L4D2ApiBossEvent_TankLedgeHang),
+	view_as<int>(L4D2ApiSkill_SpecialPinClear),
+	view_as<int>(L4D2ApiSkill_BoomerVomitLanded),
+	view_as<int>(L4D2ApiSkill_BunnyHopStreak),
+	view_as<int>(L4D2ApiSkill_CarAlarmTriggered),
+	view_as<int>(L4D2ApiKill_SmokerKill),
+	view_as<int>(L4D2ApiKill_BoomerKill),
+	view_as<int>(L4D2ApiKill_HunterKill),
+	view_as<int>(L4D2ApiKill_SpitterKill),
+	view_as<int>(L4D2ApiKill_JockeyKill),
+	view_as<int>(L4D2ApiKill_ChargerKill),
+	view_as<int>(L4D2ApiSkill_JockeyJumpStop),
+	view_as<int>(L4D2ApiSkill_JockeySkeetMelee),
+	view_as<int>(L4D2ApiSkill_JockeySkeet),
+	view_as<int>(L4D2ApiBossEvent_WitchCrown)
+};
+
 void API_CreateForwards()
 {
 	g_hForwardSkillDetected = CreateGlobalForward("PlayerSkills_OnSkillDetected", ET_Event, Param_Cell, Param_Cell);
@@ -40,178 +120,45 @@ void API_CreateNatives()
 
 L4D2ApiEventFamily API_GetEventFamily(L4D2SkillType type)
 {
-	switch (type)
-	{
-		case L4D2Skill_HunterSkeet,
-			L4D2Skill_HunterSkeetMelee,
-			L4D2Skill_HunterDeadstop,
-			L4D2Skill_BoomerPop,
-			L4D2Skill_ChargerLevel,
-			L4D2Skill_SmokerTongueCut,
-			L4D2Skill_SmokerSelfClear,
-			L4D2Skill_HunterHighPounce,
-			L4D2Skill_JockeyHighPounce,
-			L4D2Skill_SmokerLedgeHang,
-			L4D2Skill_JockeyLedgeHang,
-			L4D2Skill_ChargerInstaKill,
-			L4D2Skill_ChargerDeathSetup,
-			L4D2Skill_ChargerLedgeHang,
-			L4D2Skill_ChargerBowl,
-			L4D2Skill_SpecialPinClear,
-			L4D2Skill_BoomerVomitLanded,
-			L4D2Skill_BunnyHopStreak,
-			L4D2Skill_CarAlarmTriggered,
-			L4D2Skill_JockeyJumpStop,
-			L4D2Skill_JockeySkeetMelee,
-			L4D2Skill_JockeySkeet:
-		{
-			return L4D2ApiEventFamily_Skill;
-		}
-
-		case L4D2Skill_SmokerKill,
-			L4D2Skill_BoomerKill,
-			L4D2Skill_HunterKill,
-			L4D2Skill_SpitterKill,
-			L4D2Skill_JockeyKill,
-			L4D2Skill_ChargerKill:
-		{
-			return L4D2ApiEventFamily_Kill;
-		}
-
-		case L4D2Skill_TankDead,
-			L4D2Skill_WitchDead,
-			L4D2Skill_WitchIncap,
-			L4D2Skill_TankRockSkeet,
-			L4D2Skill_TankRockHit,
-			L4D2Skill_TankLedgeHang,
-			L4D2Skill_WitchCrown:
-		{
-			return L4D2ApiEventFamily_BossEvent;
-		}
-	}
-
-	return L4D2ApiEventFamily_None;
+	return (type >= L4D2Skill_None && type < L4D2Skill_Size)
+		? g_ApiEventFamilyBySkill[type]
+		: L4D2ApiEventFamily_None;
 }
 
 L4D2ApiSkillType API_MapSkillType(L4D2SkillType type)
 {
-	switch (type)
-	{
-		case L4D2Skill_HunterSkeet: return L4D2ApiSkill_HunterSkeet;
-		case L4D2Skill_HunterSkeetMelee: return L4D2ApiSkill_HunterSkeetMelee;
-		case L4D2Skill_HunterDeadstop: return L4D2ApiSkill_HunterDeadstop;
-		case L4D2Skill_BoomerPop: return L4D2ApiSkill_BoomerPop;
-		case L4D2Skill_ChargerLevel: return L4D2ApiSkill_ChargerLevel;
-		case L4D2Skill_SmokerTongueCut: return L4D2ApiSkill_SmokerTongueCut;
-		case L4D2Skill_SmokerSelfClear: return L4D2ApiSkill_SmokerSelfClear;
-		case L4D2Skill_HunterHighPounce: return L4D2ApiSkill_HunterHighPounce;
-		case L4D2Skill_JockeyHighPounce: return L4D2ApiSkill_JockeyHighPounce;
-		case L4D2Skill_SmokerLedgeHang: return L4D2ApiSkill_SmokerLedgeHang;
-		case L4D2Skill_JockeyLedgeHang: return L4D2ApiSkill_JockeyLedgeHang;
-		case L4D2Skill_ChargerInstaKill: return L4D2ApiSkill_ChargerInstaKill;
-		case L4D2Skill_ChargerDeathSetup: return L4D2ApiSkill_ChargerDeathSetup;
-		case L4D2Skill_ChargerLedgeHang: return L4D2ApiSkill_ChargerLedgeHang;
-		case L4D2Skill_ChargerBowl: return L4D2ApiSkill_ChargerBowl;
-		case L4D2Skill_SpecialPinClear: return L4D2ApiSkill_SpecialPinClear;
-		case L4D2Skill_BoomerVomitLanded: return L4D2ApiSkill_BoomerVomitLanded;
-		case L4D2Skill_BunnyHopStreak: return L4D2ApiSkill_BunnyHopStreak;
-		case L4D2Skill_CarAlarmTriggered: return L4D2ApiSkill_CarAlarmTriggered;
-		case L4D2Skill_JockeyJumpStop: return L4D2ApiSkill_JockeyJumpStop;
-		case L4D2Skill_JockeySkeetMelee: return L4D2ApiSkill_JockeySkeetMelee;
-		case L4D2Skill_JockeySkeet: return L4D2ApiSkill_JockeySkeet;
-	}
-
-	return L4D2ApiSkill_None;
+	return API_GetEventFamily(type) == L4D2ApiEventFamily_Skill
+		? view_as<L4D2ApiSkillType>(g_ApiPublicTypeIdBySkill[type])
+		: L4D2ApiSkill_None;
 }
 
 L4D2ApiKillType API_MapKillType(L4D2SkillType type)
 {
-	switch (type)
-	{
-		case L4D2Skill_SmokerKill: return L4D2ApiKill_SmokerKill;
-		case L4D2Skill_BoomerKill: return L4D2ApiKill_BoomerKill;
-		case L4D2Skill_HunterKill: return L4D2ApiKill_HunterKill;
-		case L4D2Skill_SpitterKill: return L4D2ApiKill_SpitterKill;
-		case L4D2Skill_JockeyKill: return L4D2ApiKill_JockeyKill;
-		case L4D2Skill_ChargerKill: return L4D2ApiKill_ChargerKill;
-	}
-
-	return L4D2ApiKill_None;
+	return API_GetEventFamily(type) == L4D2ApiEventFamily_Kill
+		? view_as<L4D2ApiKillType>(g_ApiPublicTypeIdBySkill[type])
+		: L4D2ApiKill_None;
 }
 
 L4D2ApiBossEventType API_MapBossEventType(L4D2SkillType type)
 {
-	switch (type)
-	{
-		case L4D2Skill_TankDead: return L4D2ApiBossEvent_TankDead;
-		case L4D2Skill_WitchDead: return L4D2ApiBossEvent_WitchDead;
-		case L4D2Skill_WitchIncap: return L4D2ApiBossEvent_WitchIncap;
-		case L4D2Skill_TankRockSkeet: return L4D2ApiBossEvent_TankRockSkeet;
-		case L4D2Skill_TankRockHit: return L4D2ApiBossEvent_TankRockHit;
-		case L4D2Skill_TankLedgeHang: return L4D2ApiBossEvent_TankLedgeHang;
-		case L4D2Skill_WitchCrown: return L4D2ApiBossEvent_WitchCrown;
-	}
-
-	return L4D2ApiBossEvent_None;
+	return API_GetEventFamily(type) == L4D2ApiEventFamily_BossEvent
+		? view_as<L4D2ApiBossEventType>(g_ApiPublicTypeIdBySkill[type])
+		: L4D2ApiBossEvent_None;
 }
 
 void API_GetSkillTypeName(L4D2ApiSkillType type, char[] buffer, int maxlen)
 {
-	switch (type)
-	{
-		case L4D2ApiSkill_HunterSkeet: strcopy(buffer, maxlen, "HunterSkeet");
-		case L4D2ApiSkill_HunterSkeetMelee: strcopy(buffer, maxlen, "HunterSkeetMelee");
-		case L4D2ApiSkill_HunterDeadstop: strcopy(buffer, maxlen, "HunterDeadstop");
-		case L4D2ApiSkill_BoomerPop: strcopy(buffer, maxlen, "BoomerPop");
-		case L4D2ApiSkill_ChargerLevel: strcopy(buffer, maxlen, "ChargerLevel");
-		case L4D2ApiSkill_SmokerTongueCut: strcopy(buffer, maxlen, "SmokerTongueCut");
-		case L4D2ApiSkill_SmokerSelfClear: strcopy(buffer, maxlen, "SmokerSelfClear");
-		case L4D2ApiSkill_HunterHighPounce: strcopy(buffer, maxlen, "HunterHighPounce");
-		case L4D2ApiSkill_JockeyHighPounce: strcopy(buffer, maxlen, "JockeyHighPounce");
-		case L4D2ApiSkill_SmokerLedgeHang: strcopy(buffer, maxlen, "SmokerLedgeHang");
-		case L4D2ApiSkill_JockeyLedgeHang: strcopy(buffer, maxlen, "JockeyLedgeHang");
-		case L4D2ApiSkill_ChargerInstaKill: strcopy(buffer, maxlen, "ChargerInstaKill");
-		case L4D2ApiSkill_ChargerDeathSetup: strcopy(buffer, maxlen, "ChargerDeathSetup");
-		case L4D2ApiSkill_ChargerLedgeHang: strcopy(buffer, maxlen, "ChargerLedgeHang");
-		case L4D2ApiSkill_ChargerBowl: strcopy(buffer, maxlen, "ChargerBowl");
-		case L4D2ApiSkill_SpecialPinClear: strcopy(buffer, maxlen, "SpecialPinClear");
-		case L4D2ApiSkill_BoomerVomitLanded: strcopy(buffer, maxlen, "BoomerVomitLanded");
-		case L4D2ApiSkill_BunnyHopStreak: strcopy(buffer, maxlen, "BunnyHopStreak");
-		case L4D2ApiSkill_CarAlarmTriggered: strcopy(buffer, maxlen, "CarAlarmTriggered");
-		case L4D2ApiSkill_JockeyJumpStop: strcopy(buffer, maxlen, "JockeyJumpStop");
-		case L4D2ApiSkill_JockeySkeetMelee: strcopy(buffer, maxlen, "JockeySkeetMelee");
-		case L4D2ApiSkill_JockeySkeet: strcopy(buffer, maxlen, "JockeySkeet");
-		default: strcopy(buffer, maxlen, "None");
-	}
+	PlayerSkills_GetApiSkillTypeName(type, buffer, maxlen);
 }
 
 void API_GetKillTypeName(L4D2ApiKillType type, char[] buffer, int maxlen)
 {
-	switch (type)
-	{
-		case L4D2ApiKill_SmokerKill: strcopy(buffer, maxlen, "SmokerKill");
-		case L4D2ApiKill_BoomerKill: strcopy(buffer, maxlen, "BoomerKill");
-		case L4D2ApiKill_HunterKill: strcopy(buffer, maxlen, "HunterKill");
-		case L4D2ApiKill_SpitterKill: strcopy(buffer, maxlen, "SpitterKill");
-		case L4D2ApiKill_JockeyKill: strcopy(buffer, maxlen, "JockeyKill");
-		case L4D2ApiKill_ChargerKill: strcopy(buffer, maxlen, "ChargerKill");
-		default: strcopy(buffer, maxlen, "None");
-	}
+	PlayerSkills_GetApiKillTypeName(type, buffer, maxlen);
 }
 
 void API_GetBossEventTypeName(L4D2ApiBossEventType type, char[] buffer, int maxlen)
 {
-	switch (type)
-	{
-		case L4D2ApiBossEvent_TankDead: strcopy(buffer, maxlen, "TankDead");
-		case L4D2ApiBossEvent_WitchDead: strcopy(buffer, maxlen, "WitchDead");
-		case L4D2ApiBossEvent_WitchIncap: strcopy(buffer, maxlen, "WitchIncap");
-		case L4D2ApiBossEvent_TankRockSkeet: strcopy(buffer, maxlen, "TankRockSkeet");
-		case L4D2ApiBossEvent_TankRockHit: strcopy(buffer, maxlen, "TankRockHit");
-		case L4D2ApiBossEvent_TankLedgeHang: strcopy(buffer, maxlen, "TankLedgeHang");
-		case L4D2ApiBossEvent_WitchCrown: strcopy(buffer, maxlen, "WitchCrown");
-		default: strcopy(buffer, maxlen, "None");
-	}
+	PlayerSkills_GetApiBossEventTypeName(type, buffer, maxlen);
 }
 
 Action API_FireFamilyDetected(Handle forwardHandle, int eventId, int publicTypeId, const char[] typeName, const char[] debugLabel)
