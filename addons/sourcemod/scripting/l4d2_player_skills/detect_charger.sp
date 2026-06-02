@@ -593,7 +593,11 @@ void Detect_RecordChargeVictim(int charger, int victim, bool wasCarried)
 	}
 
 	g_DetectChargeVictim[victim].charger = charger;
-	g_DetectChargeVictim[victim].assister = assister;
+	g_DetectChargeVictim[victim].assister.Reset();
+	if (IsValidInfected(assister) && assister != charger)
+	{
+		g_DetectChargeVictim[victim].assister.Capture(assister);
+	}
 	g_DetectChargeVictim[victim].wasCarried = wasCarried;
 	g_DetectChargeVictim[victim].slamResolved = false;
 	g_DetectChargeVictim[victim].setupEmitted = false;
@@ -861,10 +865,11 @@ void Detect_CheckChargerInstaKill(Event event, int victim)
 	g_SkillEvents[eventIndex].ledgeHang = (g_DetectChargeVictim[victim].flags & DCFLAG_LEDGE) != 0;
 	g_SkillEvents[eventIndex].fatalFall = (g_DetectChargeVictim[victim].flags & DCFLAG_FALL) != 0;
 	g_SkillEvents[eventIndex].deadlySlam = (g_DetectChargeVictim[victim].flags & DCFLAG_DEADLY) != 0;
-	if (IsValidInfected(g_DetectChargeVictim[victim].assister) && g_DetectChargeVictim[victim].assister != charger)
+	if ((g_DetectChargeVictim[victim].assister.userid > 0 || g_DetectChargeVictim[victim].assister.name[0] != '\0')
+		&& !g_DetectChargeVictim[victim].assister.IsSameRuntimePlayer(charger))
 	{
 		g_SkillEvents[eventIndex].assistScope = L4D2SkillAssistScope_SkillWindow;
-		g_SkillEvents[eventIndex].assists[0].Capture(g_DetectChargeVictim[victim].assister);
+		g_SkillEvents[eventIndex].assists[0] = g_DetectChargeVictim[victim].assister;
 		g_SkillEvents[eventIndex].assistsCount = 1;
 		g_SkillEvents[eventIndex].assister = g_SkillEvents[eventIndex].assists[0];
 	}

@@ -101,7 +101,7 @@ da el verde visible que ya quedó muy asociado a la identidad del plugin.
 
 ### Colores de equipo
 
-En L4D2, `red`, `blue` y `teamcolor` deben tratarse como team-colors.
+En L4D2, `red`, `blue`, `lightgreen` y `teamcolor` deben tratarse como team-colors.
 
 Eso implica:
 
@@ -111,14 +111,24 @@ Eso implica:
 
 Restricción importante:
 
-- no mezclar `{blue}`, `{red}` y `{teamcolor}` entre sí dentro del mismo mensaje
+- no mezclar `{blue}`, `{red}`, `{lightgreen}` y `{teamcolor}` entre sí dentro del mismo mensaje
+- `colors.inc` lanza error si detecta dos team-colors distintos en la misma línea
+- `olive` no entra en esta restricción
+- `default`, `green` y otros colores neutros pueden convivir con un solo team-color
 
 La librería `colors.inc` también documenta esta limitación de forma general:
 
 - solo puede usarse un team-color por mensaje
 - si un color no es soportado por el mod, puede degradarse o reemplazarse
 
-También hay observaciones de la comunidad para L4D2 indicando que `red` y `blue` pueden funcionar, pero siguen sujetos a esa restricción de team-color y a la presencia real de jugadores del equipo correspondiente.
+Caso real de error:
+
+- frase base con `{red}`
+- luego sufijo o paréntesis con `{blue}`
+- resultado:
+  - `Using two team colors in one message is not allowed`
+
+También hay observaciones de la comunidad para L4D2 indicando que `red`, `blue` y variantes de team-color pueden funcionar, pero siguen sujetos a esa restricción y a la presencia real de jugadores del equipo correspondiente.
 
 ## Regla Base Del Proyecto
 
@@ -197,4 +207,4 @@ Resumen operativo:
 - `olive` para identidad del plugin
 - `default` para legibilidad
 - `green/lightgreen/olive` para énfasis neutro
-- `red/blue` como team-color semántico, nunca combinados con otro team-color
+- `red/blue/lightgreen` como team-color semántico, nunca combinados con otro team-color

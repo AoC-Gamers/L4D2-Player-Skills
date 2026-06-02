@@ -761,6 +761,11 @@ public void OnClientSettingsChanged(int client)
 	Skills_CaptureIdentityForClient(client);
 }
 
+public void OnClientTeam(int client, int oldTeam, int newTeam)
+{
+	Skills_CaptureIdentityForClient(client);
+}
+
 public void OnEntityCreated(int entity, const char[] classname)
 {
 	Boss_OnEntityCreated(entity, classname);

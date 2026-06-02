@@ -112,7 +112,7 @@ void Boss_HookTankDamageClient(int client)
 	SDKHook(client, SDKHook_OnTakeDamage, Boss_OnClientTakeDamage);
 	g_bBossTankDamageHooked[client] = true;
 	Skills_Debug(PlayerSkillsDebug_Boss,
-		"Hooked Tank damage callbacks. client=%d userid=%d",
+		"Hooked boss damage callbacks. client=%d userid=%d",
 		client,
 		IsClientInGame(client) ? GetClientUserId(client) : 0);
 }

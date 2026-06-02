@@ -347,7 +347,9 @@ enum struct L4D2PlayerRef
 	int	 userid;
 	int	 accountId;
 	bool bot;
+	L4DTeam team;
 	int	 character;
+	L4D2ZombieClassType zombieClass;
 	char name[MAX_NAME_LENGTH];
 	char auth[32];
 
@@ -362,7 +364,9 @@ enum struct L4D2PlayerRef
 		this.userid	   = 0;
 		this.accountId = 0;
 		this.bot	   = false;
+		this.team      = L4DTeam_Unassigned;
 		this.character = -1;
+		this.zombieClass = L4D2ZombieClass_NotInfected;
 		this.name[0]   = '\0';
 		this.auth[0]   = '\0';
 	}
@@ -388,7 +392,9 @@ enum struct L4D2PlayerRef
 		this.userid	   = GetClientUserId(client);
 		this.bot	   = IsFakeClient(client);
 		this.accountId = this.bot ? 0 : GetSteamAccountID(client);
-		this.character = (L4D_GetClientTeam(client) == L4DTeam_Survivor) ? GetEntProp(client, Prop_Send, "m_survivorCharacter") : -1;
+		this.team      = L4D_GetClientTeam(client);
+		this.character = (this.team == L4DTeam_Survivor) ? GetEntProp(client, Prop_Send, "m_survivorCharacter") : -1;
+		this.zombieClass = (this.team == L4DTeam_Infected) ? GetClientZombieClass(client) : L4D2ZombieClass_NotInfected;
 
 		GetClientName(client, this.name, sizeof(this.name));
 
@@ -534,20 +540,12 @@ enum struct L4D2PlayerRef
 enum struct PlayerSkillsIdentityEntry
 {
 	bool active;
-	int userid;
-	int accountId;
-	bool bot;
-	int survivorCharacter;
-	char name[MAX_NAME_LENGTH];
+	L4D2PlayerRef ref;
 
 	void Reset()
 	{
 		this.active = false;
-		this.userid = 0;
-		this.accountId = 0;
-		this.bot = false;
-		this.survivorCharacter = L4D2Util_SurvivorCharacter_Invalid;
-		this.name[0] = '\0';
+		this.ref.Reset();
 	}
 }
 
@@ -878,14 +876,12 @@ enum struct L4D2SkillEventData
 enum struct L4D2ApiSkillSummaryEntryData
 {
 	bool active;
-	L4DTeam team;
 	L4D2PlayerRef player;
 	int counts[L4D2ApiSkill_Size];
 
 	void Reset()
 	{
 		this.active = false;
-		this.team = L4DTeam_Unassigned;
 		this.player.Reset();
 
 		for (int i = 0; i < view_as<int>(L4D2ApiSkill_Size); i++)
@@ -940,14 +936,12 @@ enum struct L4D2ApiSkillSummaryData
 enum struct L4D2ApiKillSummaryEntryData
 {
 	bool active;
-	L4DTeam team;
 	L4D2PlayerRef player;
 	int counts[L4D2ApiKill_Size];
 
 	void Reset()
 	{
 		this.active = false;
-		this.team = L4DTeam_Unassigned;
 		this.player.Reset();
 
 		for (int i = 0; i < view_as<int>(L4D2ApiKill_Size); i++)

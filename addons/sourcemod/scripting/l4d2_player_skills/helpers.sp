@@ -480,7 +480,7 @@ stock int Skills_FindIdentityCacheSlotByAccountId(int accountId)
 
 	for (int i = 1; i <= MaxClients; i++)
 	{
-		if (g_IdentityCache[i].active && !g_IdentityCache[i].bot && g_IdentityCache[i].accountId == accountId)
+		if (g_IdentityCache[i].active && !g_IdentityCache[i].ref.bot && g_IdentityCache[i].ref.accountId == accountId)
 		{
 			return i;
 		}
@@ -498,7 +498,7 @@ stock int Skills_FindIdentityCacheSlotByBotCharacter(int survivorCharacter)
 
 	for (int i = 1; i <= MaxClients; i++)
 	{
-		if (g_IdentityCache[i].active && g_IdentityCache[i].bot && g_IdentityCache[i].survivorCharacter == survivorCharacter)
+		if (g_IdentityCache[i].active && g_IdentityCache[i].ref.bot && g_IdentityCache[i].ref.character == survivorCharacter)
 		{
 			return i;
 		}
@@ -516,7 +516,7 @@ stock int Skills_FindIdentityCacheSlotByUserId(int userid)
 
 	for (int i = 1; i <= MaxClients; i++)
 	{
-		if (g_IdentityCache[i].active && g_IdentityCache[i].userid == userid)
+		if (g_IdentityCache[i].active && g_IdentityCache[i].ref.userid == userid)
 		{
 			return i;
 		}
@@ -584,11 +584,7 @@ stock void Skills_CaptureIdentityForClient(int client)
 	}
 
 	g_IdentityCache[slot].active = true;
-	g_IdentityCache[slot].userid = GetClientUserId(client);
-	g_IdentityCache[slot].bot = IsFakeClient(client);
-	g_IdentityCache[slot].accountId = g_IdentityCache[slot].bot ? 0 : GetSteamAccountID(client);
-	g_IdentityCache[slot].survivorCharacter = Skills_GetClientSurvivorCharacter(client);
-	GetClientName(client, g_IdentityCache[slot].name, sizeof(g_IdentityCache[slot].name));
+	g_IdentityCache[slot].ref.Capture(client);
 }
 
 stock void Skills_DetachIdentityClient(int client)
@@ -610,7 +606,7 @@ stock void Skills_DetachIdentityClient(int client)
 		return;
 	}
 
-	g_IdentityCache[slot].userid = 0;
+	g_IdentityCache[slot].ref.DetachClient();
 }
 
 stock bool Skills_TryResolveIdentityName(int accountId, bool bot, int survivorCharacter, int userid, char[] buffer, int maxlen)
@@ -632,12 +628,12 @@ stock bool Skills_TryResolveIdentityName(int accountId, bool bot, int survivorCh
 		slot = Skills_FindIdentityCacheSlotByUserId(userid);
 	}
 
-	if (slot == -1 || !g_IdentityCache[slot].active || g_IdentityCache[slot].name[0] == '\0')
+	if (slot == -1 || !g_IdentityCache[slot].active || g_IdentityCache[slot].ref.name[0] == '\0')
 	{
 		return false;
 	}
 
-	strcopy(buffer, maxlen, g_IdentityCache[slot].name);
+	strcopy(buffer, maxlen, g_IdentityCache[slot].ref.name);
 	return true;
 }
 
@@ -731,10 +727,33 @@ stock bool Skills_TryBuildPlayerRefFromIdentity(int accountId, bool bot, int sur
 	player.userid = userid;
 	player.accountId = accountId;
 	player.bot = bot;
+	player.team = L4DTeam_Unassigned;
 	player.character = survivorCharacter;
+	player.zombieClass = L4D2ZombieClass_NotInfected;
 
 	if (Skills_TryResolveIdentityName(accountId, bot, survivorCharacter, userid, player.name, sizeof(player.name)))
 	{
+		int slot = -1;
+		if (!bot && accountId > 0)
+		{
+			slot = Skills_FindIdentityCacheSlotByAccountId(accountId);
+		}
+		else if (bot && survivorCharacter != L4D2Util_SurvivorCharacter_Invalid)
+		{
+			slot = Skills_FindIdentityCacheSlotByBotCharacter(survivorCharacter);
+		}
+
+		if (slot == -1 && userid > 0)
+		{
+			slot = Skills_FindIdentityCacheSlotByUserId(userid);
+		}
+
+		if (slot != -1 && g_IdentityCache[slot].active)
+		{
+			player.team = g_IdentityCache[slot].ref.team;
+			player.zombieClass = g_IdentityCache[slot].ref.zombieClass;
+		}
+
 		return true;
 	}
 

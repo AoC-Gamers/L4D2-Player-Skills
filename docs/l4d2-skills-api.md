@@ -134,6 +134,29 @@ Payload común:
 - `assists`
 - `properties`
 
+Campos de identidad serializados en cualquier `player ref`:
+
+- `userid`
+- `accountid`
+- `name`
+- `bot`
+- `team`
+- `character`
+- `zombie_class`
+
+Notas:
+
+- `character`
+  - survivor character cuando aplica
+  - `Invalid` fuera de survivor
+- `zombie_class`
+  - clase SI cuando el snapshot corresponde a infected
+  - `NotInfected` fuera de infected
+- en `assists[]` esos mismos campos viajan por entrada, además de:
+  - `damage`
+  - `shots`
+  - `weaponid`
+
 Notas para `skill_event.properties`:
 
 - `implies_si_death`
@@ -194,11 +217,17 @@ Notas de shaping:
 	"actor_accountid"		"87654321"
 	"actor_name"		">lechuga"
 	"actor_bot"		"0"
+	"actor_team"		"2"
+	"actor_character"		"7"
+	"actor_zombie_class"		"0"
 
 	"victim_userid"		"4"
 	"victim_accountid"		"0"
 	"victim_name"		"Smoker"
 	"victim_bot"		"1"
+	"victim_team"		"3"
+	"victim_character"		"-1"
+	"victim_zombie_class"		"1"
 
 	"assists_count"		"1"
 	"assists"
@@ -209,6 +238,9 @@ Notas de shaping:
 			"accountid"		"12345678"
 			"name"		"el jugo"
 			"bot"		"0"
+			"team"		"2"
+			"character"		"5"
+			"zombie_class"		"0"
 			"damage"		"90"
 			"shots"		"1"
 			"weaponid"		"8"
@@ -240,11 +272,17 @@ Notas de shaping:
 	"actor_accountid"		"12345678"
 	"actor_name"		"el jugo"
 	"actor_bot"		"0"
+	"actor_team"		"2"
+	"actor_character"		"5"
+	"actor_zombie_class"		"0"
 
 	"victim_userid"		"3"
 	"victim_accountid"		"0"
 	"victim_name"		"Hunter"
 	"victim_bot"		"1"
+	"victim_team"		"3"
+	"victim_character"		"-1"
+	"victim_zombie_class"		"3"
 
 	"assists_count"		"1"
 	"assists"
@@ -255,6 +293,9 @@ Notas de shaping:
 			"accountid"		"87654321"
 			"name"		">lechuga"
 			"bot"		"0"
+			"team"		"2"
+			"character"		"7"
+			"zombie_class"		"0"
 			"damage"		"91"
 			"shots"		"1"
 			"weaponid"		"8"
@@ -315,11 +356,35 @@ Notas de shaping:
 	"actor_accountid"		"99887766"
 	"actor_name"		"Charger"
 	"actor_bot"		"1"
+	"actor_team"		"3"
+	"actor_character"		"-1"
+	"actor_zombie_class"		"6"
 
 	"victim_userid"		"5"
 	"victim_accountid"		"12345678"
 	"victim_name"		"Rochelle"
 	"victim_bot"		"0"
+	"victim_team"		"2"
+	"victim_character"		"8"
+	"victim_zombie_class"		"0"
+
+	"assists_count"		"1"
+	"assists"
+	{
+		"0"
+		{
+			"userid"		"17"
+			"accountid"		"55667788"
+			"name"		"Test-Subject"
+			"bot"		"0"
+			"team"		"3"
+			"character"		"-1"
+			"zombie_class"		"1"
+			"damage"		"0"
+			"shots"		"0"
+			"weaponid"		"0"
+		}
+	}
 
 	"properties"
 	{

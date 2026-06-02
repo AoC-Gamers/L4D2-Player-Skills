@@ -472,7 +472,7 @@ bool API_ShouldIncludeEventInSummary(int eventIndex, L4D2ApiEventFamily family)
 bool API_SkillSummaryEntryMatchesPlayer(int summaryIndex, int entryIndex, L4DTeam team, L4D2PlayerRef player)
 {
 	if (!g_SkillSummaries[summaryIndex].entries[entryIndex].active
-		|| g_SkillSummaries[summaryIndex].entries[entryIndex].team != team)
+		|| g_SkillSummaries[summaryIndex].entries[entryIndex].player.team != team)
 	{
 		return false;
 	}
@@ -516,11 +516,11 @@ int API_FindOrCreateSkillSummaryEntry(int summaryIndex, L4DTeam team, L4D2Player
 
 		g_SkillSummaries[summaryIndex].entries[entry].Reset();
 		g_SkillSummaries[summaryIndex].entries[entry].active = true;
-		g_SkillSummaries[summaryIndex].entries[entry].team = team;
 
 		if (player.bot)
 		{
 			g_SkillSummaries[summaryIndex].entries[entry].player.bot = true;
+			g_SkillSummaries[summaryIndex].entries[entry].player.team = team;
 			g_SkillSummaries[summaryIndex].entries[entry].player.userid = 0;
 			g_SkillSummaries[summaryIndex].entries[entry].player.accountId = 0;
 			strcopy(g_SkillSummaries[summaryIndex].entries[entry].player.name, MAX_NAME_LENGTH, "IA");
@@ -540,7 +540,7 @@ int API_FindOrCreateSkillSummaryEntry(int summaryIndex, L4DTeam team, L4D2Player
 bool API_KillSummaryEntryMatchesPlayer(int summaryIndex, int entryIndex, L4DTeam team, L4D2PlayerRef player)
 {
 	if (!g_KillSummaries[summaryIndex].entries[entryIndex].active
-		|| g_KillSummaries[summaryIndex].entries[entryIndex].team != team)
+		|| g_KillSummaries[summaryIndex].entries[entryIndex].player.team != team)
 	{
 		return false;
 	}
@@ -584,11 +584,11 @@ int API_FindOrCreateKillSummaryEntry(int summaryIndex, L4DTeam team, L4D2PlayerR
 
 		g_KillSummaries[summaryIndex].entries[entry].Reset();
 		g_KillSummaries[summaryIndex].entries[entry].active = true;
-		g_KillSummaries[summaryIndex].entries[entry].team = team;
 
 		if (player.bot)
 		{
 			g_KillSummaries[summaryIndex].entries[entry].player.bot = true;
+			g_KillSummaries[summaryIndex].entries[entry].player.team = team;
 			g_KillSummaries[summaryIndex].entries[entry].player.userid = 0;
 			g_KillSummaries[summaryIndex].entries[entry].player.accountId = 0;
 			strcopy(g_KillSummaries[summaryIndex].entries[entry].player.name, MAX_NAME_LENGTH, "IA");
@@ -775,6 +775,15 @@ void API_SetEventPlayerKeys(Handle kv, const char[] prefix, L4D2PlayerRef player
 
 	FormatEx(key, sizeof(key), "%s_bot", prefix);
 	KvSetNum(kv, key, player.bot ? 1 : 0);
+
+	FormatEx(key, sizeof(key), "%s_team", prefix);
+	KvSetNum(kv, key, player.team);
+
+	FormatEx(key, sizeof(key), "%s_character", prefix);
+	KvSetNum(kv, key, player.character);
+
+	FormatEx(key, sizeof(key), "%s_zombie_class", prefix);
+	KvSetNum(kv, key, player.zombieClass);
 }
 
 void API_WriteEventAssists(Handle kv, int eventIndex)
@@ -798,6 +807,9 @@ void API_WriteEventAssists(Handle kv, int eventIndex)
 			KvSetNum(kv, "accountid", g_SkillEvents[eventIndex].assists[i].accountId);
 			KvSetString(kv, "name", g_SkillEvents[eventIndex].assists[i].name);
 			KvSetNum(kv, "bot", g_SkillEvents[eventIndex].assists[i].bot ? 1 : 0);
+			KvSetNum(kv, "team", g_SkillEvents[eventIndex].assists[i].team);
+			KvSetNum(kv, "character", g_SkillEvents[eventIndex].assists[i].character);
+			KvSetNum(kv, "zombie_class", g_SkillEvents[eventIndex].assists[i].zombieClass);
 			KvSetNum(kv, "damage", g_SkillEvents[eventIndex].assistDamage[i]);
 			KvSetNum(kv, "shots", g_SkillEvents[eventIndex].assistShots[i]);
 			KvSetNum(kv, "weaponid", g_SkillEvents[eventIndex].assistWeaponId[i]);
@@ -1260,8 +1272,8 @@ void API_WriteSkillSummaryEntries(Handle kv, int summaryIndex)
 		}
 
 		char teamName[16];
-		API_GetSummaryTeamName(g_SkillSummaries[summaryIndex].entries[entry].team, teamName, sizeof(teamName));
-		KvSetNum(kv, "team", g_SkillSummaries[summaryIndex].entries[entry].team);
+		API_GetSummaryTeamName(g_SkillSummaries[summaryIndex].entries[entry].player.team, teamName, sizeof(teamName));
+		KvSetNum(kv, "team", g_SkillSummaries[summaryIndex].entries[entry].player.team);
 		KvSetString(kv, "team_name", teamName);
 		KvSetNum(kv, "userid", g_SkillSummaries[summaryIndex].entries[entry].player.userid);
 		KvSetNum(kv, "accountid", g_SkillSummaries[summaryIndex].entries[entry].player.accountId);
@@ -1321,8 +1333,8 @@ void API_WriteKillSummaryEntries(Handle kv, int summaryIndex)
 		}
 
 		char teamName[16];
-		API_GetSummaryTeamName(g_KillSummaries[summaryIndex].entries[entry].team, teamName, sizeof(teamName));
-		KvSetNum(kv, "team", g_KillSummaries[summaryIndex].entries[entry].team);
+		API_GetSummaryTeamName(g_KillSummaries[summaryIndex].entries[entry].player.team, teamName, sizeof(teamName));
+		KvSetNum(kv, "team", g_KillSummaries[summaryIndex].entries[entry].player.team);
 		KvSetString(kv, "team_name", teamName);
 		KvSetNum(kv, "userid", g_KillSummaries[summaryIndex].entries[entry].player.userid);
 		KvSetNum(kv, "accountid", g_KillSummaries[summaryIndex].entries[entry].player.accountId);

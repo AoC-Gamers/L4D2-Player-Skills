@@ -205,7 +205,7 @@ enum struct DetectDamageSnapshot
 enum struct DetectChargeVictimState
 {
 	int charger;
-	int assister;
+	L4D2PlayerRef assister;
 	bool wasCarried;
 	bool slamResolved;
 	bool setupEmitted;
@@ -224,7 +224,7 @@ enum struct DetectChargeVictimState
 	void Reset()
 	{
 		this.charger = 0;
-		this.assister = 0;
+		this.assister.Reset();
 		this.wasCarried = false;
 		this.slamResolved = false;
 		this.setupEmitted = false;

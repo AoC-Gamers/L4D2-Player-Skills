@@ -92,7 +92,7 @@ void Announce_BuildChargerInstaKillQualifier(int eventIndex, char[] buffer, int 
 		StrCat(joined, sizeof(joined), parts[i]);
 	}
 
-	FormatEx(buffer, maxlen, "{blue}(%s){red}", joined);
+	FormatEx(buffer, maxlen, " {red}({green}%s{red})", joined);
 }
 
 void Announce_PrintRoutedActorLine(int eventIndex, const char[] chatTag, char[] line, bool headshot, int mode)
@@ -197,7 +197,7 @@ void Announce_FormatAssistList(int eventIndex, char[] buffer, int maxlen)
 	}
 }
 
-void Announce_FormatAssistNames(int eventIndex, char[] buffer, int maxlen)
+void Announce_FormatInfectedAssisterName(int eventIndex, char[] buffer, int maxlen)
 {
 	buffer[0] = '\0';
 
@@ -206,20 +206,25 @@ void Announce_FormatAssistNames(int eventIndex, char[] buffer, int maxlen)
 		return;
 	}
 
-	for (int assistIndex = 0; assistIndex < g_SkillEvents[eventIndex].assistsCount && assistIndex < L4D2_SKILLS_MAX_EVENT_ASSISTS; assistIndex++)
+	L4D2PlayerRef assister;
+	assister = g_SkillEvents[eventIndex].assister;
+	if (assister.userid <= 0 && assister.name[0] == '\0')
 	{
-		char segment[128];
-		if (assistIndex == 0)
-		{
-			FormatEx(segment, sizeof(segment), "%s", g_SkillEvents[eventIndex].assists[assistIndex].name);
-		}
-		else
-		{
-			FormatEx(segment, sizeof(segment), ", %s", g_SkillEvents[eventIndex].assists[assistIndex].name);
-		}
-
-		StrCat(buffer, maxlen, segment);
+		return;
 	}
+
+	int assisterClient = assister.ResolveClient();
+	if (IsValidInfected(assisterClient))
+	{
+		L4D2ZombieClassType zombieClass = GetClientZombieClass(assisterClient);
+		if (zombieClass != L4D2ZombieClass_NotInfected && zombieClass != L4D2ZombieClass_Tank)
+		{
+			Skills_FormatInfectedPlayerRefName(assister, zombieClass, buffer, maxlen);
+			return;
+		}
+	}
+
+	strcopy(buffer, maxlen, assister.name);
 }
 
 void Announce_ChargerClawSummary(int charger)
@@ -2085,19 +2090,23 @@ void Announce_Skill(int eventId)
 		{
 			char qualifier[192];
 			char line[512];
-			char assistNames[256];
+			char infectedAssisterName[96];
 			Announce_BuildChargerInstaKillQualifier(eventIndex, qualifier, sizeof(qualifier));
-			Announce_FormatAssistNames(eventIndex, assistNames, sizeof(assistNames));
+			Announce_FormatInfectedAssisterName(eventIndex, infectedAssisterName, sizeof(infectedAssisterName));
 
 			FormatEx(line, sizeof(line),
-				"{olive}%s {red}hizo un {green}InstaKill {red}a {olive}%s%s{red}.",
+				"{olive}%s {red}hizo un {green}InstaKill {red}a {olive}%s%s",
 				actorName,
 				victimName,
 				qualifier);
 
-			if (g_SkillEvents[eventIndex].assistsCount > 0)
+			if (g_SkillEvents[eventIndex].assistsCount > 0 && infectedAssisterName[0] != '\0')
 			{
-				Format(line, sizeof(line), "%s {blue}, asistido por {olive}%s{blue}.", line, assistNames);
+				Format(line, sizeof(line), "%s{red}, asistido por {olive}%s{red}.", line, infectedAssisterName);
+			}
+			else
+			{
+				StrCat(line, sizeof(line), "{red}.");
 			}
 
 			CPrintToChatAll("%s %s", tag, line);
