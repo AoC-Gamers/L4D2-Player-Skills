@@ -164,6 +164,8 @@ Nombre visible:
 ### Properties
 
 - `damage`
+- `chip_damage`
+- `assists`
 - `perfect`
 
 ### Flow

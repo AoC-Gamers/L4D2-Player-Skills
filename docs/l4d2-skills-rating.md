@@ -101,10 +101,11 @@ Consecuencia practica:
 |---|---:|---|
 | `BoomerPop` | `1-3` | depende del tiempo de pop |
 | `CarAlarmTriggered` | `0-1` | depende de influencia de SI |
-| `HunterSkeet` | `2-3` | `2` estandar, `3` si es `headshot` o disparo perfecto |
-| `HunterSkeetMelee` | `2-3` | `2` estandar, `3` en contexto mas fuerte |
+| `HunterSkeet` | `1-3` | `3` si es perfecto, `2` si fue solo del actor, `1` si hubo asistencia |
+| `HunterSkeetMelee` | `1-3` | `3` si es perfecto, `2` si fue solo del actor, `1` si hubo asistencia |
 | `SmokerSelfClear` | `1-2` | `1` estandar o shove, `2` si es `SelfClear Headshot` |
-| `JockeySkeetMelee` | `3` | skill de melee en ventana de leap, siempre de prestigio alto |
+| `JockeySkeet` | `1-3` | `3` si es perfecto, `2` si fue solo del actor, `1` si hubo asistencia |
+| `JockeySkeetMelee` | `1-3` | `3` si es perfecto, `2` si fue solo del actor, `1` si hubo asistencia |
 | `ChargerLevel` | `2-3` | `2` si el Charger estaba chipeado, `3` si es `PerfectLevel` |
 | `HunterHighPounce` | `1-3` | depende del daño real del pounce |
 | `JockeyHighLeap` | `1-3` | depende de la altura real del ride |
@@ -146,55 +147,84 @@ Direccion de implementacion actual:
 
 `HunterSkeetMelee` deberia ser:
 
-- `2` en el caso estandar
 - `3` si es `perfect`
+- `2` si no es `perfect`, pero el actor fue el unico contributor
+- `1` si hubo asistencia
 
 Regla acordada actual:
 
-- `2` en el caso estandar
 - `3` si `perfect`
+- `2` si no hay asistencia
+- `1` si hubo asistencia
 
 Direccion de implementacion actual:
 
 - `HunterSkeetMelee` ya nace solo en contexto de Hunter pouncing
-- la señal fuerte real para subir rating es `perfect`
+- `perfect` exige vida completa y sin asistencia previa
+- fuera de `perfect`, la separacion entre `2` y `1` depende de si hubo `assists`
 
 ### HunterSkeet
 
 `HunterSkeet` deberia ser:
 
-- `2` en el caso estandar
-- `3` si el skeet fue `headshot`
-- `3` si el disparo fue perfecto
+- `3` si es `perfect`
+- `2` si no es `perfect`, pero el actor fue el unico contributor
+- `1` si hubo asistencia
 
 Regla acordada actual:
 
-- `2` en el caso estandar
-- `3` si `headshot`
 - `3` si `perfect`
+- `2` si no hay asistencia
+- `1` si hubo asistencia
 
 Direccion de implementacion actual:
 
 - `perfect` en ranged se interpreta como:
   - `shots == 1`
   - `chip_damage == 0`
-  - sin team skeet
-- `sniper` y `grenade_launcher` no cambian el rating por si solos
+  - sin asistencia
+- `headshot`, `sniper` y `grenade_launcher` no cambian el rating por si solos
+
+### JockeySkeet
+
+`JockeySkeet` deberia ser:
+
+- `3` si es `perfect`
+- `2` si no es `perfect`, pero el actor fue el unico contributor
+- `1` si hubo asistencia
+
+Regla acordada actual:
+
+- `3` si `perfect`
+- `2` si no hay asistencia
+- `1` si hubo asistencia
+
+Direccion de implementacion actual:
+
+- `perfect` en ranged se interpreta como:
+  - `shots == 1`
+  - `chip_damage == 0`
+  - sin asistencia
 
 ### JockeySkeetMelee
 
 `JockeySkeetMelee` deberia ser:
 
-- `3` fijo
+- `3` si es `perfect`
+- `2` si no es `perfect`, pero el actor fue el unico contributor
+- `1` si hubo asistencia
 
 Regla acordada actual:
 
-- siempre `3`
+- `3` si `perfect`
+- `2` si no hay asistencia
+- `1` si hubo asistencia
 
 Direccion de implementacion actual:
 
 - vive en una ventana artesanal de leap
-- es la variante de mayor prestigio del set actual de `Jockey`
+- `perfect` exige que el `Jockey` llegue limpio a la melee final
+- fuera de `perfect`, la separacion entre `2` y `1` depende de si hubo `assists`
 
 ### JockeyJumpStop
 

@@ -1843,7 +1843,8 @@ void Announce_Skill(int eventId)
 
 		case L4D2Skill_JockeySkeetMelee:
 		{
-			CPrintToChatAll("%s %t", tag, "JockeySkeetMelee",
+			CPrintToChatAll("%s %t", tag,
+				g_SkillEvents[eventIndex].perfect ? "JockeySkeetMeleePerfect" : "JockeySkeetMelee",
 				actorName,
 				victimName);
 		}
@@ -1877,6 +1878,17 @@ void Announce_Skill(int eventId)
 				else
 				{
 					CPrintToChatAll("%s %t", tag, "JockeySkeetHeadshot", actorName, victimName, actorStat);
+				}
+			}
+			else if (g_SkillEvents[eventIndex].perfect)
+			{
+				if (specialWeapon)
+				{
+					CPrintToChatAll("%s %t", tag, "JockeySkeetWeaponPerfect", actorName, victimName, weaponName);
+				}
+				else
+				{
+					CPrintToChatAll("%s %t", tag, "JockeySkeetPerfect", actorName, victimName);
 				}
 			}
 			else if (specialWeapon && g_SkillEvents[eventIndex].assistsCount > 0)
@@ -2322,8 +2334,7 @@ void Announce_Skill(int eventId)
 			if (g_SkillEvents[eventIndex].perfect)
 			{
 				CPrintToChatAll("%s %t", tag, "WitchCrownPerfect",
-					actorName,
-					crownStat);
+					actorName);
 			}
 			else if (g_SkillEvents[eventIndex].assistsCount > 0)
 			{
@@ -2545,7 +2556,7 @@ static void Announce_PrintTankControlHeader(int sessionIndex, int controlIndex, 
 	{
 		if (hasRockSection)
 		{
-			CPrintToChatAll("%t %t", "Tag", "BossTankHealthRemainingTimeRocks",
+			CPrintToChatAll("%t %t", "Tag1", "BossTankHealthRemainingTimeRocks",
 				bossName,
 				g_BossSessions[sessionIndex].tank.controls[controlIndex].remainingHealth,
 				aliveTime,
@@ -2554,7 +2565,7 @@ static void Announce_PrintTankControlHeader(int sessionIndex, int controlIndex, 
 		}
 		else
 		{
-			CPrintToChatAll("%t %t", "Tag", "BossTankHealthRemainingTime",
+			CPrintToChatAll("%t %t", "Tag1", "BossTankHealthRemainingTime",
 				bossName,
 				g_BossSessions[sessionIndex].tank.controls[controlIndex].remainingHealth,
 				aliveTime);
@@ -2564,7 +2575,7 @@ static void Announce_PrintTankControlHeader(int sessionIndex, int controlIndex, 
 	{
 		if (hasRockSection)
 		{
-			CPrintToChatAll("%t %t", "Tag", "BossTankDamageTitleTimeRocks",
+			CPrintToChatAll("%t %t", "Tag1", "BossTankDamageTitleTimeRocks",
 				bossName,
 				aliveTime,
 				rocksHit,
@@ -2572,7 +2583,7 @@ static void Announce_PrintTankControlHeader(int sessionIndex, int controlIndex, 
 		}
 		else
 		{
-			CPrintToChatAll("%t %t", "Tag", "BossTankDamageTitleTime",
+			CPrintToChatAll("%t %t", "Tag1", "BossTankDamageTitleTime",
 				bossName,
 				aliveTime);
 		}
@@ -2616,7 +2627,7 @@ void Announce_TankDamage(int sessionIndex, bool tankAlive)
 			{
 				if (hasRockSection)
 				{
-					CPrintToChatAll("%t %t", "Tag", "BossTankHealthRemainingTimeRocks",
+					CPrintToChatAll("%t %t", "Tag1", "BossTankHealthRemainingTimeRocks",
 						bossName,
 						g_BossSessions[sessionIndex].lastHealth,
 						aliveTime,
@@ -2625,7 +2636,7 @@ void Announce_TankDamage(int sessionIndex, bool tankAlive)
 				}
 				else
 				{
-					CPrintToChatAll("%t %t", "Tag", "BossTankHealthRemainingTime",
+					CPrintToChatAll("%t %t", "Tag1", "BossTankHealthRemainingTime",
 						bossName,
 						g_BossSessions[sessionIndex].lastHealth,
 						aliveTime);
@@ -2635,7 +2646,7 @@ void Announce_TankDamage(int sessionIndex, bool tankAlive)
 			{
 				if (hasRockSection)
 				{
-					CPrintToChatAll("%t %t", "Tag", "BossTankDamageTitleTimeRocks",
+					CPrintToChatAll("%t %t", "Tag1", "BossTankDamageTitleTimeRocks",
 						bossName,
 						aliveTime,
 						rocksHit,
@@ -2643,7 +2654,7 @@ void Announce_TankDamage(int sessionIndex, bool tankAlive)
 				}
 				else
 				{
-					CPrintToChatAll("%t %t", "Tag", "BossTankDamageTitleTime",
+					CPrintToChatAll("%t %t", "Tag1", "BossTankDamageTitleTime",
 						bossName,
 						aliveTime);
 				}

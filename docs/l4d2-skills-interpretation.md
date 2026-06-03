@@ -133,7 +133,7 @@ Nota de UX:
 - no obliga a que el announce visible use la palabra `chip`;
 - en `HunterSkeet`, el chat actual prioriza `damage/shots`, `perfect` y `assists`;
 - en `ChargerLevel`, el chat actual prioriza:
-  - `Level Perfecto`
+  - `Level (Perfecto)`
   - `Level`
   - `Level (dmg/shots)` si hubo daño previo propio del actor
   - `Level ..., asistido por ...` si hubo contribución ajena
@@ -185,7 +185,7 @@ Reglas:
 - las propiedades no forman parte del nombre base
   - `Skeet Perfecto`
   - `Skeet Headshot`
-  - `Level Perfecto`
+  - `Level (Perfecto)`
   - `SelfClear Headshot`
 - el nombre interno del enum no debe imprimirse directo en chat
   - evitar `PerfectSkeet`, `PerfectLevel`, `SkeetMelee`, `RockSkeet`
@@ -276,6 +276,8 @@ Ejemplo actual:
 En ese caso, el contexto adicional sigue siendo útil:
 
 - `perfect` marca que el Hunter murió en pounce y con vida completa;
+- en `JockeySkeet` y `JockeySkeetMelee`, `perfect` usa la misma idea:
+  muerte en la ventana valida, sin `chipDamage` y sin asistencia;
 - `headshot` existe como metadata cuando aplica a la jugada detectada.
 - `reportedHigh` marca que el deadstop ocurrió sobre un high pounce detectado por el juego.
 
@@ -385,8 +387,11 @@ Esto implica:
 
 Restricción adicional:
 
-- `JockeySkeetMelee` no necesita assists, porque la melee ya supera la vida máxima del `Jockey` y la jugada queda definida por un solo hit letal.
 - `JockeyJumpStop` tampoco necesita assists, porque la autoría del shove exitoso es unívoca.
+- `JockeySkeetMelee` sí puede exponer assists y `chipDamage` para distinguir:
+  - variante perfecta;
+  - kill solo del actor;
+  - kill con contribución previa de otros survivors.
 
 ---
 
@@ -508,6 +513,9 @@ No toda skill necesita assists.
 Hoy, las que sí pueden admitirlos de forma útil son:
 
 - `HunterSkeet`
+- `HunterSkeetMelee`
+- `JockeySkeet`
+- `JockeySkeetMelee`
 - `BoomerPop`
 - `SmokerSelfClear`
 - `ChargerLevel`

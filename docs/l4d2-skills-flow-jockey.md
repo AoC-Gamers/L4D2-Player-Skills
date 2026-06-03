@@ -132,6 +132,8 @@ Se emite `JockeySkeetMelee` cuando:
 
 - `damage`
 - `shots`
+- `chip_damage`
+- `assists`
 - `perfect`
 
 ### Flow
@@ -179,17 +181,22 @@ Reglas:
 - `shotgun` puede calificar aunque exista asistencia previa;
 - `Grenade Launcher` puede calificar sin `headshot`;
 - `snipers` y `Magnum` solo califican cuando el remate final fue `Headshot`;
-- no existe variante `Perfecta` para `JockeySkeet`.
+- existe variante `perfecta` para `JockeySkeet` cuando el remate mata al `Jockey` limpio:
+  - `shots == 1`
+  - `chip_damage == 0`
+  - sin asistencia
 - el announce de `JockeySkeet` es independiente de `JockeySkeetMelee`.
 
 ### Properties
 
 - `damage`
 - `shots`
+- `chip_damage`
 - `headshot`
 - `sniper`
 - `grenade_launcher`
 - `assists`
+- `perfect`
 
 ### Flow
 

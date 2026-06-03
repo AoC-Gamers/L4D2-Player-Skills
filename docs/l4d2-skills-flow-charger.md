@@ -63,7 +63,7 @@ Notas:
 - el announce visible ya no usa wording explicito de `chip`;
 - si hubo daño previo propio del actor, el chat imprime `Level ... (dmg/shots)`;
 - si hubo asistencia previa, el chat imprime `Level ..., asistido por ...`;
-- `Level Perfecto` reemplaza al `Level` limpio y ocupa su lugar en chat.
+- `Level (Perfecto)` reemplaza al `Level` limpio y ocupa su lugar en chat.
 
 ### Flow
 

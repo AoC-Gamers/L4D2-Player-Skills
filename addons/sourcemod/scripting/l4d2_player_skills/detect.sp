@@ -3281,7 +3281,19 @@ void Detect_TryEmitJockeyMeleeSkeet(Event event, int victim, int attacker, bool 
 			g_SkillEvents[eventIndex].damage = Skills_GetSpecialMaxHealth(L4D2ZombieClass_Jockey);
 			g_SkillEvents[eventIndex].actorDamage = g_SkillEvents[eventIndex].damage;
 			g_SkillEvents[eventIndex].shots = 1;
-			g_SkillEvents[eventIndex].perfect = true;
+			g_SkillEvents[eventIndex].actorChipDamage = Detect_GetSiLifePreviousDamageByAttacker(victim, attacker);
+			g_SkillEvents[eventIndex].actorChipShots = Detect_GetSiLifePreviousShotsByAttacker(victim, attacker);
+
+			int assistsFound = Detect_WriteSiTrackAssistsToEventAsSkillWindow(eventIndex, victim, attacker);
+			int assistDamageTotal = 0;
+			for (int i = 0; i < assistsFound && i < L4D2_SKILLS_MAX_EVENT_ASSISTS; i++)
+			{
+				assistDamageTotal += g_SkillEvents[eventIndex].assistDamage[i];
+			}
+
+			g_SkillEvents[eventIndex].chipDamage = g_SkillEvents[eventIndex].actorChipDamage + assistDamageTotal;
+			g_SkillEvents[eventIndex].perfect = g_SkillEvents[eventIndex].chipDamage == 0
+				&& assistsFound == 0;
 
 			Action result = API_FireSkillDetected(eventId, L4D2Skill_JockeySkeetMelee);
 			if (result < Plugin_Handled)
@@ -3352,6 +3364,9 @@ void Detect_TryEmitJockeyRangedSkeet(Event event, int victim, int attacker, bool
 		assistDamageTotal += g_SkillEvents[eventIndex].assistDamage[i];
 	}
 	g_SkillEvents[eventIndex].chipDamage = g_SkillEvents[eventIndex].actorChipDamage + assistDamageTotal;
+	g_SkillEvents[eventIndex].perfect = g_SkillEvents[eventIndex].shots == 1
+		&& g_SkillEvents[eventIndex].chipDamage == 0
+		&& assistsFound == 0;
 
 	Action result = API_FireSkillDetected(eventId, L4D2Skill_JockeySkeet);
 	if (result < Plugin_Handled)
