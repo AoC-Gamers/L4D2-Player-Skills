@@ -498,7 +498,7 @@ public void OnPluginStart()
 	g_smDetectCarPendingInfected = new StringMap();
 	g_smDetectCarPendingFlags = new StringMap();
 
-	g_cvDebug			   			= CreateConVar("sm_skills_debug", "0", "Debug bitmask for l4d2_player_skills. 0=None 1=Core 2=Event 4=Detect 8=Boss 16=Pin 32=Physics 64=Api 128=Announce 255=all.");
+	g_cvDebug			   			= CreateConVar("sm_skills_debug", "255", "Debug bitmask for l4d2_player_skills. 0=None 1=Core 2=Event 4=Detect 8=Boss 16=Pin 32=Physics 64=Api 128=Announce 255=all.");
 	g_cvEnable			   			= CreateConVar("sm_skills_enable", "1", "Enable the l4d2_player_skills plugin.");
 	g_cvAnnounceWitch				= CreateConVar("sm_skills_announce_witch", "7", "Bitmask for Witch announcements. 1=damage 2=misc 4=crown 7=all.");
 	g_cvAnnounceTank				= CreateConVar("sm_skills_announce_tank", "15", "Bitmask for Tank announcements. 1=damage 2=rock_skeet 4=rock_hit 8=ledge_hang 15=all.");

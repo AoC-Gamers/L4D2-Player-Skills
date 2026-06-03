@@ -15,6 +15,7 @@ bool g_bBossTankVictimLastHitClaw[MAXPLAYERS + 1];
 int g_iBossPendingTankTransitionSession = -1;
 #define L4D2_SKILLS_TANK_BOT_CONTROL_CONFIRM_TIME 0.10
 #define L4D2_SKILLS_TANK_TRIVIAL_BOT_CONTROL_TIME 1.0
+#define L4D2_SKILLS_TANK_TRANSITION_FLUSH_TIME 0.50
 
 // Initialization and reset.
 void Boss_Init()
@@ -170,6 +171,19 @@ static void Boss_QueuePendingTankBotControlConfirmation(int sessionIndex, int ta
 	CreateTimer(L4D2_SKILLS_TANK_BOT_CONTROL_CONFIRM_TIME, Boss_TimerConfirmPendingTankBotControl, pack, TIMER_FLAG_NO_MAPCHANGE);
 }
 
+static void Boss_QueuePendingTankTransitionFlush(int sessionIndex)
+{
+	if (sessionIndex < 0 || sessionIndex >= L4D2_SKILLS_MAX_BOSSES || g_BossSessions[sessionIndex].id == 0)
+	{
+		return;
+	}
+
+	DataPack pack = new DataPack();
+	pack.WriteCell(sessionIndex);
+	pack.WriteCell(g_BossSessions[sessionIndex].id);
+	CreateTimer(L4D2_SKILLS_TANK_TRANSITION_FLUSH_TIME, Boss_TimerFlushPendingTankTransition, pack, TIMER_FLAG_NO_MAPCHANGE);
+}
+
 static void Boss_ForcePendingTankBotControlNow(int sessionIndex, int tank)
 {
 	if (sessionIndex < 0
@@ -190,6 +204,57 @@ static void Boss_ForcePendingTankBotControlNow(int sessionIndex, int tank)
 	L4D2BossSession(sessionIndex).CancelPendingTankBotControl();
 	L4D2BossSession(sessionIndex).UpdateOwnerSnapshot(tank);
 	L4D2BossSession(sessionIndex).OpenTankControl(tank, startedAt);
+}
+
+static bool Boss_TankSessionHasMeaningfulBotActivity(int sessionIndex)
+{
+	if (sessionIndex < 0
+		|| sessionIndex >= L4D2_SKILLS_MAX_BOSSES
+		|| g_BossSessions[sessionIndex].id == 0
+		|| g_BossSessions[sessionIndex].type != L4D2Boss_Tank)
+	{
+		return false;
+	}
+
+	return g_BossSessions[sessionIndex].totalDamage > 0
+		|| g_BossSessions[sessionIndex].tank.punchesHit > 0
+		|| g_BossSessions[sessionIndex].tank.punchDamage > 0
+		|| g_BossSessions[sessionIndex].tank.hittablesHit > 0
+		|| g_BossSessions[sessionIndex].tank.hittableDamage > 0
+		|| g_BossSessions[sessionIndex].tank.incaps > 0
+		|| g_BossSessions[sessionIndex].tank.ledgeHangs > 0;
+}
+
+static bool Boss_PromotePendingTankBotControlForActivity(int sessionIndex, int tank, const char[] reason)
+{
+	if (sessionIndex < 0
+		|| sessionIndex >= L4D2_SKILLS_MAX_BOSSES
+		|| !IsValidTank(tank)
+		|| !IsFakeClient(tank)
+		|| g_BossSessions[sessionIndex].id == 0
+		|| g_BossSessions[sessionIndex].type != L4D2Boss_Tank
+		|| !g_BossSessions[sessionIndex].tank.pendingBotControl
+		|| g_BossSessions[sessionIndex].tank.pendingBotUserid != GetClientUserId(tank))
+	{
+		return false;
+	}
+
+	float startedAt = g_BossSessions[sessionIndex].tank.pendingBotStartedAt;
+	if (startedAt <= 0.0)
+	{
+		startedAt = GetGameTime();
+	}
+
+	L4D2BossSession(sessionIndex).CancelPendingTankBotControl();
+	L4D2BossSession(sessionIndex).UpdateOwnerSnapshot(tank);
+	L4D2BossSession(sessionIndex).OpenTankControl(tank, startedAt);
+	Skills_Debug(PlayerSkillsDebug_Boss,
+		"Promoted pending Tank bot control from activity. session=%d userid=%d startedAt=%.3f reason=%s",
+		g_BossSessions[sessionIndex].id,
+		GetClientUserId(tank),
+		startedAt,
+		reason);
+	return true;
 }
 
 static bool Boss_IsTrivialBotTankControl(L4D2TankControlEntry control)
@@ -502,6 +567,31 @@ Action Boss_TimerConfirmPendingTankBotControl(Handle timer, DataPack pack)
 	return Plugin_Stop;
 }
 
+Action Boss_TimerFlushPendingTankTransition(Handle timer, DataPack pack)
+{
+	pack.Reset();
+	int sessionIndex = pack.ReadCell();
+	int sessionId = pack.ReadCell();
+	delete pack;
+
+	if (!Boss_IsValidPendingTankTransitionSession(g_iBossPendingTankTransitionSession)
+		|| g_iBossPendingTankTransitionSession != sessionIndex
+		|| sessionIndex < 0
+		|| sessionIndex >= L4D2_SKILLS_MAX_BOSSES
+		|| g_BossSessions[sessionIndex].id != sessionId)
+	{
+		return Plugin_Stop;
+	}
+
+	Boss_ClearPendingTankTransition();
+	Skills_Debug(PlayerSkillsDebug_Boss,
+		"Flushed pending Tank transition by timeout. session=%d tank_id=%d",
+		g_BossSessions[sessionIndex].id,
+		g_BossSessions[sessionIndex].tank.lifecycleId);
+	Boss_FinalizeSessionImmediate(sessionIndex);
+	return Plugin_Stop;
+}
+
 void Boss_OnEntityCreated(int entity, const char[] classname)
 {
 	if (!Skills_IsEnabled())
@@ -647,6 +737,7 @@ void Boss_OnTankTakeDamagePost(int victim, int attacker, int inflictor, float da
 	}
 
 	L4D2BossSession(sessionIndex).RefreshOwner(victim);
+	Boss_PromotePendingTankBotControlForActivity(sessionIndex, victim, "damage_taken");
 
 	int previousHealth = g_BossSessions[sessionIndex].lastHealth;
 	int currentHealth = GetClientHealth(victim);
@@ -725,6 +816,8 @@ void Boss_EventPlayerHurt(Event event)
 		return;
 	}
 
+	Boss_PromotePendingTankBotControlForActivity(sessionIndex, attacker, "player_hurt");
+
 	char weapon[64];
 	event.GetString("weapon", weapon, sizeof(weapon));
 	bool isClaw = StrEqual(weapon, "tank_claw");
@@ -800,6 +893,8 @@ void Boss_EventPlayerIncapacitatedStart(Event event)
 		int sessionIndex = Boss_EnsureTankSession(attacker);
 		if (sessionIndex != -1)
 		{
+			Boss_PromotePendingTankBotControlForActivity(sessionIndex, attacker, "incap");
+
 			char weapon[64];
 			event.GetString("weapon", weapon, sizeof(weapon));
 			bool isClaw = StrEqual(weapon, "tank_claw");
@@ -889,6 +984,7 @@ void Boss_RecordTankLedgeHang(int attacker)
 		return;
 	}
 
+	Boss_PromotePendingTankBotControlForActivity(sessionIndex, attacker, "ledge_hang");
 	g_BossSessions[sessionIndex].tank.ledgeHangs++;
 }
 
@@ -1371,6 +1467,7 @@ static void Boss_QueuePendingTankTransition(int sessionIndex)
 		g_BossSessions[sessionIndex].id,
 		g_BossSessions[sessionIndex].tank.endReason,
 		g_BossSessions[sessionIndex].tank.lifecycleId);
+	Boss_QueuePendingTankTransitionFlush(sessionIndex);
 }
 
 static void Boss_MaybeMergePendingTankTransitionIntoSession(int targetSessionIndex)
@@ -1931,6 +2028,7 @@ void Boss_OnTankRockReleased(int tank)
 		return;
 	}
 
+	Boss_PromotePendingTankBotControlForActivity(sessionIndex, tank, "rock_throw");
 	L4D2BossSession(sessionIndex).RecordTankRockThrown();
 }
 
@@ -1947,6 +2045,7 @@ void Boss_OnTankRockConnected(int tank)
 		return;
 	}
 
+	Boss_PromotePendingTankBotControlForActivity(sessionIndex, tank, "rock_hit");
 	L4D2BossSession(sessionIndex).RecordTankRockHit();
 }
 
@@ -1979,6 +2078,12 @@ bool Boss_DidRoundEndInWipe()
 
 static void Boss_FinalizeSessionImmediate(int sessionIndex, bool allowAnnounce = true)
 {
+	if (g_BossSessions[sessionIndex].type == L4D2Boss_Witch
+		&& g_BossSessions[sessionIndex].state == L4D2BossState_Escaped)
+	{
+		allowAnnounce = false;
+	}
+
 	if (g_BossSessions[sessionIndex].type == L4D2Boss_Tank
 		&& g_BossSessions[sessionIndex].tank.endReason != L4D2TankSessionEnd_None)
 	{
@@ -2070,6 +2175,12 @@ void Boss_FinalizeSession(int sessionIndex)
 
 	if (g_BossSessions[sessionIndex].type == L4D2Boss_Tank)
 	{
+		int pendingTank = GetClientOfUserId(g_BossSessions[sessionIndex].tank.pendingBotUserid);
+		if (Boss_TankSessionHasMeaningfulBotActivity(sessionIndex))
+		{
+			Boss_PromotePendingTankBotControlForActivity(sessionIndex, pendingTank, "finalize");
+		}
+
 		L4D2BossSession(sessionIndex).CloseActiveTankControl(g_BossSessions[sessionIndex].closedAt);
 		Boss_NormalizeTankControls(sessionIndex);
 	}

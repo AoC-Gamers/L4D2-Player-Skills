@@ -936,21 +936,21 @@
 	"BossWitchHealthRemaining"
 	{
 		"#format"	"{1:d}"
-		"en"		"{blue}Witch {default}had {green}{1}{default} health remaining."
-		"es"		"{blue}Witch {default}quedo con {green}{1}{default} de vida restante."
+		"en"		"{blue}Witch had {green}{1}{blue} health remaining."
+		"es"		"{blue}Witch quedo con {green}{1}{blue} de vida restante."
 	}
 
 	"BossWitchHealthRemainingIncap"
 	{
 		"#format"	"{1:s},{2:d}"
-		"en"		"{blue}Witch {default}incapped {olive}{1}{default} and had {green}{2}{default} health remaining."
-		"es"		"{blue}Witch {default}dejo a {olive}{1}{default} incapacitado y quedo con {green}{2}{default} de vida restante."
+		"en"		"{blue}Witch {red}incapped {olive}{1}{red} and had {green}{2}{red} health remaining."
+		"es"		"{blue}Witch {red}incapacito a {olive}{1}{red} ({green}{2}{red} de vida)."
 	}
 
 	"BossWitchDamageTitle"
 	{
-		"en"		"{blue}Damage {default}dealt to {blue}Witch{default}:"
-		"es"		"{blue}Daño {default}hecho a la {blue}Witch{default}:"
+		"en"		"{blue}Damage dealt to Witch:"
+		"es"		"{blue}Daño hecho a la Witch:"
 	}
 
 	"BossDamageEntry"
@@ -990,13 +990,13 @@
 	"WitchKilledByTank"
 	{
 		"#format"	"{1:s}"
-		"en"		"{olive}Tank {red}({olive}{1}{red}) killed the {olive}Witch{default}."
-		"es"		"{olive}Tank {red}({olive}{1}{red}) mato a la {olive}Witch{default}."
+		"en"		"{blue}Tank {default}({olive}{1}{default}) killed the {olive}Witch{blue}."
+		"es"		"{blue}Tank {default}({olive}{1}{default}) mato a la {olive}Witch{blue}."
 	}
 
 	"WitchKilledByWorld"
 	{
-		"en"		"The {olive}Witch {default}died to map damage."
-		"es"		"La {olive}Witch {default}murio por daño del mapa."
+		"en"		"{blue}The {olive}Witch {blue}died to map damage."
+		"es"		"{blue}La {olive}Witch {blue}murio por daño del mapa."
 	}
 }
