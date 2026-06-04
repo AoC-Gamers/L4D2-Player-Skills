@@ -12,12 +12,17 @@ El proyecto consolida lógica que antes estaba repartida entre varios plugins y 
 ## Command Surface
 
 - `sm_skills`
-  - imprime el resumen de skills detectadas en chat
-  - además imprime una tabla comparativa en la consola del usuario
-  - sin argumentos: jugador actual
-  - `sm_skills <player>`: objetivo explícito
+  - imprime en chat el resumen de skills detectadas para un jugador
+  - además imprime en la consola del usuario una tabla comparativa del equipo survivor, infected o ambos según el contexto
+  - sin argumentos: usa al jugador actual como objetivo
+  - `sm_skills <player>`: usa un jugador específico como objetivo
+  - `sm_skills all`: fuerza la vista completa de survivor e infected
 - `sm_skills_stats`
-  - imprime la tabla comparativa de skills por equipo
+  - imprime en consola la tabla comparativa de skills por equipo
+  - sin argumentos: usa el equipo actual del jugador; si está como espectador muestra ambos equipos
+  - `sm_skills_stats surv`: muestra solo survivor
+  - `sm_skills_stats infect`: muestra solo infected
+  - `sm_skills_stats all`: muestra survivor e infected
 
 ## Announcement Routing
 
