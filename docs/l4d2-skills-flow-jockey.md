@@ -132,7 +132,16 @@ Se emite `JockeySkeetMelee` cuando:
 
 - `damage`
 - `shots`
+- `chip_damage`
+- `assists`
 - `perfect`
+
+Notas:
+
+- la ventana de `leap` decide si la kill califica como `JockeySkeetMelee`;
+- cuando se imprime `damage/shots`, ese stat visible puede resumir el total del
+  actor sobre la vida del `Jockey` que terminó dentro de la ventana válida;
+- `perfect` sigue dependiendo de una resolución limpia dentro de esa ventana.
 
 ### Flow
 
@@ -179,17 +188,30 @@ Reglas:
 - `shotgun` puede calificar aunque exista asistencia previa;
 - `Grenade Launcher` puede calificar sin `headshot`;
 - `snipers` y `Magnum` solo califican cuando el remate final fue `Headshot`;
-- no existe variante `Perfecta` para `JockeySkeet`.
+- existe variante `perfecta` para `JockeySkeet` cuando el remate mata al `Jockey` limpio:
+  - `shots == 1`
+  - `chip_damage == 0`
+  - sin asistencia
 - el announce de `JockeySkeet` es independiente de `JockeySkeetMelee`.
 
 ### Properties
 
 - `damage`
 - `shots`
+- `chip_damage`
 - `headshot`
 - `sniper`
 - `grenade_launcher`
 - `assists`
+- `perfect`
+
+Notas:
+
+- la ventana de `leap` decide si la muerte califica como `JockeySkeet`;
+- `perfect`, `headshot`, `chip_damage` y `assists` siguen evaluándose desde esa
+  ventana técnica;
+- el suffix visible `damage/shots` puede resumir el total del actor sobre la
+  vida del `Jockey`, no solo el remate final dentro del salto.
 
 ### Flow
 

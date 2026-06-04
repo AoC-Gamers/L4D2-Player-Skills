@@ -40,8 +40,8 @@ Ejemplos:
 
 - `HunterSkeet Perfecto`
 - `Skeet-Melee Perfecto`
-- `WitchCrown Perfecta`
-- `ChargerLevel Perfecto`
+- `WitchCrown (Perfecta)`
+- `ChargerLevel (Perfecto)`
 
 ### `Headshot`
 
@@ -242,7 +242,7 @@ Reglas generales:
 
 | Escenario | Candidatos | Gana | Nota |
 | --- | --- | --- | --- |
-| muerte clasifica como `WitchCrown` | `WitchCrown`, `WitchDead` | `WitchCrown` | incluye `Crown Perfecta` cuando corresponde |
+| muerte clasifica como `WitchCrown` | `WitchCrown`, `WitchDead` | `WitchCrown` | incluye `Crown (Perfecta)` cuando corresponde |
 | muerte normal sin crown | `WitchDead` | `WitchDead` | imprime summary de daño a la Witch |
 
 ---

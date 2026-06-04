@@ -68,6 +68,15 @@ Whitelist actual de armas para `HunterSkeet`:
 Fuera de esa whitelist, una kill en pounce no debe clasificarse como `HunterSkeet`;
 debe caer a `HunterKill`.
 
+Regla de shotgun:
+
+- `shotgun skeet` usa una cvar propia del plugin:
+  - `sm_skills_hunter_skeet_interrupt`
+- si ese valor queda en `0` o menos, el gate se desactiva;
+- en ese modo, cualquier kill válida en `pounce` con arma permitida puede
+  clasificarse como `HunterSkeet`, y la calidad se diferencia por
+  `perfect/chip/assists`.
+
 Regla visual actual:
 
 - `Skeet` es la habilidad base;
@@ -96,6 +105,12 @@ Notas:
 - ya no forma parte obligatoria del announce de chat para `HunterSkeet`;
 - `damage` y `actor_damage` deben representar daño efectivo de la jugada, no
   `raw damage` inflado del blast final;
+- la ventana de `pounce` decide si la jugada califica como `HunterSkeet`;
+- el suffix visible `damage/shots` puede resumir el total del actor sobre la
+  vida del `Hunter` hasta su muerte, aunque parte de ese total haya ocurrido
+  antes del remate técnico;
+- eso no cambia la evaluación de `perfect`, `assists` ni `headshot`, que sigue
+  dependiendo de la ventana técnica;
 - el announce visible usa:
   - `Skeet Headshot ... con {arma}`
   - `Skeet Perfecto ... con {arma}`
@@ -164,7 +179,18 @@ Nombre visible:
 ### Properties
 
 - `damage`
+- `chip_damage`
+- `assists`
 - `perfect`
+
+Notas:
+
+- la ventana de `pounce` sigue decidiendo si hubo `HunterSkeetMelee`;
+- cuando el announce imprime `damage/shots`, ese stat visible puede resumir la
+  contribución total del actor sobre la vida del `Hunter` que terminó dentro de
+  la ventana válida;
+- `perfect` sigue exigiendo que no exista chip ni asistencia relevante en la
+  ventana técnica.
 
 ### Flow
 

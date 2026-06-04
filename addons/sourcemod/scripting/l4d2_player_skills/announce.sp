@@ -189,6 +189,56 @@ void Announce_FormatSimpleKillStat(int damage, int count, char[] buffer, int max
 	FormatEx(buffer, maxlen, "%d/%d", damage, count);
 }
 
+int Announce_GetVisibleSkillDamageCap(int eventIndex)
+{
+	if (eventIndex < 0 || eventIndex >= L4D2_SKILLS_MAX_EVENTS)
+	{
+		return 0;
+	}
+
+	switch (g_SkillEvents[eventIndex].type)
+	{
+		case L4D2Skill_HunterSkeet, L4D2Skill_HunterSkeetMelee:
+		{
+			return Skills_GetSpecialMaxHealth(L4D2ZombieClass_Hunter);
+		}
+
+		case L4D2Skill_JockeySkeet, L4D2Skill_JockeySkeetMelee:
+		{
+			return Skills_GetSpecialMaxHealth(L4D2ZombieClass_Jockey);
+		}
+
+		case L4D2Skill_ChargerLevel:
+		{
+			return Skills_GetSpecialMaxHealth(L4D2ZombieClass_Charger);
+		}
+
+		case L4D2Skill_WitchCrown:
+		{
+			return Skills_GetWitchMaxHealth();
+		}
+	}
+
+	return 0;
+}
+
+int Announce_GetVisibleActorTotalDamage(int eventIndex)
+{
+	if (eventIndex < 0 || eventIndex >= L4D2_SKILLS_MAX_EVENTS)
+	{
+		return 0;
+	}
+
+	int totalDamage = g_SkillEvents[eventIndex].actorDamage + g_SkillEvents[eventIndex].actorChipDamage;
+	int damageCap = Announce_GetVisibleSkillDamageCap(eventIndex);
+	if (damageCap > 0 && totalDamage > damageCap)
+	{
+		totalDamage = damageCap;
+	}
+
+	return totalDamage;
+}
+
 void Announce_FormatAssistList(int eventIndex, char[] buffer, int maxlen)
 {
 	buffer[0] = '\0';
@@ -1667,9 +1717,11 @@ void Announce_Skill(int eventId)
 			char assistList[256];
 			char weaponName[64];
 			char actorStat[32];
+			int actorTotalDamage = Announce_GetVisibleActorTotalDamage(eventIndex);
+			int actorTotalShots = g_SkillEvents[eventIndex].shots + g_SkillEvents[eventIndex].actorChipShots;
 			Announce_FormatAssistList(eventIndex, assistList, sizeof(assistList));
 			Skills_GetWeaponDisplayName(g_SkillEvents[eventIndex].actorWeaponId, weaponName, sizeof(weaponName));
-			Format(actorStat, sizeof(actorStat), "%d/%d", g_SkillEvents[eventIndex].damage, g_SkillEvents[eventIndex].shots);
+			Format(actorStat, sizeof(actorStat), "%d/%d", actorTotalDamage, actorTotalShots);
 
 			if (g_SkillEvents[eventIndex].grenadeLauncher || g_SkillEvents[eventIndex].sniper)
 			{
@@ -1712,8 +1764,8 @@ void Announce_Skill(int eventId)
 					g_SkillEvents[eventIndex].shots == 1 ? "SkeetSingleShotAssisted" : "SkeetMultiShotAssisted",
 					actorName,
 					victimName,
-					g_SkillEvents[eventIndex].damage,
-					g_SkillEvents[eventIndex].shots,
+					actorTotalDamage,
+					actorTotalShots,
 					assistList);
 			}
 			else if (g_SkillEvents[eventIndex].shots == 1)
@@ -1721,16 +1773,16 @@ void Announce_Skill(int eventId)
 				CPrintToChatAll("%s %t", tag, "SkeetSingleShot",
 					actorName,
 					victimName,
-					g_SkillEvents[eventIndex].damage,
-					g_SkillEvents[eventIndex].shots);
+					actorTotalDamage,
+					actorTotalShots);
 			}
 			else
 			{
 				CPrintToChatAll("%s %t", tag, "SkeetMultiShot",
 					actorName,
 					victimName,
-					g_SkillEvents[eventIndex].damage,
-					g_SkillEvents[eventIndex].shots);
+					actorTotalDamage,
+					actorTotalShots);
 			}
 		}
 
@@ -1738,19 +1790,8 @@ void Announce_Skill(int eventId)
 		{
 			char assistList[256];
 			Announce_FormatAssistList(eventIndex, assistList, sizeof(assistList));
-			int assistDamageTotal = 0;
-			for (int i = 0; i < g_SkillEvents[eventIndex].assistsCount && i < L4D2_SKILLS_MAX_EVENT_ASSISTS; i++)
-			{
-				assistDamageTotal += g_SkillEvents[eventIndex].assistDamage[i];
-			}
-
-			int actorMeleeDamage = Skills_GetSpecialMaxHealth(L4D2ZombieClass_Hunter) - assistDamageTotal;
-			if (actorMeleeDamage < 0)
-			{
-				actorMeleeDamage = 0;
-			}
-
-			int actorMeleeShots = g_SkillEvents[eventIndex].actorChipShots + 1;
+			int actorMeleeDamage = Announce_GetVisibleActorTotalDamage(eventIndex);
+			int actorMeleeShots = g_SkillEvents[eventIndex].shots + g_SkillEvents[eventIndex].actorChipShots;
 			char meleeStat[64];
 			Announce_FormatSimpleKillStat(actorMeleeDamage, actorMeleeShots, meleeStat, sizeof(meleeStat));
 
@@ -1760,23 +1801,6 @@ void Announce_Skill(int eventId)
 					"SkeetMeleePerfect",
 					actorName,
 					victimName);
-			}
-			else if (g_SkillEvents[eventIndex].actorChipDamage > 0 && g_SkillEvents[eventIndex].assistsCount > 0)
-			{
-				CPrintToChatAll("%s %t", tag,
-					"SkeetMeleeStatAssist",
-					actorName,
-					victimName,
-					meleeStat,
-					assistList);
-			}
-			else if (g_SkillEvents[eventIndex].actorChipDamage > 0)
-			{
-				CPrintToChatAll("%s %t", tag,
-					"SkeetMeleeStat",
-					actorName,
-					victimName,
-					meleeStat);
 			}
 			else if (g_SkillEvents[eventIndex].assistsCount > 0)
 			{
@@ -1790,9 +1814,10 @@ void Announce_Skill(int eventId)
 			else
 			{
 				CPrintToChatAll("%s %t", tag,
-					"SkeetMelee",
+					"SkeetMeleeStat",
 					actorName,
-					victimName);
+					victimName,
+					meleeStat);
 			}
 		}
 
@@ -1843,9 +1868,37 @@ void Announce_Skill(int eventId)
 
 		case L4D2Skill_JockeySkeetMelee:
 		{
-			CPrintToChatAll("%s %t", tag, "JockeySkeetMelee",
-				actorName,
-				victimName);
+			char assistList[256];
+			char meleeStat[64];
+			int actorMeleeDamage = Announce_GetVisibleActorTotalDamage(eventIndex);
+			int actorMeleeShots = g_SkillEvents[eventIndex].shots + g_SkillEvents[eventIndex].actorChipShots;
+			Announce_FormatAssistList(eventIndex, assistList, sizeof(assistList));
+			Announce_FormatSimpleKillStat(actorMeleeDamage, actorMeleeShots, meleeStat, sizeof(meleeStat));
+
+			if (g_SkillEvents[eventIndex].perfect)
+			{
+				CPrintToChatAll("%s %t", tag,
+					"JockeySkeetMeleePerfect",
+					actorName,
+					victimName);
+			}
+			else if (g_SkillEvents[eventIndex].assistsCount > 0)
+			{
+				CPrintToChatAll("%s %t", tag,
+					"SkeetMeleeStatAssist",
+					actorName,
+					victimName,
+					meleeStat,
+					assistList);
+			}
+			else
+			{
+				CPrintToChatAll("%s %t", tag,
+					"SkeetMeleeStat",
+					actorName,
+					victimName,
+					meleeStat);
+			}
 		}
 
 		case L4D2Skill_JockeySkeet:
@@ -1853,8 +1906,10 @@ void Announce_Skill(int eventId)
 			char assistList[256];
 			char weaponName[64];
 			char actorStat[64];
+			int actorTotalDamage = Announce_GetVisibleActorTotalDamage(eventIndex);
+			int actorTotalShots = g_SkillEvents[eventIndex].shots + g_SkillEvents[eventIndex].actorChipShots;
 			Announce_FormatAssistList(eventIndex, assistList, sizeof(assistList));
-			Announce_FormatSimpleKillStat(g_SkillEvents[eventIndex].actorDamage, g_SkillEvents[eventIndex].shots, actorStat, sizeof(actorStat));
+			Announce_FormatSimpleKillStat(actorTotalDamage, actorTotalShots, actorStat, sizeof(actorStat));
 			Skills_GetWeaponDisplayName(g_SkillEvents[eventIndex].actorWeaponId, weaponName, sizeof(weaponName));
 			bool specialWeapon = g_SkillEvents[eventIndex].sniper
 				|| g_SkillEvents[eventIndex].grenadeLauncher
@@ -1877,6 +1932,17 @@ void Announce_Skill(int eventId)
 				else
 				{
 					CPrintToChatAll("%s %t", tag, "JockeySkeetHeadshot", actorName, victimName, actorStat);
+				}
+			}
+			else if (g_SkillEvents[eventIndex].perfect)
+			{
+				if (specialWeapon)
+				{
+					CPrintToChatAll("%s %t", tag, "JockeySkeetWeaponPerfect", actorName, victimName, weaponName);
+				}
+				else
+				{
+					CPrintToChatAll("%s %t", tag, "JockeySkeetPerfect", actorName, victimName);
 				}
 			}
 			else if (specialWeapon && g_SkillEvents[eventIndex].assistsCount > 0)
@@ -1915,6 +1981,12 @@ void Announce_Skill(int eventId)
 			}
 			else if (g_SkillEvents[eventIndex].zombieClass == view_as<int>(L4D2ZombieClass_Smoker) && !g_SkillEvents[eventIndex].withShove)
 			{
+				bool isTongueRelease = g_SkillEvents[eventIndex].timeA < 0.0;
+				if (isTongueRelease && g_cvAnnounceTongueReleaseMode != null && g_cvAnnounceTongueReleaseMode.IntValue >= SKILLS_PRINT_MODE_CONSOLE)
+				{
+					printMode = g_cvAnnounceTongueReleaseMode.IntValue;
+				}
+
 				char phrase[64];
 				strcopy(phrase, sizeof(phrase), "SpecialPinClear");
 
@@ -1993,13 +2065,20 @@ void Announce_Skill(int eventId)
 			}
 			else
 			{
+				int visibleDamage = g_SkillEvents[eventIndex].damage;
+				int maxHealth = Skills_GetSpecialMaxHealth(L4D2ZombieClass_Smoker);
+				if (maxHealth > 0 && visibleDamage > maxHealth)
+				{
+					visibleDamage = maxHealth;
+				}
+
 				CPrintToChatAll("%s %t", tag,
 					g_SkillEvents[eventIndex].headshot
 						? (g_SkillEvents[eventIndex].assistsCount > 0 ? "SmokerSelfClearHeadshotAssist" : "SmokerSelfClearHeadshot")
 						: (g_SkillEvents[eventIndex].assistsCount > 0 ? "SmokerSelfClearKillAssist" : "SmokerSelfClearKill"),
 					actorName,
 					victimName,
-					g_SkillEvents[eventIndex].damage,
+					visibleDamage,
 					g_SkillEvents[eventIndex].shots,
 					assistList);
 			}
@@ -2167,68 +2246,40 @@ void Announce_Skill(int eventId)
 			char assistList[256];
 			bool freedVictim = pinVictimName[0] != '\0';
 			Announce_FormatAssistList(eventIndex, assistList, sizeof(assistList));
-			int assistDamageTotal = 0;
-			for (int i = 0; i < g_SkillEvents[eventIndex].assistsCount && i < L4D2_SKILLS_MAX_EVENT_ASSISTS; i++)
-			{
-				assistDamageTotal += g_SkillEvents[eventIndex].assistDamage[i];
-			}
-
-			int actorLevelDamage = Skills_GetSpecialMaxHealth(L4D2ZombieClass_Charger) - assistDamageTotal;
-			if (actorLevelDamage < 0)
-			{
-				actorLevelDamage = 0;
-			}
-
-			int actorLevelShots = g_SkillEvents[eventIndex].actorChipDamage > 0
-				? g_SkillEvents[eventIndex].actorChipShots + 1
-				: 0;
-			char chipStat[64];
+			int actorLevelDamage = Announce_GetVisibleActorTotalDamage(eventIndex);
+			int actorLevelShots = g_SkillEvents[eventIndex].shots + g_SkillEvents[eventIndex].actorChipShots;
+			char actorStat[64];
 			Announce_FormatSimpleKillStat(
 				actorLevelDamage,
 				actorLevelShots,
-				chipStat,
-				sizeof(chipStat));
+				actorStat,
+				sizeof(actorStat));
 
 			if (g_SkillEvents[eventIndex].perfect)
 			{
 				CPrintToChatAll("%s %t", tag, freedVictim ? "ChargerLevelPerfectClear" : "ChargerLevelPerfect", actorName, victimName, pinVictimName);
 			}
-			else if (g_SkillEvents[eventIndex].actorChipDamage > 0 && g_SkillEvents[eventIndex].assistsCount > 0)
-			{
-				if (freedVictim)
-				{
-					CPrintToChatAll("%s %t", tag, "ChargerLevelStatAssistClear", actorName, victimName, chipStat, pinVictimName, assistList);
-				}
-				else
-				{
-					CPrintToChatAll("%s %t", tag, "ChargerLevelStatAssist", actorName, victimName, chipStat, assistList);
-				}
-			}
-			else if (g_SkillEvents[eventIndex].actorChipDamage > 0)
-			{
-				if (freedVictim)
-				{
-					CPrintToChatAll("%s %t", tag, "ChargerLevelStatClear", actorName, victimName, chipStat, pinVictimName);
-				}
-				else
-				{
-					CPrintToChatAll("%s %t", tag, "ChargerLevelStat", actorName, victimName, chipStat);
-				}
-			}
 			else if (g_SkillEvents[eventIndex].assistsCount > 0)
 			{
 				if (freedVictim)
 				{
-					CPrintToChatAll("%s %t", tag, "ChargerLevelAssistClear", actorName, victimName, pinVictimName, assistList);
+					CPrintToChatAll("%s %t", tag, "ChargerLevelStatAssistClear", actorName, victimName, actorStat, pinVictimName, assistList);
 				}
 				else
 				{
-					CPrintToChatAll("%s %t", tag, "ChargerLevelAssist", actorName, victimName, assistList);
+					CPrintToChatAll("%s %t", tag, "ChargerLevelStatAssist", actorName, victimName, actorStat, assistList);
 				}
 			}
 			else
 			{
-				CPrintToChatAll("%s %t", tag, freedVictim ? "ChargerLevelClear" : "ChargerLevel", actorName, victimName, pinVictimName);
+				if (freedVictim)
+				{
+					CPrintToChatAll("%s %t", tag, "ChargerLevelStatClear", actorName, victimName, actorStat, pinVictimName);
+				}
+				else
+				{
+					CPrintToChatAll("%s %t", tag, "ChargerLevelStat", actorName, victimName, actorStat);
+				}
 			}
 		}
 
@@ -2312,9 +2363,11 @@ void Announce_Skill(int eventId)
 		{
 			char crownStat[64];
 			char assistList[256];
+			int actorTotalDamage = Announce_GetVisibleActorTotalDamage(eventIndex);
+			int actorTotalShots = g_SkillEvents[eventIndex].shots + g_SkillEvents[eventIndex].actorChipShots;
 			Announce_FormatSimpleKillStat(
-				g_SkillEvents[eventIndex].actorDamage,
-				g_SkillEvents[eventIndex].shots,
+				actorTotalDamage,
+				actorTotalShots,
 				crownStat,
 				sizeof(crownStat));
 			Announce_FormatAssistList(eventIndex, assistList, sizeof(assistList));
@@ -2322,8 +2375,7 @@ void Announce_Skill(int eventId)
 			if (g_SkillEvents[eventIndex].perfect)
 			{
 				CPrintToChatAll("%s %t", tag, "WitchCrownPerfect",
-					actorName,
-					crownStat);
+					actorName);
 			}
 			else if (g_SkillEvents[eventIndex].assistsCount > 0)
 			{
@@ -2545,7 +2597,7 @@ static void Announce_PrintTankControlHeader(int sessionIndex, int controlIndex, 
 	{
 		if (hasRockSection)
 		{
-			CPrintToChatAll("%t %t", "Tag", "BossTankHealthRemainingTimeRocks",
+			CPrintToChatAll("%t %t", "Tag1", "BossTankHealthRemainingTimeRocks",
 				bossName,
 				g_BossSessions[sessionIndex].tank.controls[controlIndex].remainingHealth,
 				aliveTime,
@@ -2554,7 +2606,7 @@ static void Announce_PrintTankControlHeader(int sessionIndex, int controlIndex, 
 		}
 		else
 		{
-			CPrintToChatAll("%t %t", "Tag", "BossTankHealthRemainingTime",
+			CPrintToChatAll("%t %t", "Tag1", "BossTankHealthRemainingTime",
 				bossName,
 				g_BossSessions[sessionIndex].tank.controls[controlIndex].remainingHealth,
 				aliveTime);
@@ -2564,7 +2616,7 @@ static void Announce_PrintTankControlHeader(int sessionIndex, int controlIndex, 
 	{
 		if (hasRockSection)
 		{
-			CPrintToChatAll("%t %t", "Tag", "BossTankDamageTitleTimeRocks",
+			CPrintToChatAll("%t %t", "Tag1", "BossTankDamageTitleTimeRocks",
 				bossName,
 				aliveTime,
 				rocksHit,
@@ -2572,7 +2624,7 @@ static void Announce_PrintTankControlHeader(int sessionIndex, int controlIndex, 
 		}
 		else
 		{
-			CPrintToChatAll("%t %t", "Tag", "BossTankDamageTitleTime",
+			CPrintToChatAll("%t %t", "Tag1", "BossTankDamageTitleTime",
 				bossName,
 				aliveTime);
 		}
@@ -2616,7 +2668,7 @@ void Announce_TankDamage(int sessionIndex, bool tankAlive)
 			{
 				if (hasRockSection)
 				{
-					CPrintToChatAll("%t %t", "Tag", "BossTankHealthRemainingTimeRocks",
+					CPrintToChatAll("%t %t", "Tag1", "BossTankHealthRemainingTimeRocks",
 						bossName,
 						g_BossSessions[sessionIndex].lastHealth,
 						aliveTime,
@@ -2625,7 +2677,7 @@ void Announce_TankDamage(int sessionIndex, bool tankAlive)
 				}
 				else
 				{
-					CPrintToChatAll("%t %t", "Tag", "BossTankHealthRemainingTime",
+					CPrintToChatAll("%t %t", "Tag1", "BossTankHealthRemainingTime",
 						bossName,
 						g_BossSessions[sessionIndex].lastHealth,
 						aliveTime);
@@ -2635,7 +2687,7 @@ void Announce_TankDamage(int sessionIndex, bool tankAlive)
 			{
 				if (hasRockSection)
 				{
-					CPrintToChatAll("%t %t", "Tag", "BossTankDamageTitleTimeRocks",
+					CPrintToChatAll("%t %t", "Tag1", "BossTankDamageTitleTimeRocks",
 						bossName,
 						aliveTime,
 						rocksHit,
@@ -2643,7 +2695,7 @@ void Announce_TankDamage(int sessionIndex, bool tankAlive)
 				}
 				else
 				{
-					CPrintToChatAll("%t %t", "Tag", "BossTankDamageTitleTime",
+					CPrintToChatAll("%t %t", "Tag1", "BossTankDamageTitleTime",
 						bossName,
 						aliveTime);
 				}

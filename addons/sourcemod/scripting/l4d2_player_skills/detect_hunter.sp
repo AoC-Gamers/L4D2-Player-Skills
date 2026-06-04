@@ -24,6 +24,21 @@ bool Detect_IsHunterEffectivelyPouncing(int hunter)
 		&& (GetGameTime() - g_fDetectHunterPounceSeenAt[hunter]) <= L4D2_SKILLS_HUNTER_POUNCE_GRACE_TIME;
 }
 
+bool Detect_IsHunterAirborneForSkeet(int hunter)
+{
+	return hunter > 0
+		&& hunter <= MaxClients
+		&& IsClientInGame(hunter)
+		&& IsPlayerAlive(hunter)
+		&& !(GetEntityFlags(hunter) & FL_ONGROUND);
+}
+
+bool Detect_IsHunterSkeetWindowActive(int hunter)
+{
+	return Detect_IsHunterEffectivelyPouncing(hunter)
+		&& Detect_IsHunterAirborneForSkeet(hunter);
+}
+
 void Detect_ResetHunterPounceState(int hunter)
 {
 	g_bDetectHunterPouncing[hunter] = false;
@@ -31,6 +46,7 @@ void Detect_ResetHunterPounceState(int hunter)
 	g_DetectHunterShotWindow[hunter].teamBlastDamage = 0;
 	g_DetectHunterShotWindow[hunter].overkillDamage = 0;
 	g_DetectHunterShotWindow[hunter].killedPouncing = false;
+	Detect_CloseSkeetQualityWindow(hunter);
 
 	for (int attacker = 1; attacker <= MaxClients; attacker++)
 	{

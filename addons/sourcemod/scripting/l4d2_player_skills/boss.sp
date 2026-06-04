@@ -15,6 +15,7 @@ bool g_bBossTankVictimLastHitClaw[MAXPLAYERS + 1];
 int g_iBossPendingTankTransitionSession = -1;
 #define L4D2_SKILLS_TANK_BOT_CONTROL_CONFIRM_TIME 0.10
 #define L4D2_SKILLS_TANK_TRIVIAL_BOT_CONTROL_TIME 1.0
+#define L4D2_SKILLS_TANK_TRANSITION_FLUSH_TIME 0.50
 
 // Initialization and reset.
 void Boss_Init()
@@ -170,6 +171,19 @@ static void Boss_QueuePendingTankBotControlConfirmation(int sessionIndex, int ta
 	CreateTimer(L4D2_SKILLS_TANK_BOT_CONTROL_CONFIRM_TIME, Boss_TimerConfirmPendingTankBotControl, pack, TIMER_FLAG_NO_MAPCHANGE);
 }
 
+static void Boss_QueuePendingTankTransitionFlush(int sessionIndex)
+{
+	if (sessionIndex < 0 || sessionIndex >= L4D2_SKILLS_MAX_BOSSES || g_BossSessions[sessionIndex].id == 0)
+	{
+		return;
+	}
+
+	DataPack pack = new DataPack();
+	pack.WriteCell(sessionIndex);
+	pack.WriteCell(g_BossSessions[sessionIndex].id);
+	CreateTimer(L4D2_SKILLS_TANK_TRANSITION_FLUSH_TIME, Boss_TimerFlushPendingTankTransition, pack, TIMER_FLAG_NO_MAPCHANGE);
+}
+
 static void Boss_ForcePendingTankBotControlNow(int sessionIndex, int tank)
 {
 	if (sessionIndex < 0
@@ -190,6 +204,57 @@ static void Boss_ForcePendingTankBotControlNow(int sessionIndex, int tank)
 	L4D2BossSession(sessionIndex).CancelPendingTankBotControl();
 	L4D2BossSession(sessionIndex).UpdateOwnerSnapshot(tank);
 	L4D2BossSession(sessionIndex).OpenTankControl(tank, startedAt);
+}
+
+static bool Boss_TankSessionHasMeaningfulBotActivity(int sessionIndex)
+{
+	if (sessionIndex < 0
+		|| sessionIndex >= L4D2_SKILLS_MAX_BOSSES
+		|| g_BossSessions[sessionIndex].id == 0
+		|| g_BossSessions[sessionIndex].type != L4D2Boss_Tank)
+	{
+		return false;
+	}
+
+	return g_BossSessions[sessionIndex].totalDamage > 0
+		|| g_BossSessions[sessionIndex].tank.punchesHit > 0
+		|| g_BossSessions[sessionIndex].tank.punchDamage > 0
+		|| g_BossSessions[sessionIndex].tank.hittablesHit > 0
+		|| g_BossSessions[sessionIndex].tank.hittableDamage > 0
+		|| g_BossSessions[sessionIndex].tank.incaps > 0
+		|| g_BossSessions[sessionIndex].tank.ledgeHangs > 0;
+}
+
+static bool Boss_PromotePendingTankBotControlForActivity(int sessionIndex, int tank, const char[] reason)
+{
+	if (sessionIndex < 0
+		|| sessionIndex >= L4D2_SKILLS_MAX_BOSSES
+		|| !IsValidTank(tank)
+		|| !IsFakeClient(tank)
+		|| g_BossSessions[sessionIndex].id == 0
+		|| g_BossSessions[sessionIndex].type != L4D2Boss_Tank
+		|| !g_BossSessions[sessionIndex].tank.pendingBotControl
+		|| g_BossSessions[sessionIndex].tank.pendingBotUserid != GetClientUserId(tank))
+	{
+		return false;
+	}
+
+	float startedAt = g_BossSessions[sessionIndex].tank.pendingBotStartedAt;
+	if (startedAt <= 0.0)
+	{
+		startedAt = GetGameTime();
+	}
+
+	L4D2BossSession(sessionIndex).CancelPendingTankBotControl();
+	L4D2BossSession(sessionIndex).UpdateOwnerSnapshot(tank);
+	L4D2BossSession(sessionIndex).OpenTankControl(tank, startedAt);
+	Skills_Debug(PlayerSkillsDebug_Boss,
+		"Promoted pending Tank bot control from activity. session=%d userid=%d startedAt=%.3f reason=%s",
+		g_BossSessions[sessionIndex].id,
+		GetClientUserId(tank),
+		startedAt,
+		reason);
+	return true;
 }
 
 static bool Boss_IsTrivialBotTankControl(L4D2TankControlEntry control)
@@ -502,6 +567,31 @@ Action Boss_TimerConfirmPendingTankBotControl(Handle timer, DataPack pack)
 	return Plugin_Stop;
 }
 
+Action Boss_TimerFlushPendingTankTransition(Handle timer, DataPack pack)
+{
+	pack.Reset();
+	int sessionIndex = pack.ReadCell();
+	int sessionId = pack.ReadCell();
+	delete pack;
+
+	if (!Boss_IsValidPendingTankTransitionSession(g_iBossPendingTankTransitionSession)
+		|| g_iBossPendingTankTransitionSession != sessionIndex
+		|| sessionIndex < 0
+		|| sessionIndex >= L4D2_SKILLS_MAX_BOSSES
+		|| g_BossSessions[sessionIndex].id != sessionId)
+	{
+		return Plugin_Stop;
+	}
+
+	Boss_ClearPendingTankTransition();
+	Skills_Debug(PlayerSkillsDebug_Boss,
+		"Flushed pending Tank transition by timeout. session=%d tank_id=%d",
+		g_BossSessions[sessionIndex].id,
+		g_BossSessions[sessionIndex].tank.lifecycleId);
+	Boss_FinalizeSessionImmediate(sessionIndex);
+	return Plugin_Stop;
+}
+
 void Boss_OnEntityCreated(int entity, const char[] classname)
 {
 	if (!Skills_IsEnabled())
@@ -647,6 +737,7 @@ void Boss_OnTankTakeDamagePost(int victim, int attacker, int inflictor, float da
 	}
 
 	L4D2BossSession(sessionIndex).RefreshOwner(victim);
+	Boss_PromotePendingTankBotControlForActivity(sessionIndex, victim, "damage_taken");
 
 	int previousHealth = g_BossSessions[sessionIndex].lastHealth;
 	int currentHealth = GetClientHealth(victim);
@@ -725,6 +816,8 @@ void Boss_EventPlayerHurt(Event event)
 		return;
 	}
 
+	Boss_PromotePendingTankBotControlForActivity(sessionIndex, attacker, "player_hurt");
+
 	char weapon[64];
 	event.GetString("weapon", weapon, sizeof(weapon));
 	bool isClaw = StrEqual(weapon, "tank_claw");
@@ -800,6 +893,8 @@ void Boss_EventPlayerIncapacitatedStart(Event event)
 		int sessionIndex = Boss_EnsureTankSession(attacker);
 		if (sessionIndex != -1)
 		{
+			Boss_PromotePendingTankBotControlForActivity(sessionIndex, attacker, "incap");
+
 			char weapon[64];
 			event.GetString("weapon", weapon, sizeof(weapon));
 			bool isClaw = StrEqual(weapon, "tank_claw");
@@ -889,6 +984,7 @@ void Boss_RecordTankLedgeHang(int attacker)
 		return;
 	}
 
+	Boss_PromotePendingTankBotControlForActivity(sessionIndex, attacker, "ledge_hang");
 	g_BossSessions[sessionIndex].tank.ledgeHangs++;
 }
 
@@ -1227,6 +1323,133 @@ void Boss_HookWitchDamageEntity(int sessionIndex, int witch)
 	g_BossSessions[sessionIndex].witch.damageHooksAttached = true;
 }
 
+void Boss_OpenWitchCrownQualityWindow(int sessionIndex)
+{
+	if (sessionIndex < 0 || sessionIndex >= L4D2_SKILLS_MAX_BOSSES)
+	{
+		return;
+	}
+
+	g_BossSessions[sessionIndex].witch.crownQualityWindowActive = true;
+	for (int entry = 0; entry < L4D2_SKILLS_MAX_DAMAGE_ENTRIES; entry++)
+	{
+		g_BossSessions[sessionIndex].witch.crownQualityUserids[entry] = 0;
+		g_BossSessions[sessionIndex].witch.crownQualityAccountIds[entry] = 0;
+		g_BossSessions[sessionIndex].witch.crownQualityBots[entry] = false;
+		g_BossSessions[sessionIndex].witch.crownQualitySurvivorCharacters[entry] = L4D2Util_SurvivorCharacter_Invalid;
+		g_BossSessions[sessionIndex].witch.crownQualityDamage[entry] = 0;
+		g_BossSessions[sessionIndex].witch.crownQualityShots[entry] = 0;
+
+		if (!g_BossDamage[sessionIndex][entry].active)
+		{
+			continue;
+		}
+
+		g_BossSessions[sessionIndex].witch.crownQualityUserids[entry] = g_BossDamage[sessionIndex][entry].player.userid;
+		g_BossSessions[sessionIndex].witch.crownQualityAccountIds[entry] = g_BossDamage[sessionIndex][entry].player.accountId;
+		g_BossSessions[sessionIndex].witch.crownQualityBots[entry] = g_BossDamage[sessionIndex][entry].player.bot;
+		g_BossSessions[sessionIndex].witch.crownQualitySurvivorCharacters[entry] = g_BossDamage[sessionIndex][entry].player.character;
+		g_BossSessions[sessionIndex].witch.crownQualityDamage[entry] = g_BossDamage[sessionIndex][entry].damage;
+		g_BossSessions[sessionIndex].witch.crownQualityShots[entry] = g_BossDamage[sessionIndex][entry].shots;
+	}
+}
+
+void Boss_LogWitchCrownQuality(int sessionIndex, int killer, int eventIndex, const char[] stage)
+{
+	if (!Skills_IsDebugEnabled(PlayerSkillsDebug_Boss)
+		|| sessionIndex < 0
+		|| sessionIndex >= L4D2_SKILLS_MAX_BOSSES
+		|| eventIndex < 0
+		|| eventIndex >= L4D2_SKILLS_MAX_EVENTS)
+	{
+		return;
+	}
+
+	char killerName[64];
+	if (IsValidSurvivor(killer))
+	{
+		FormatEx(killerName, sizeof(killerName), "%N", killer);
+	}
+	else
+	{
+		strcopy(killerName, sizeof(killerName), "<none>");
+	}
+
+	int assistDamageTotal = 0;
+	for (int i = 0; i < g_SkillEvents[eventIndex].assistsCount && i < L4D2_SKILLS_MAX_EVENT_ASSISTS; i++)
+	{
+		assistDamageTotal += g_SkillEvents[eventIndex].assistDamage[i];
+	}
+
+	Skills_Debug(PlayerSkillsDebug_Boss,
+		"Witch crown quality. session=%d killer=%d killer_name=%s stage=%s actor_damage=%d shots=%d actor_chip=%d actor_chip_shots=%d assist_damage=%d assists=%d chip=%d crown=%d perfect=%d oneshot=%d melee_only=%d",
+		g_BossSessions[sessionIndex].id,
+		killer,
+		killerName,
+		stage,
+		g_SkillEvents[eventIndex].actorDamage,
+		g_SkillEvents[eventIndex].shots,
+		g_SkillEvents[eventIndex].actorChipDamage,
+		g_SkillEvents[eventIndex].actorChipShots,
+		assistDamageTotal,
+		g_SkillEvents[eventIndex].assistsCount,
+		g_SkillEvents[eventIndex].chipDamage,
+		g_SkillEvents[eventIndex].crown ? 1 : 0,
+		g_SkillEvents[eventIndex].perfect ? 1 : 0,
+		g_BossSessions[sessionIndex].witch.pendingWitchOneShot ? 1 : 0,
+		g_BossSessions[sessionIndex].witch.pendingWitchMeleeOnly ? 1 : 0);
+}
+
+int Boss_GetWitchCrownSnapshotDamageByAttacker(int sessionIndex, int attacker)
+{
+	if (sessionIndex < 0 || sessionIndex >= L4D2_SKILLS_MAX_BOSSES
+		|| !IsValidSurvivor(attacker)
+		|| !g_BossSessions[sessionIndex].witch.crownQualityWindowActive)
+	{
+		return 0;
+	}
+
+	for (int entry = 0; entry < L4D2_SKILLS_MAX_DAMAGE_ENTRIES; entry++)
+	{
+		if (Skills_IsClientMatchingIdentity(
+			attacker,
+			g_BossSessions[sessionIndex].witch.crownQualityAccountIds[entry],
+			g_BossSessions[sessionIndex].witch.crownQualityBots[entry],
+			g_BossSessions[sessionIndex].witch.crownQualitySurvivorCharacters[entry],
+			g_BossSessions[sessionIndex].witch.crownQualityUserids[entry]))
+		{
+			return g_BossSessions[sessionIndex].witch.crownQualityDamage[entry];
+		}
+	}
+
+	return 0;
+}
+
+int Boss_GetWitchCrownSnapshotShotsByAttacker(int sessionIndex, int attacker)
+{
+	if (sessionIndex < 0 || sessionIndex >= L4D2_SKILLS_MAX_BOSSES
+		|| !IsValidSurvivor(attacker)
+		|| !g_BossSessions[sessionIndex].witch.crownQualityWindowActive)
+	{
+		return 0;
+	}
+
+	for (int entry = 0; entry < L4D2_SKILLS_MAX_DAMAGE_ENTRIES; entry++)
+	{
+		if (Skills_IsClientMatchingIdentity(
+			attacker,
+			g_BossSessions[sessionIndex].witch.crownQualityAccountIds[entry],
+			g_BossSessions[sessionIndex].witch.crownQualityBots[entry],
+			g_BossSessions[sessionIndex].witch.crownQualitySurvivorCharacters[entry],
+			g_BossSessions[sessionIndex].witch.crownQualityUserids[entry]))
+		{
+			return g_BossSessions[sessionIndex].witch.crownQualityShots[entry];
+		}
+	}
+
+	return 0;
+}
+
 int Boss_FindFreeSession()
 {
 	for (int index = 0; index < L4D2_SKILLS_MAX_BOSSES; index++)
@@ -1371,6 +1594,7 @@ static void Boss_QueuePendingTankTransition(int sessionIndex)
 		g_BossSessions[sessionIndex].id,
 		g_BossSessions[sessionIndex].tank.endReason,
 		g_BossSessions[sessionIndex].tank.lifecycleId);
+	Boss_QueuePendingTankTransitionFlush(sessionIndex);
 }
 
 static void Boss_MaybeMergePendingTankTransitionIntoSession(int targetSessionIndex)
@@ -1931,6 +2155,7 @@ void Boss_OnTankRockReleased(int tank)
 		return;
 	}
 
+	Boss_PromotePendingTankBotControlForActivity(sessionIndex, tank, "rock_throw");
 	L4D2BossSession(sessionIndex).RecordTankRockThrown();
 }
 
@@ -1947,6 +2172,7 @@ void Boss_OnTankRockConnected(int tank)
 		return;
 	}
 
+	Boss_PromotePendingTankBotControlForActivity(sessionIndex, tank, "rock_hit");
 	L4D2BossSession(sessionIndex).RecordTankRockHit();
 }
 
@@ -1979,6 +2205,12 @@ bool Boss_DidRoundEndInWipe()
 
 static void Boss_FinalizeSessionImmediate(int sessionIndex, bool allowAnnounce = true)
 {
+	if (g_BossSessions[sessionIndex].type == L4D2Boss_Witch
+		&& g_BossSessions[sessionIndex].state == L4D2BossState_Escaped)
+	{
+		allowAnnounce = false;
+	}
+
 	if (g_BossSessions[sessionIndex].type == L4D2Boss_Tank
 		&& g_BossSessions[sessionIndex].tank.endReason != L4D2TankSessionEnd_None)
 	{
@@ -2070,6 +2302,12 @@ void Boss_FinalizeSession(int sessionIndex)
 
 	if (g_BossSessions[sessionIndex].type == L4D2Boss_Tank)
 	{
+		int pendingTank = GetClientOfUserId(g_BossSessions[sessionIndex].tank.pendingBotUserid);
+		if (Boss_TankSessionHasMeaningfulBotActivity(sessionIndex))
+		{
+			Boss_PromotePendingTankBotControlForActivity(sessionIndex, pendingTank, "finalize");
+		}
+
 		L4D2BossSession(sessionIndex).CloseActiveTankControl(g_BossSessions[sessionIndex].closedAt);
 		Boss_NormalizeTankControls(sessionIndex);
 	}
@@ -2191,6 +2429,10 @@ Action Boss_OnWitchTakeDamage(int witch, int &attacker, int &inflictor, float &d
 		g_BossSessions[sessionIndex].witch.lastBlastStartTime = now;
 		g_BossSessions[sessionIndex].witch.lastBlastDamage = 0;
 		g_BossSessions[sessionIndex].witch.lastBlastRawDamage = 0.0;
+		if (shotgunBlast && IsValidSurvivor(attacker))
+		{
+			Boss_OpenWitchCrownQualityWindow(sessionIndex);
+		}
 	}
 
 	return Plugin_Continue;
@@ -2286,6 +2528,8 @@ void Boss_CreateWitchDeadEvent(int sessionIndex, int killer)
 
 	int killerTotalDamage = Boss_GetDamageEntryDamage(sessionIndex, killer);
 	int killerShots = Boss_GetDamageEntryShots(sessionIndex, killer);
+	int killerSnapshotDamage = Boss_GetWitchCrownSnapshotDamageByAttacker(sessionIndex, killer);
+	int killerSnapshotShots = Boss_GetWitchCrownSnapshotShotsByAttacker(sessionIndex, killer);
 	int actualDamage = g_BossSessions[sessionIndex].witch.lastShotIsShotgun
 		? g_BossSessions[sessionIndex].witch.lastBlastDamage
 		: g_BossSessions[sessionIndex].witch.lastShotDamage;
@@ -2347,7 +2591,6 @@ void Boss_CreateWitchDeadEvent(int sessionIndex, int killer)
 	bool crown = g_BossSessions[sessionIndex].witch.lastShotAttacker == killer
 		&& g_BossSessions[sessionIndex].witch.lastShotIsShotgun
 		&& actualDamage >= preBlastHealth;
-	int chipDamage = g_BossSessions[sessionIndex].maxHealth - actualDamage;
 
 	L4D2SkillType eventType = crown ? L4D2Skill_WitchCrown : L4D2Skill_WitchDead;
 	int eventId = Skills_CreateEvent(eventType);
@@ -2361,46 +2604,35 @@ void Boss_CreateWitchDeadEvent(int sessionIndex, int killer)
 		g_SkillEvents[eventIndex].damageScope = L4D2SkillDamageScope_SkillWindow;
 	g_SkillEvents[eventIndex].actorDamage = actualDamage;
 	g_SkillEvents[eventIndex].damage = actualDamage;
-	g_SkillEvents[eventIndex].chipDamage = chipDamage < 0 ? 0 : chipDamage;
+	g_SkillEvents[eventIndex].actorChipDamage = 0;
+	g_SkillEvents[eventIndex].actorChipShots = 0;
 	g_SkillEvents[eventIndex].shots = killerShots;
 	g_SkillEvents[eventIndex].crown = crown;
 	g_SkillEvents[eventIndex].startled = g_BossSessions[sessionIndex].witch.startled;
 	g_SkillEvents[eventIndex].actor2 = g_BossSessions[sessionIndex].id;
-	Boss_FillWitchAssistData(sessionIndex, killer, eventIndex);
+
 	if (g_SkillEvents[eventIndex].crown)
 	{
-		int totalAssistDamage = 0;
-		for (int assistIndex = 0; assistIndex < g_SkillEvents[eventIndex].assistsCount; assistIndex++)
+		g_SkillEvents[eventIndex].shots = killerShots - killerSnapshotShots;
+		if (g_SkillEvents[eventIndex].shots < 1 && actualDamage > 0)
 		{
-			totalAssistDamage += g_SkillEvents[eventIndex].assistDamage[assistIndex];
+			g_SkillEvents[eventIndex].shots = 1;
 		}
 
-		int normalizedActorDamage = g_BossSessions[sessionIndex].maxHealth - totalAssistDamage;
-		if (normalizedActorDamage < 0)
-		{
-			normalizedActorDamage = 0;
-		}
-		else if (normalizedActorDamage > g_BossSessions[sessionIndex].maxHealth)
-		{
-			normalizedActorDamage = g_BossSessions[sessionIndex].maxHealth;
-		}
-
-		g_SkillEvents[eventIndex].actorDamage = normalizedActorDamage;
-		g_SkillEvents[eventIndex].damage = normalizedActorDamage;
-		g_SkillEvents[eventIndex].chipDamage = normalizedActorDamage - actualDamage;
-		if (g_SkillEvents[eventIndex].chipDamage < 0)
-		{
-			g_SkillEvents[eventIndex].chipDamage = 0;
-		}
+		Boss_FillWitchCrownAssistData(sessionIndex, killer, eventIndex);
+		g_SkillEvents[eventIndex].actorChipDamage = killerSnapshotDamage;
+		g_SkillEvents[eventIndex].actorChipShots = killerSnapshotShots;
+		g_SkillEvents[eventIndex].chipDamage = g_SkillEvents[eventIndex].actorChipDamage + Boss_GetSkillEventAssistDamageTotal(eventIndex);
+		g_SkillEvents[eventIndex].perfect = !g_BossSessions[sessionIndex].witch.pendingWitchMeleeOnly
+			&& g_SkillEvents[eventIndex].shots == 1
+			&& g_SkillEvents[eventIndex].actorChipDamage == 0
+			&& g_SkillEvents[eventIndex].assistsCount == 0;
 	}
-	g_SkillEvents[eventIndex].perfect = g_BossSessions[sessionIndex].witch.pendingWitchOneShot
-		&& !g_BossSessions[sessionIndex].witch.pendingWitchMeleeOnly
-		&& g_SkillEvents[eventIndex].assistsCount == 0;
-	if (g_SkillEvents[eventIndex].crown
-		&& !g_BossSessions[sessionIndex].witch.pendingWitchOneShot
-		&& g_SkillEvents[eventIndex].shots < 2)
+	else
 	{
-		g_SkillEvents[eventIndex].shots = 2;
+		Boss_FillWitchAssistData(sessionIndex, killer, eventIndex);
+		g_SkillEvents[eventIndex].chipDamage = 0;
+		g_SkillEvents[eventIndex].perfect = false;
 	}
 
 	if (g_SkillEvents[eventIndex].crown)
@@ -2409,13 +2641,17 @@ void Boss_CreateWitchDeadEvent(int sessionIndex, int killer)
 		g_BossSessions[sessionIndex].witch.crowner.Capture(killer);
 	}
 
+	Boss_LogWitchCrownQuality(sessionIndex, killer, eventIndex, "death_emit");
+
 	Skills_Debug(PlayerSkillsDebug_Boss,
-		"Witch dead event built. session=%d killer=%d damage=%d actor_damage=%d chip=%d shots=%d killer_total=%d killer_shots=%d crown=%d perfect=%d assists=%d oneshot=%d melee_only=%d recovered=%d recovered_blast=%d shotgun=%d blast=%d shot=%d",
+		"Witch dead event built. session=%d killer=%d damage=%d actor_damage=%d chip=%d actor_chip=%d actor_chip_shots=%d shots=%d killer_total=%d killer_shots=%d crown=%d perfect=%d assists=%d oneshot=%d melee_only=%d recovered=%d recovered_blast=%d shotgun=%d blast=%d shot=%d",
 		g_BossSessions[sessionIndex].id,
 		killer,
 		g_SkillEvents[eventIndex].damage,
 		g_SkillEvents[eventIndex].actorDamage,
 		g_SkillEvents[eventIndex].chipDamage,
+		g_SkillEvents[eventIndex].actorChipDamage,
+		g_SkillEvents[eventIndex].actorChipShots,
 		g_SkillEvents[eventIndex].shots,
 		killerTotalDamage,
 		killerShots,
@@ -2532,6 +2768,71 @@ void Boss_FillWitchAssistData(int sessionIndex, int killer, int eventIndex)
 		}
 	}
 
+	Boss_FinalizeWitchAssistData(eventIndex);
+}
+
+void Boss_FillWitchCrownAssistData(int sessionIndex, int killer, int eventIndex)
+{
+	if (sessionIndex < 0 || sessionIndex >= L4D2_SKILLS_MAX_BOSSES || !g_BossSessions[sessionIndex].witch.crownQualityWindowActive)
+	{
+		return;
+	}
+
+	g_SkillEvents[eventIndex].assistScope = L4D2SkillAssistScope_SkillWindow;
+
+	for (int entry = 0; entry < L4D2_SKILLS_MAX_DAMAGE_ENTRIES; entry++)
+	{
+		int assistDamage = g_BossSessions[sessionIndex].witch.crownQualityDamage[entry];
+		if (assistDamage <= 0)
+		{
+			continue;
+		}
+
+		if (Skills_IsClientMatchingIdentity(
+			killer,
+			g_BossSessions[sessionIndex].witch.crownQualityAccountIds[entry],
+			g_BossSessions[sessionIndex].witch.crownQualityBots[entry],
+			g_BossSessions[sessionIndex].witch.crownQualitySurvivorCharacters[entry],
+			g_BossSessions[sessionIndex].witch.crownQualityUserids[entry]))
+		{
+			continue;
+		}
+
+		if (g_SkillEvents[eventIndex].assistsCount >= L4D2_SKILLS_MAX_EVENT_ASSISTS)
+		{
+			break;
+		}
+
+		L4D2PlayerRef assister;
+		if (!Skills_TryBuildPlayerRefFromIdentity(
+			g_BossSessions[sessionIndex].witch.crownQualityAccountIds[entry],
+			g_BossSessions[sessionIndex].witch.crownQualityBots[entry],
+			g_BossSessions[sessionIndex].witch.crownQualitySurvivorCharacters[entry],
+			g_BossSessions[sessionIndex].witch.crownQualityUserids[entry],
+			assister))
+		{
+			continue;
+		}
+
+		int assistIndex = g_SkillEvents[eventIndex].assistsCount;
+		g_SkillEvents[eventIndex].assists[assistIndex] = assister;
+		g_SkillEvents[eventIndex].assistDamage[assistIndex] = assistDamage;
+		g_SkillEvents[eventIndex].assistShots[assistIndex] = g_BossSessions[sessionIndex].witch.crownQualityShots[entry] > 0
+			? g_BossSessions[sessionIndex].witch.crownQualityShots[entry]
+			: 1;
+		g_SkillEvents[eventIndex].assistsCount++;
+	}
+
+	Boss_FinalizeWitchAssistData(eventIndex);
+}
+
+void Boss_FinalizeWitchAssistData(int eventIndex)
+{
+	if (eventIndex < 0 || eventIndex >= L4D2_SKILLS_MAX_EVENTS)
+	{
+		return;
+	}
+
 	for (int pass = 0; pass < g_SkillEvents[eventIndex].assistsCount - 1; pass++)
 	{
 		for (int i = 0; i < g_SkillEvents[eventIndex].assistsCount - 1 - pass; i++)
@@ -2562,6 +2863,22 @@ void Boss_FillWitchAssistData(int sessionIndex, int killer, int eventIndex)
 		g_SkillEvents[eventIndex].assisterDamage = g_SkillEvents[eventIndex].assistDamage[0];
 		g_SkillEvents[eventIndex].assisterShots = g_SkillEvents[eventIndex].assistShots[0];
 	}
+}
+
+int Boss_GetSkillEventAssistDamageTotal(int eventIndex)
+{
+	if (eventIndex < 0 || eventIndex >= L4D2_SKILLS_MAX_EVENTS)
+	{
+		return 0;
+	}
+
+	int totalAssistDamage = 0;
+	for (int assistIndex = 0; assistIndex < g_SkillEvents[eventIndex].assistsCount; assistIndex++)
+	{
+		totalAssistDamage += g_SkillEvents[eventIndex].assistDamage[assistIndex];
+	}
+
+	return totalAssistDamage;
 }
 
 // Witch event helpers.

@@ -1815,11 +1815,21 @@ stock int Skills_GetEventRating(int eventIndex)
 		}
 		case L4D2Skill_HunterSkeet:
 		{
-			return (g_SkillEvents[eventIndex].headshot || g_SkillEvents[eventIndex].perfect) ? 3 : 2;
+			if (g_SkillEvents[eventIndex].perfect)
+			{
+				return 3;
+			}
+
+			return g_SkillEvents[eventIndex].assistsCount > 0 ? 1 : 2;
 		}
 		case L4D2Skill_HunterSkeetMelee:
 		{
-			return g_SkillEvents[eventIndex].perfect ? 3 : 2;
+			if (g_SkillEvents[eventIndex].perfect)
+			{
+				return 3;
+			}
+
+			return g_SkillEvents[eventIndex].assistsCount > 0 ? 1 : 2;
 		}
 		case L4D2Skill_HunterHighPounce:
 		{
@@ -1861,11 +1871,21 @@ stock int Skills_GetEventRating(int eventIndex)
 		}
 		case L4D2Skill_JockeySkeet:
 		{
-			return 3;
+			if (g_SkillEvents[eventIndex].perfect)
+			{
+				return 3;
+			}
+
+			return g_SkillEvents[eventIndex].assistsCount > 0 ? 1 : 2;
 		}
 		case L4D2Skill_JockeySkeetMelee:
 		{
-			return 3;
+			if (g_SkillEvents[eventIndex].perfect)
+			{
+				return 3;
+			}
+
+			return g_SkillEvents[eventIndex].assistsCount > 0 ? 1 : 2;
 		}
 		case L4D2Skill_SmokerLedgeHang, L4D2Skill_JockeyLedgeHang, L4D2Skill_TankLedgeHang:
 		{

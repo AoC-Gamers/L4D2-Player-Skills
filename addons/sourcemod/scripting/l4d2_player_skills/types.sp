@@ -671,6 +671,13 @@ enum struct L4D2WitchSessionData
 	int pendingKillerUserid;
 	bool pendingWitchOneShot;
 	bool pendingWitchMeleeOnly;
+	bool crownQualityWindowActive;
+	int crownQualityUserids[L4D2_SKILLS_MAX_DAMAGE_ENTRIES];
+	int crownQualityAccountIds[L4D2_SKILLS_MAX_DAMAGE_ENTRIES];
+	bool crownQualityBots[L4D2_SKILLS_MAX_DAMAGE_ENTRIES];
+	int crownQualitySurvivorCharacters[L4D2_SKILLS_MAX_DAMAGE_ENTRIES];
+	int crownQualityDamage[L4D2_SKILLS_MAX_DAMAGE_ENTRIES];
+	int crownQualityShots[L4D2_SKILLS_MAX_DAMAGE_ENTRIES];
 	bool damageHooksAttached;
 
 	void Reset()
@@ -693,6 +700,16 @@ enum struct L4D2WitchSessionData
 		this.pendingKillerUserid = 0;
 		this.pendingWitchOneShot = false;
 		this.pendingWitchMeleeOnly = false;
+		this.crownQualityWindowActive = false;
+		for (int i = 0; i < L4D2_SKILLS_MAX_DAMAGE_ENTRIES; i++)
+		{
+			this.crownQualityUserids[i] = 0;
+			this.crownQualityAccountIds[i] = 0;
+			this.crownQualityBots[i] = false;
+			this.crownQualitySurvivorCharacters[i] = L4D2Util_SurvivorCharacter_Invalid;
+			this.crownQualityDamage[i] = 0;
+			this.crownQualityShots[i] = 0;
+		}
 		this.damageHooksAttached = false;
 	}
 }

@@ -1,17 +1,14 @@
 # Boss Flows
 
-Este documento resume los flujos actuales de skills y sesiones relacionadas con `Tank` y `Witch`.
+Este documento resume los flujos actuales de skills y sesiones relacionadas con `Tank` y, como índice, deriva `Witch` a su documento dedicado.
 
 ## Skills and Sessions
 
 - `TankDead`
 - `TankRockSkeet`
 - `TankRockHit`
-- `WitchDead`
-- `WitchCrown`
-- `WitchIncap`
 - boss damage sessions de `Tank`
-- boss damage sessions de `Witch`
+- [Witch Flows](./l4d2-skills-flow-witch.md)
 
 ## Tank Damage Session
 
@@ -238,144 +235,17 @@ flowchart TD
     D -->|yes| F[Emit TankRockHit]
 ```
 
-## Witch Damage Session
+## Witch
 
-### Sources
+Los flujos específicos de `Witch` ahora viven en:
 
-- `witch_spawn`
-- `SDKHook_OnTakeDamage`
-- `SDKHook_OnTakeDamagePost`
-- `witch_killed`
-- `player_incapacitated_start`
-- `L4D_OnWitchSetHarasser`
-
-### State
-
-- `g_BossSessions`
-- `g_BossDamage`
-- common session:
-  - `totalDamage`
-- `witch` substate:
-  - `startled`
-  - `harasser`
-  - `incapVictim`
-  - `crownDetected`
-  - `crowner`
-  - `lastHealthBeforeDamage`
-  - `lastShotAttacker`
-  - `lastShotDamage`
-  - `lastShotRawDamage`
-  - `lastDamageType`
-  - `lastShotIsShotgun`
-  - `lastBlastStartTime`
-  - `lastBlastDamage`
-  - `lastBlastRawDamage`
-  - death pending state
-
-Regla de ownership:
-
-- cada `Witch` vive en su propia boss session;
-- el estado fino de `crown`, `startle`, `harasser` e `incapVictim` debe permanecer aislado por entidad/session;
-- el payload público de `Witch` no usa identidad de controller;
-- el diseño actual admite múltiples `Witch` simultáneas siempre que el tracking siga resolviendo por entidad.
-
-### Emit
-
-`WitchDead` se emite cuando:
-
-- la `Witch` muere,
-- el killer es survivor,
-- y no hubo `WitchCrown`.
-
-`WitchDead` no representa una skill; es el cierre default que imprime el resumen tradicional de daño.
-
-Regla de daño:
-
-- `lastShotDamage` y `lastBlastDamage`
-  - guardan daño efectivo capeado por la vida restante de la `Witch`;
-- `lastShotRawDamage` y `lastBlastRawDamage`
-  - se conservan solo como contexto técnico;
-- el payload final de `WitchDead`
-  - expone contexto de cierre de sesión, no una skill de crown.
-
-Regla de announce:
-
-- `WitchDead`
-  - imprime el resumen tradicional de daño hecho a la `Witch`.
-
-Regla de KV público:
-
-- `WitchCrown`
-  - omite `victim_*`
-  - mantiene `actor_weaponid`
-- `WitchDead`
-  - omite `victim_*`
-  - omite `actor_weaponid`
-- `witch_session`
-  - mantiene:
-    - `startled`
-    - `crown_detected`
-  - no expone identidad de controller
-- `damage_entries`
-  - no expone `weaponid`
-  - porque una misma sesión de `Witch` puede mezclar varias armas por survivor
-
-### Round End Policy
-
-El timer diferido de muerte de `Witch` usa política de `hard stop`.
-
-Si la ronda deja de estar `live` antes de resolver:
-
-- no se emite `WitchCrown`;
-- no se emite `WitchDead`;
-- no se imprime el cierre diferido de la sesión.
-
-### Properties
-
-- `damage`
-- `actor_damage`
-- `chip_damage`
-- `shots`
-- `startled`
-
-Contexto adicional:
-
-- `witch_session`
-
-### Flow
-
-```mermaid
-flowchart TD
-    A[witch_spawn] --> B[Start Witch session]
-    B --> C[OnTakeDamage / OnTakeDamagePost]
-    C --> D[Track blast, startled and harasser]
-    D --> E[witch_killed]
-    E --> F{Was WitchCrown detected}
-    F -->|no| G[Emit WitchDead]
-    F -->|yes| H[Skip default death skill]
-    G --> I[Finalize boss damage session]
-    H --> I
-```
-
-## WitchCrown
-
-### Sources
-
-- `witch_killed`
-- Witch damage session state
-
-### State
-
-Reutiliza la misma sesión de `Witch`:
-
-- contributors de daño por survivor
-- `lastShotDamage`
-- `lastBlastDamage`
-- `lastShotRawDamage`
-- `lastBlastRawDamage`
-- `lastShotIsShotgun`
-- `pendingWitchOneShot`
-- `pendingWitchMeleeOnly`
+- [Witch Flows](./l4d2-skills-flow-witch.md)
+- incluye:
+  - `WitchDead`
+  - `WitchCrown`
+  - `WitchIncap`
+  - la separación entre ventana de `crown` y vida total de la `Witch`
+  - la semántica actual de `damage/shots` visible
 
 ### Emit
 

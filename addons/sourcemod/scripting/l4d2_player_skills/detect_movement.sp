@@ -90,6 +90,7 @@ void Detect_EventAbilityUse(Event event)
 	{
 		Detect_ResetHunterPounceState(client);
 		Detect_SetHunterPouncing(client, true);
+		Detect_OpenSkeetQualityWindow(client);
 		if (g_DetectHunterDamageSnapshot[client].lastHealth <= 0)
 		{
 			g_DetectHunterDamageSnapshot[client].lastHealth = GetClientHealth(client);
@@ -110,6 +111,7 @@ void Detect_EventAbilityUse(Event event)
 	{
 		Detect_ResetJockeyLeapState(client);
 		Detect_SetJockeyLeaping(client, true);
+		Detect_OpenSkeetQualityWindow(client);
 		GetClientAbsOrigin(client, g_DetectLeap[client].origin);
 		g_DetectLeap[client].originSet = true;
 		CreateTimer(0.5, Timer_DetectJockeyGroundedCheck, GetClientUserId(client), TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
@@ -206,7 +208,12 @@ void Detect_EventPlayerJumpApex(Event event)
 		Skills_Debug(PlayerSkillsDebug_Detect,
 			"Jockey leap opened from jump_apex. jockey=%d",
 			client);
+		if (!g_DetectSkeetQualityWindow[client].active)
+		{
+			Detect_OpenSkeetQualityWindow(client);
+		}
 		Detect_SetJockeyLeaping(client, true);
+		Detect_LogJockeyLeapState(client, "jump_apex_open");
 		CreateTimer(0.5, Timer_DetectJockeyGroundedCheck, GetClientUserId(client), TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 	}
 }
@@ -272,6 +279,7 @@ void Detect_EventJockeyPunched(Event event)
 		attacker,
 		isLunging ? 1 : 0,
 		(jockey > 0 && jockey <= MaxClients && Detect_IsJockeyEffectivelyLeaping(jockey)) ? 1 : 0);
+	Detect_LogJockeyLeapState(jockey, "punched_event");
 }
 
 void Detect_EventJockeyKilled(Event event)
@@ -292,6 +300,7 @@ void Detect_EventJockeyKilled(Event event)
 		attacker,
 		weapon,
 		(jockey > 0 && jockey <= MaxClients && Detect_IsJockeyEffectivelyLeaping(jockey)) ? 1 : 0);
+	Detect_LogJockeyLeapState(jockey, "killed_event");
 }
 
 Action Timer_DetectHunterGroundedCheck(Handle timer, any userid)
@@ -313,15 +322,22 @@ Action Timer_DetectHunterGroundedCheck(Handle timer, any userid)
 Action Timer_DetectJockeyGroundedCheck(Handle timer, any userid)
 {
 	int client = GetClientOfUserId(userid);
-	if (client > 0 && !(GetEntityFlags(client) & FL_ONGROUND))
+	if (!IsValidZombieClass(client, L4D2ZombieClass_Jockey) || !IsPlayerAlive(client))
 	{
-		return Plugin_Continue;
+		return Plugin_Stop;
 	}
 
 	if (client > 0)
 	{
-		Detect_SetJockeyLeaping(client, false);
+		Detect_LogJockeyLeapState(client, "grounded_timer_tick");
 	}
+	if (!(GetEntityFlags(client) & FL_ONGROUND))
+	{
+		return Plugin_Continue;
+	}
+
+	Detect_SetJockeyLeaping(client, false);
+	Detect_LogJockeyLeapState(client, "grounded_timer_stop");
 
 	return Plugin_Stop;
 }

@@ -137,6 +137,7 @@ void Detect_EventChokeStart(Event event)
 	g_DetectSmoker[smoker].victim = victim;
 	g_DetectPinRegistry.smokerOwnerByVictim[victim] = smoker;
 	g_DetectSmoker[smoker].reached = true;
+	g_DetectSmoker[smoker].dragging = false;
 	g_fDetectSpecialClearTimeA[smoker] = GetGameTime();
 
 	if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
@@ -147,6 +148,64 @@ void Detect_EventChokeStart(Event event)
 			victim,
 			g_DetectPinRegistry.pinnedVictimByAttacker[smoker],
 			g_fDetectSpecialClearTimeA[smoker]);
+	}
+}
+
+void Detect_EventDragBegin(Event event)
+{
+	if (!Skills_IsEnabled())
+	{
+		return;
+	}
+
+	int smoker = GetClientOfUserId(event.GetInt("userid"));
+	int victim = GetClientOfUserId(event.GetInt("subject"));
+	if (!IsValidZombieClass(smoker, L4D2ZombieClass_Smoker) || !IsValidSurvivor(victim))
+	{
+		return;
+	}
+
+	g_DetectSmoker[smoker].victim = victim;
+	g_DetectPinRegistry.smokerOwnerByVictim[victim] = smoker;
+	g_DetectSmoker[smoker].dragging = true;
+
+	if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
+	{
+		Skills_Debug(PlayerSkillsDebug_Detect,
+			"SpecialClear drag_begin. smoker=%d victim=%d reached=%d dragging=%d pin_victim=%d",
+			smoker,
+			victim,
+			g_DetectSmoker[smoker].reached ? 1 : 0,
+			g_DetectSmoker[smoker].dragging ? 1 : 0,
+			g_DetectPinRegistry.pinnedVictimByAttacker[smoker]);
+	}
+}
+
+void Detect_EventDragEnd(Event event)
+{
+	if (!Skills_IsEnabled())
+	{
+		return;
+	}
+
+	int smoker = GetClientOfUserId(event.GetInt("userid"));
+	int victim = GetClientOfUserId(event.GetInt("subject"));
+	if (!IsValidZombieClass(smoker, L4D2ZombieClass_Smoker) || !IsValidSurvivor(victim))
+	{
+		return;
+	}
+
+	g_DetectSmoker[smoker].dragging = false;
+
+	if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
+	{
+		Skills_Debug(PlayerSkillsDebug_Detect,
+			"SpecialClear drag_end. smoker=%d victim=%d reached=%d dragging=%d pin_victim=%d",
+			smoker,
+			victim,
+			g_DetectSmoker[smoker].reached ? 1 : 0,
+			g_DetectSmoker[smoker].dragging ? 1 : 0,
+			g_DetectPinRegistry.pinnedVictimByAttacker[smoker]);
 	}
 }
 
