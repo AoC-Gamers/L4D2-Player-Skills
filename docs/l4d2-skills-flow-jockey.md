@@ -136,6 +136,13 @@ Se emite `JockeySkeetMelee` cuando:
 - `assists`
 - `perfect`
 
+Notas:
+
+- la ventana de `leap` decide si la kill califica como `JockeySkeetMelee`;
+- cuando se imprime `damage/shots`, ese stat visible puede resumir el total del
+  actor sobre la vida del `Jockey` que terminó dentro de la ventana válida;
+- `perfect` sigue dependiendo de una resolución limpia dentro de esa ventana.
+
 ### Flow
 
 ```mermaid
@@ -197,6 +204,14 @@ Reglas:
 - `grenade_launcher`
 - `assists`
 - `perfect`
+
+Notas:
+
+- la ventana de `leap` decide si la muerte califica como `JockeySkeet`;
+- `perfect`, `headshot`, `chip_damage` y `assists` siguen evaluándose desde esa
+  ventana técnica;
+- el suffix visible `damage/shots` puede resumir el total del actor sobre la
+  vida del `Jockey`, no solo el remate final dentro del salto.
 
 ### Flow
 

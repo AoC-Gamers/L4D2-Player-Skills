@@ -57,6 +57,9 @@ Regla práctica:
 
 - las skills ricas leen su ventana técnica;
 - las kills genéricas de SI leen el acumulado de vida total.
+- la ventana técnica decide si la jugada califica como skill;
+- el print visible de `damage/shots` no está obligado a ser idéntico al recorte
+  estricto de esa ventana.
 
 ### 4.1. Separación obligatoria
 
@@ -97,6 +100,9 @@ Consecuencias:
   mezclar su semántica con ella;
 - si una limpieza o filtro mejora la clasificación de una `skill`, no debe
   recortar por accidente el resumen total de una `kill`.
+- una `skill` rica puede clasificar la jugada por `skill window` y aun así
+  exponer en chat un resumen total del actor sobre esa misma vida, siempre que
+  eso no altere la semántica de `perfect`, `assists` o `headshot`.
 
 En corto:
 
@@ -113,6 +119,37 @@ Regla de daño actual:
   - usan daño efectivo/semántico de la jugada;
 - el payload puede conservar contexto técnico adicional aunque el chat no lo
   imprima literalmente.
+
+### 4.1.1. Ventana de evaluación vs stats visibles
+
+`l4d2_player_skills` distingue entre:
+
+- `ventana de evaluación`
+  - decide si la jugada califica o no como skill rica;
+  - define propiedades como `perfect`, `headshot`, `assists` y `chipDamage`;
+- `stats visibles`
+  - resumen corto que el chat muestra como `damage/shots`;
+  - pueden representar la contribución total del actor sobre la vida del target
+    hasta que esa vida se cierra dentro de la ventana válida.
+
+Regla general:
+
+- la ventana técnica diferencia `Skeet` de `no Skeet`, `Level` de `no Level`,
+  y `Crown` de `no Crown`;
+- una vez clasificada la jugada, el announce puede imprimir `damage/shots`
+  totales del actor en esa vida aunque parte de ese daño haya ocurrido antes del
+  remate técnico;
+- ese agregado visible no convierte daño previo en daño de ventana;
+- el evento debe seguir conservando separados:
+  - daño del remate o tramo técnico;
+  - `chipDamage` previo;
+  - assists válidos de la jugada.
+
+Objetivo:
+
+- evaluar correctamente la habilidad en su ventana;
+- y, al mismo tiempo, permitir que el print visible cuente la historia completa
+  de cómo ese actor resolvió la vida del infectado hasta el cierre de la skill.
 
 Ejemplos de contexto que deben vivir en el evento y no necesariamente en el enum:
 
@@ -131,12 +168,17 @@ Nota de UX:
 
 - `chipDamage` sigue siendo un dato tecnico valido;
 - no obliga a que el announce visible use la palabra `chip`;
-- en `HunterSkeet`, el chat actual prioriza `damage/shots`, `perfect` y `assists`;
+- en `HunterSkeet` y `JockeySkeet`, el chat actual prioriza `damage/shots`,
+  `perfect` y `assists`;
+- ese `damage/shots` visible puede representar el total del actor sobre la vida
+  del SI, no solo el recorte estricto de la ventana;
 - en `ChargerLevel`, el chat actual prioriza:
   - `Level (Perfecto)`
-  - `Level`
-  - `Level (dmg/shots)` si hubo daño previo propio del actor
-  - `Level ..., asistido por ...` si hubo contribución ajena
+  - `Level (dmg/shots)` en cualquier variante no perfecta
+  - `Level (dmg/shots), asistido por ...` si hubo contribución ajena
+- en `WitchCrown`, la misma lógica aplica: la ventana de crown clasifica la
+  jugada, pero el suffix visible puede resumir la contribución total relevante
+  del actor sobre esa Witch.
 
 Nota adicional:
 
@@ -325,10 +367,14 @@ Entonces:
 Regla de daño:
 
 - el resumen de boss de `Witch` usa daño efectivo acumulado sobre su vida real;
-- `WitchCrown` expone daño efectivo del killer en `damage`;
-- `shots` en `WitchCrown` representa los tiros totales del killer sobre esa `Witch`;
+- `WitchCrown` usa la ventana de crown para clasificar la jugada y para fijar
+  sus propiedades;
+- el payload de `WitchCrown` puede conservar separado el daño del blast final y
+  el contexto previo del killer;
+- el print visible de `damage/shots` puede resumir la contribución total del
+  killer sobre esa `Witch` hasta el cierre del crown;
 - los contributors previos de otros survivors se exponen como assists con
-  `damage/shots` acumulado;
+  contexto acumulado o contextual segun el scope de la jugada;
 - el `raw` del blast final puede conservarse internamente, pero no debe filtrarse
   como daño visible del evento.
 
@@ -343,6 +389,13 @@ Entonces:
 - `ChargerLevel` sigue siendo la habilidad principal;
 - el daño previo debe conservarse como contexto;
 - no se debe crear una skill principal aparte solo porque el Charger ya había recibido chip.
+
+Regla visible:
+
+- la ventana de `charge` decide si hubo `Level`;
+- `perfect`, `chipDamage` y `assists` se evalúan contra esa ventana;
+- el suffix `damage/shots` del announce puede resumir el total aportado por el
+  actor sobre la vida del `Charger` hasta que la kill se resuelve como `Level`.
 
 ### 6.1.1. Restricción de PerfectLevel
 
@@ -384,6 +437,13 @@ Esto implica:
 - la ventana de leap debe usarse como contexto para clasificar la jugada;
 - la kill genérica del `Jockey` debe seguir existiendo como fallback;
 - pero el announce visible debe preferir `JockeyJumpStop` o `JockeySkeetMelee` cuando correspondan.
+
+Regla visible para `JockeySkeet`:
+
+- la ventana de leap decide si la muerte califica como skeet;
+- `perfect`, `headshot`, `chipDamage` y `assists` se derivan de esa evaluación;
+- el `damage/shots` visible puede resumir el total del actor sobre la vida del
+  `Jockey` cuando esa vida se cierra dentro de la ventana válida.
 
 Restricción adicional:
 

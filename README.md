@@ -61,6 +61,7 @@ Flow documentation:
 - [Jockey Flows](./docs/l4d2-skills-flow-jockey.md)
 - [Smoker Flows](./docs/l4d2-skills-flow-smoker.md)
 - [Boomer Flows](./docs/l4d2-skills-flow-boomer.md)
+- [Witch Flows](./docs/l4d2-skills-flow-witch.md)
 - [Boss Flows](./docs/l4d2-skills-flow-bosses.md)
 - [Misc Flows](./docs/l4d2-skills-flow-misc.md)
 

@@ -846,7 +846,7 @@
 	{
 		"#format"	"{1:s}"
 		"en"		"{olive}{1} {blue}landed a {green}Crown {blue}on the {olive}Witch {blue}({green}Perfect{blue})."
-		"es"		"{olive}{1} {blue}hizo {green}Crown {blue}a la {olive}Witch {blue}({green}Perfecta{blue})."
+		"es"		"{olive}{1} {blue}hizo {green}Crown {blue}a la {olive}Witch {blue}({green}Perfecto{blue})."
 	}
 
 	"WitchCrownAssist"

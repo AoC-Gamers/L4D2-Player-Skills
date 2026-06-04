@@ -53,6 +53,7 @@ ConVar	g_cvAnnounceCharger		 = null;
 ConVar	g_cvAnnounceOther		 = null;
 ConVar	g_cvAnnounceKillMode		 = null;
 ConVar	g_cvAnnounceSpecialClearMode = null;
+ConVar	g_cvAnnounceTongueReleaseMode = null;
 ConVar	g_cvShoveAttempt		 = null;
 ConVar	g_cvBoomerVomitMinTargets = null;
 ConVar	g_cvBoomerHealth		 = null;
@@ -498,7 +499,7 @@ public void OnPluginStart()
 	g_smDetectCarPendingInfected = new StringMap();
 	g_smDetectCarPendingFlags = new StringMap();
 
-	g_cvDebug			   			= CreateConVar("sm_skills_debug", "255", "Debug bitmask for l4d2_player_skills. 0=None 1=Core 2=Event 4=Detect 8=Boss 16=Pin 32=Physics 64=Api 128=Announce 255=all.");
+	g_cvDebug			   			= CreateConVar("sm_skills_debug", "0", "Debug bitmask for l4d2_player_skills. 0=None 1=Core 2=Event 4=Detect 8=Boss 16=Pin 32=Physics 64=Api 128=Announce 255=all.");
 	g_cvEnable			   			= CreateConVar("sm_skills_enable", "1", "Enable the l4d2_player_skills plugin.");
 	g_cvAnnounceWitch				= CreateConVar("sm_skills_announce_witch", "7", "Bitmask for Witch announcements. 1=damage 2=misc 4=crown 7=all.");
 	g_cvAnnounceTank				= CreateConVar("sm_skills_announce_tank", "15", "Bitmask for Tank announcements. 1=damage 2=rock_skeet 4=rock_hit 8=ledge_hang 15=all.");
@@ -511,13 +512,15 @@ public void OnPluginStart()
 	g_cvAnnounceOther				= CreateConVar("sm_skills_announce_other", "3", "Bitmask for other announcements. 1=bunnyhop 2=car_alarm 3=all.");
 	g_cvAnnounceKillMode			= CreateConVar("sm_skills_announce_kill_mode", "3", "Output mode for kill announcements. 1=console 2=chat 3=chat_headshot.");
 	g_cvAnnounceSpecialClearMode	= CreateConVar("sm_skills_announce_specialclear_mode", "3", "Output mode for SpecialClear announcements. 1=console 2=chat 3=chat_headshot.");
+	g_cvAnnounceTongueReleaseMode	= CreateConVar("sm_skills_announce_tongue_release_mode", "2", "Output mode for Smoker tongue-release announcements before choke. -1=inherit specialclear_mode 1=console 2=chat 3=chat_headshot.");
 
 	g_cvShoveAttempt			= CreateConVar("sm_skills_shove_attempt", "1", "Bitmask for shove-attempt announcements. 1=charger 2=tank 4=witch 7=all.");
 	g_cvBoomerVomitMinTargets	= CreateConVar("sm_skills_boomer_vomit_min_targets", "3", "Minimum number of vomited survivors required to announce BoomerVomitLanded. 0=disabled.");
 	g_cvWitchPrintMaxEntries	= CreateConVar("sm_skills_witch_print_max_entries", "4", "Maximum number of Witch damage entries to print before combining the rest as others.");
 	
-	g_cvHunterHighPounceHeight	= CreateConVar("sm_skills_hunter_high_pounce_height", "400", "Minimum vertical height for HunterHighPounce.");
-	g_cvJockeyHighLeapHeight	= CreateConVar("sm_skills_jockey_high_leap_height", "300", "Minimum vertical height for JockeyHighLeap.");
+	g_cvHunterHighPounceHeight				= CreateConVar("sm_skills_hunter_pounce_height", "400", "Minimum vertical height for HunterHighPounce.");
+	g_cvDetectHunterSkeetShotgunInterrupt	= CreateConVar("sm_skills_hunter_skeet_interrupt", "0", "Minimum shotgun blast damage required to classify HunterSkeet. Applies to shotgun skeets only. 0=disabled.");
+	g_cvJockeyHighLeapHeight				= CreateConVar("sm_skills_jockey_leap_height", "300", "Minimum vertical height for JockeyHighLeap.");
 
 	g_cvDetectInstaKillHeight	= CreateConVar("sm_skills_charger_instakill_height", "400", "Minimum vertical drop for ChargerInstaKill.");
 	g_cvDetectDeathSetupHeight	= CreateConVar("sm_skills_charger_death_setup_height", "100", "Minimum vertical drop for ChargerDeathSetup incap classification.");
@@ -529,7 +532,6 @@ public void OnPluginStart()
 
 	g_cvHunterMaxPounceBonusDamage = FindConVar("z_hunter_max_pounce_bonus_damage");
 
-	g_cvDetectPounceInterrupt 	= FindConVar("z_pounce_damage_interrupt");
 	g_cvDetectMaxPounceDistance = FindConVar("z_pounce_damage_range_max");
 	g_cvDetectMinPounceDistance = FindConVar("z_pounce_damage_range_min");
 
@@ -584,6 +586,8 @@ public void OnPluginStart()
 	HookEvent("witch_killed", Event_WitchKilled, EventHookMode_Post);
 	HookEvent("choke_start", Event_ChokeStart, EventHookMode_Post);
 	HookEvent("choke_stopped", Event_ChokeStopped, EventHookMode_Post);
+	HookEvent("drag_begin", Event_DragBegin, EventHookMode_Post);
+	HookEvent("drag_end", Event_DragEnd, EventHookMode_Post);
 	HookEvent("tongue_pull_stopped", Event_TonguePullStopped, EventHookMode_Post);
 	HookEvent("pounce_stopped", Event_PounceStopped, EventHookMode_Post);
 	HookEvent("pounce_end", Event_PounceEnd, EventHookMode_Post);
@@ -1385,6 +1389,26 @@ void Event_ChokeStart(Event event, const char[] name, bool dontBroadcast)
 	}
 
 	Detect_EventChokeStart(event);
+}
+
+void Event_DragBegin(Event event, const char[] name, bool dontBroadcast)
+{
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
+	Detect_EventDragBegin(event);
+}
+
+void Event_DragEnd(Event event, const char[] name, bool dontBroadcast)
+{
+	if (!Skills_IsRoundLive())
+	{
+		return;
+	}
+
+	Detect_EventDragEnd(event);
 }
 
 void Event_ChokeStopped(Event event, const char[] name, bool dontBroadcast)
