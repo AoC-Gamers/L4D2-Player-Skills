@@ -45,6 +45,32 @@ bool Announce_ShouldPrintToChat(int mode, bool headshot)
 	return false;
 }
 
+bool Announce_IsSmokerTongueReleaseEvent(int eventIndex)
+{
+	if (eventIndex < 0 || eventIndex >= L4D2_SKILLS_MAX_EVENTS)
+	{
+		return false;
+	}
+
+	switch (g_SkillEvents[eventIndex].type)
+	{
+		case L4D2Skill_SpecialPinClear:
+		{
+			return g_SkillEvents[eventIndex].zombieClass == view_as<int>(L4D2ZombieClass_Smoker)
+				&& !g_SkillEvents[eventIndex].withShove
+				&& g_SkillEvents[eventIndex].timeA < 0.0;
+		}
+
+		case L4D2Skill_SmokerSelfClear:
+		{
+			return !g_SkillEvents[eventIndex].withShove
+				&& g_SkillEvents[eventIndex].timeA < 0.0;
+		}
+	}
+
+	return false;
+}
+
 void Announce_BuildChargerInstaKillQualifier(int eventIndex, char[] buffer, int maxlen)
 {
 	buffer[0] = '\0';
@@ -488,7 +514,15 @@ bool Announce_ShouldAnnounceSkill(int eventIndex)
 		}
 		case L4D2Skill_SmokerSelfClear:
 		{
-			shouldAnnounce = Announce_HasMask(g_cvAnnounceSmoker, view_as<int>(PlayerSkillsAnnounceSmoker_SelfClear));
+			if (Announce_IsSmokerTongueReleaseEvent(eventIndex))
+			{
+				shouldAnnounce = g_cvAnnounceTongueReleaseMode != null
+					&& g_cvAnnounceTongueReleaseMode.IntValue >= SKILLS_PRINT_MODE_CONSOLE;
+			}
+			else
+			{
+				shouldAnnounce = Announce_HasMask(g_cvAnnounceSmoker, view_as<int>(PlayerSkillsAnnounceSmoker_SelfClear));
+			}
 		}
 		case L4D2Skill_SmokerKill:
 		{
@@ -556,7 +590,12 @@ bool Announce_ShouldAnnounceSkill(int eventIndex)
 		}
 		case L4D2Skill_SpecialPinClear:
 		{
-			switch (view_as<L4D2ZombieClassType>(g_SkillEvents[eventIndex].zombieClass))
+			if (Announce_IsSmokerTongueReleaseEvent(eventIndex))
+			{
+				shouldAnnounce = g_cvAnnounceTongueReleaseMode != null
+					&& g_cvAnnounceTongueReleaseMode.IntValue >= SKILLS_PRINT_MODE_CONSOLE;
+			}
+			else switch (view_as<L4D2ZombieClassType>(g_SkillEvents[eventIndex].zombieClass))
 			{
 				case L4D2ZombieClass_Hunter:
 				{
@@ -1970,8 +2009,15 @@ void Announce_Skill(int eventId)
 
 			if (g_SkillEvents[eventIndex].damage > 0)
 			{
+				int visibleDamage = g_SkillEvents[eventIndex].damage;
+				int maxHealth = Skills_GetSpecialMaxHealth(view_as<L4D2ZombieClassType>(g_SkillEvents[eventIndex].zombieClass));
+				if (maxHealth > 0 && visibleDamage > maxHealth)
+				{
+					visibleDamage = maxHealth;
+				}
+
 				char actorStat[32];
-				Format(actorStat, sizeof(actorStat), "%d/%d", g_SkillEvents[eventIndex].damage, g_SkillEvents[eventIndex].shots);
+				Format(actorStat, sizeof(actorStat), "%d/%d", visibleDamage, g_SkillEvents[eventIndex].shots);
 				FormatEx(line, sizeof(line), "%T", g_SkillEvents[eventIndex].headshot ? "SpecialPinClearKillHeadshot" : "SpecialPinClearKill", LANG_SERVER,
 					actorName,
 					victimName,
@@ -1981,10 +2027,14 @@ void Announce_Skill(int eventId)
 			}
 			else if (g_SkillEvents[eventIndex].zombieClass == view_as<int>(L4D2ZombieClass_Smoker) && !g_SkillEvents[eventIndex].withShove)
 			{
-				bool isTongueRelease = g_SkillEvents[eventIndex].timeA < 0.0;
-				if (isTongueRelease && g_cvAnnounceTongueReleaseMode != null && g_cvAnnounceTongueReleaseMode.IntValue >= SKILLS_PRINT_MODE_CONSOLE)
+				bool isTongueRelease = Announce_IsSmokerTongueReleaseEvent(eventIndex);
+				if (isTongueRelease)
 				{
-					printMode = g_cvAnnounceTongueReleaseMode.IntValue;
+					printMode = g_cvAnnounceTongueReleaseMode != null ? g_cvAnnounceTongueReleaseMode.IntValue : 0;
+					if (printMode < SKILLS_PRINT_MODE_CONSOLE)
+					{
+						return;
+					}
 				}
 
 				char phrase[64];
@@ -2052,6 +2102,33 @@ void Announce_Skill(int eventId)
 
 		case L4D2Skill_SmokerSelfClear:
 		{
+			if (Announce_IsSmokerTongueReleaseEvent(eventIndex))
+			{
+				int printMode = g_cvAnnounceTongueReleaseMode != null ? g_cvAnnounceTongueReleaseMode.IntValue : 0;
+				if (printMode < SKILLS_PRINT_MODE_CONSOLE)
+				{
+					return;
+				}
+
+				char line[512];
+				int visibleDamage = g_SkillEvents[eventIndex].damage;
+				int maxHealth = Skills_GetSpecialMaxHealth(L4D2ZombieClass_Smoker);
+				if (maxHealth > 0 && visibleDamage > maxHealth)
+				{
+					visibleDamage = maxHealth;
+				}
+
+				FormatEx(line, sizeof(line), "%T",
+					g_SkillEvents[eventIndex].headshot ? "SmokerSelfClearHeadshot" : "SmokerSelfClearKill",
+					LANG_SERVER,
+					actorName,
+					victimName,
+					visibleDamage,
+					g_SkillEvents[eventIndex].shots);
+				Announce_PrintRoutedActorLine(eventIndex, tag, line, g_SkillEvents[eventIndex].headshot, printMode);
+				return;
+			}
+
 			char assistList[256];
 			Announce_FormatAssistList(eventIndex, assistList, sizeof(assistList));
 

@@ -512,7 +512,7 @@ public void OnPluginStart()
 	g_cvAnnounceOther				= CreateConVar("sm_skills_announce_other", "3", "Bitmask for other announcements. 1=bunnyhop 2=car_alarm 3=all.");
 	g_cvAnnounceKillMode			= CreateConVar("sm_skills_announce_kill_mode", "3", "Output mode for kill announcements. 1=console 2=chat 3=chat_headshot.");
 	g_cvAnnounceSpecialClearMode	= CreateConVar("sm_skills_announce_specialclear_mode", "3", "Output mode for SpecialClear announcements. 1=console 2=chat 3=chat_headshot.");
-	g_cvAnnounceTongueReleaseMode	= CreateConVar("sm_skills_announce_tongue_release_mode", "2", "Output mode for Smoker tongue-release announcements before choke. -1=inherit specialclear_mode 1=console 2=chat 3=chat_headshot.");
+	g_cvAnnounceTongueReleaseMode	= CreateConVar("sm_skills_announce_tongue_release_mode", "2", "Output mode for Smoker tongue-release announcements during pull/drag before choke pin. 0=disabled 1=console 2=chat 3=chat_headshot.");
 
 	g_cvShoveAttempt			= CreateConVar("sm_skills_shove_attempt", "1", "Bitmask for shove-attempt announcements. 1=charger 2=tank 4=witch 7=all.");
 	g_cvBoomerVomitMinTargets	= CreateConVar("sm_skills_boomer_vomit_min_targets", "3", "Minimum number of vomited survivors required to announce BoomerVomitLanded. 0=disabled.");

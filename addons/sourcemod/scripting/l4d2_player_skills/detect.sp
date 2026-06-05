@@ -295,6 +295,7 @@ enum struct DetectChargerClawState
 	int totalHits;
 	int totalDamage;
 	int entryCount;
+	bool disabledByPin;
 	int victimUserids[L4D2_SKILLS_MAX_TRACKED_SURVIVOR_ENTRIES];
 	int victimAccountIds[L4D2_SKILLS_MAX_TRACKED_SURVIVOR_ENTRIES];
 	bool victimBots[L4D2_SKILLS_MAX_TRACKED_SURVIVOR_ENTRIES];
@@ -307,6 +308,7 @@ enum struct DetectChargerClawState
 		this.totalHits = 0;
 		this.totalDamage = 0;
 		this.entryCount = 0;
+		this.disabledByPin = false;
 
 		for (int i = 0; i < L4D2_SKILLS_MAX_TRACKED_SURVIVOR_ENTRIES; i++)
 		{
@@ -2239,6 +2241,26 @@ int Detect_GetSiLifeShotsByAttacker(int victim, int client)
 	return g_DetectSiLife[victim].entries[slot].shots;
 }
 
+bool Detect_GetNormalizedSiLifeContributionByAttacker(int victim, L4D2ZombieClassType zombieClass, int client, int &damage, int &shots, int &weaponId)
+{
+	damage = 0;
+	shots = 0;
+	weaponId = L4D2WeaponId_None;
+
+	DetectSiLifeContributorEntry contributors[L4D2_SKILLS_MAX_TRACKED_SURVIVOR_ENTRIES];
+	int killerEntry = -1;
+	int contributorCount = Detect_BuildSiLifeContributorSnapshot(victim, zombieClass, client, contributors, killerEntry);
+	if (killerEntry == -1 || contributorCount <= 0)
+	{
+		return false;
+	}
+
+	damage = contributors[killerEntry].effectiveDamage;
+	shots = contributors[killerEntry].shots;
+	weaponId = contributors[killerEntry].weaponId;
+	return true;
+}
+
 int Detect_GetSiLifePreviousDamageByAttacker(int victim, int client)
 {
 	int slot = Detect_FindSiLifeSlot(victim, client);
@@ -3005,6 +3027,8 @@ void Detect_OnPummelVictimPost(int attacker, int victim)
 		return;
 	}
 
+	Detect_DisableChargerClawSummaryByPin(attacker, "pummel_post");
+
 	if (Detect_GetCurrentPinnedVictim(attacker) != victim)
 	{
 		Detect_SetPinState(attacker, victim, L4D2ZombieClass_Charger, GetGameTime(), GetGameTime());
@@ -3442,6 +3466,7 @@ void Detect_HandleSmokerDeath(Event event, int victim, int attacker, bool should
 			g_SkillEvents[eventIndex].actorDamage = g_SkillEvents[eventIndex].damage;
 			g_SkillEvents[eventIndex].shots = Detect_GetSiLifeShotsByAttacker(victim, attacker);
 			g_SkillEvents[eventIndex].headshot = Detect_ResolveHeadshot(victim, attacker, event.GetBool("headshot"));
+			g_SkillEvents[eventIndex].timeA = g_DetectSmoker[victim].reached ? 0.0 : -1.0;
 			Detect_WriteSiTrackAssistsToEventAsSkillWindow(eventIndex, victim, attacker);
 
 			Action result = API_FireSkillDetected(eventId, L4D2Skill_SmokerSelfClear);
