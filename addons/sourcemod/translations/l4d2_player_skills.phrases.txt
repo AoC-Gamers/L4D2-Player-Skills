@@ -964,8 +964,8 @@
 	"BossWitchHealthRemainingIncap"
 	{
 		"#format"	"{1:s},{2:d}"
-		"en"		"{blue}Witch {red}incapped {olive}{1}{red} and had {green}{2}{red} health remaining."
-		"es"		"{blue}Witch {red}incapacito a {olive}{1}{red} ({green}{2}{red} de vida)."
+		"en"		"{red}Witch incapped {olive}{1}{red} and had {green}{2}{red} health remaining."
+		"es"		"{red}Witch incapacito a {olive}{1}{red} ({green}{2}{red} de vida)."
 	}
 
 	"BossWitchDamageTitle"
