@@ -327,6 +327,7 @@ void Detect_EventTonguePullStopped(Event event)
 			g_SkillEvents[eventIndex].withShove = true;
 			g_SkillEvents[eventIndex].damageScope = L4D2SkillDamageScope_SkillWindow;
 			g_SkillEvents[eventIndex].reason = breakReason;
+			g_SkillEvents[eventIndex].timeA = -1.0;
 			Detect_WriteSiTrackAssistsToEventAsSkillWindow(eventIndex, smoker, victim);
 
 			Action result = API_FireSkillDetected(eventId, L4D2Skill_SmokerSelfClear);
@@ -693,11 +694,31 @@ void Detect_EmitSpecialClear(int clearer, int pinner, bool withShove, bool fromK
 	g_SkillEvents[eventIndex].pinVictim.Capture(pinvictim);
 	if (fromKill)
 	{
+		int normalizedDamage = 0;
+		int normalizedShots = 0;
+		int normalizedWeaponId = L4D2WeaponId_None;
+
 		g_SkillEvents[eventIndex].damageScope = L4D2SkillDamageScope_SkillWindow;
-		g_SkillEvents[eventIndex].damage = Detect_GetSiLifeDamageByAttacker(pinner, clearer);
-		g_SkillEvents[eventIndex].actorDamage = g_SkillEvents[eventIndex].damage;
-		g_SkillEvents[eventIndex].shots = Detect_GetSiLifeShotsByAttacker(pinner, clearer);
-		g_SkillEvents[eventIndex].actorWeaponId = Detect_GetSiLifeWeaponIdByAttacker(pinner, clearer);
+		if (Detect_GetNormalizedSiLifeContributionByAttacker(
+			pinner,
+			view_as<L4D2ZombieClassType>(g_SkillEvents[eventIndex].zombieClass),
+			clearer,
+			normalizedDamage,
+			normalizedShots,
+			normalizedWeaponId))
+		{
+			g_SkillEvents[eventIndex].damage = normalizedDamage;
+			g_SkillEvents[eventIndex].actorDamage = normalizedDamage;
+			g_SkillEvents[eventIndex].shots = normalizedShots;
+			g_SkillEvents[eventIndex].actorWeaponId = normalizedWeaponId;
+		}
+		else
+		{
+			g_SkillEvents[eventIndex].damage = Detect_GetSiLifeDamageByAttacker(pinner, clearer);
+			g_SkillEvents[eventIndex].actorDamage = g_SkillEvents[eventIndex].damage;
+			g_SkillEvents[eventIndex].shots = Detect_GetSiLifeShotsByAttacker(pinner, clearer);
+			g_SkillEvents[eventIndex].actorWeaponId = Detect_GetSiLifeWeaponIdByAttacker(pinner, clearer);
+		}
 		g_SkillEvents[eventIndex].headshot = Detect_ResolveHeadshot(pinner, clearer, headshot);
 	}
 

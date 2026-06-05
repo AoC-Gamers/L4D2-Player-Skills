@@ -126,6 +126,30 @@ void Detect_SetChargerCharging(int charger, bool state)
 	}
 }
 
+void Detect_DisableChargerClawSummaryByPin(int charger, const char[] source)
+{
+	if (!IsValidZombieClass(charger, L4D2ZombieClass_Charger))
+	{
+		return;
+	}
+
+	if (g_DetectChargerClaw[charger].disabledByPin)
+	{
+		return;
+	}
+
+	g_DetectChargerClaw[charger].Reset();
+	g_DetectChargerClaw[charger].disabledByPin = true;
+
+	if (Skills_IsDebugEnabled(PlayerSkillsDebug_Detect))
+	{
+		Skills_Debug(PlayerSkillsDebug_Detect,
+			"Charger claw summary disabled by pin. charger=%d source=%s",
+			charger,
+			source);
+	}
+}
+
 bool Detect_IsChargerEffectivelyCharging(int charger)
 {
 	if (charger < 1 || charger > MaxClients)
@@ -243,6 +267,7 @@ void Detect_EventChargerCarryStart(Event event)
 
 	if (IsValidZombieClass(charger, L4D2ZombieClass_Charger) && IsValidSurvivor(victim))
 	{
+		Detect_DisableChargerClawSummaryByPin(charger, "carry_start");
 		g_DetectChargerBowl[charger].active = true;
 		g_DetectChargerBowl[charger].emitted = false;
 		g_DetectChargerBowl[charger].carriedVictim = victim;
@@ -314,6 +339,11 @@ void Detect_RecordChargerClawHitFromDamage(int victim, int attacker, int inflict
 		return;
 	}
 
+	if (g_DetectChargerClaw[attacker].disabledByPin)
+	{
+		return;
+	}
+
 	if (Detect_IsChargerEffectivelyCharging(attacker)
 		|| g_DetectPinRegistry.pinnedClassByAttacker[attacker] == view_as<int>(L4D2ZombieClass_Charger)
 		|| g_DetectPinRegistry.pinnedVictimByAttacker[attacker] > 0)
@@ -353,6 +383,11 @@ void Detect_RecordChargerClawHitFromDamage(int victim, int attacker, int inflict
 bool Detect_ShouldAnnounceChargerClawSummary(int charger)
 {
 	if (!IsValidZombieClass(charger, L4D2ZombieClass_Charger))
+	{
+		return false;
+	}
+
+	if (g_DetectChargerClaw[charger].disabledByPin)
 	{
 		return false;
 	}
