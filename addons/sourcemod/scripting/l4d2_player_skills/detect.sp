@@ -626,6 +626,7 @@ float g_fDetectLastWeaponFireTime[MAXPLAYERS + 1];
 DetectHunterShotWindowState g_DetectHunterShotWindow[MAXPLAYERS + 1];
 DetectSkeetQualityWindowState g_DetectSkeetQualityWindow[MAXPLAYERS + 1];
 DetectRockTrack g_DetectRocks[L4D2_SKILLS_MAX_ROCKS];
+int g_iDetectActiveRocks = 0;
 StringMap g_smDetectCarAlarmTargets = null;
 StringMap g_smDetectCarGlassParents = null;
 StringMap g_smDetectCarPendingSurvivor = null;
@@ -970,6 +971,8 @@ void Detect_ResetRocks()
 	{
 		g_DetectRocks[slot].Reset();
 	}
+
+	g_iDetectActiveRocks = 0;
 }
 
 bool Detect_IsTrackableSiLifeKillClass(int client)
