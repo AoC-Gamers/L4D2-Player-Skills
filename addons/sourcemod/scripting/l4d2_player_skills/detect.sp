@@ -4016,12 +4016,6 @@ Action Detect_OnTakeDamage_Client(int victim, int &attacker, int &inflictor, flo
 
 	if (!roundLive || !validInfected)
 	{
-		if (roundLive)
-		{
-			int chargerWeaponId = IsValidZombieClass(attacker, L4D2ZombieClass_Charger) ? WEPID_CHARGER_CLAW : WEPID_NONE;
-			Detect_RecordChargerClawHitFromDamage(victim, attacker, inflictor, damage, damagetype, chargerWeaponId);
-		}
-
 		return Plugin_Continue;
 	}
 

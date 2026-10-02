@@ -10,6 +10,7 @@ Handle g_hForwardBossSessionFinalized = INVALID_HANDLE;
 Handle g_hForwardTankSessionClosed = INVALID_HANDLE;
 Handle g_hForwardSkillSummaryFinalized = INVALID_HANDLE;
 Handle g_hForwardKillSummaryFinalized = INVALID_HANDLE;
+bool g_bSummaryFinalizedForRound;
 
 static const L4D2ApiEventFamily g_ApiEventFamilyBySkill[L4D2Skill_Size] =
 {
@@ -688,8 +689,21 @@ int API_CreateKillSummaryFromCurrentState()
 	return g_KillSummaries[slot].id;
 }
 
+void API_ResetRoundSummaryState()
+{
+	g_bSummaryFinalizedForRound = false;
+	Skills_ResetEvents();
+}
+
 void API_FinalizeSummaryFromCurrentState()
 {
+	if (g_bSummaryFinalizedForRound)
+	{
+		return;
+	}
+
+	g_bSummaryFinalizedForRound = true;
+
 	int skillSummaryId = API_CreateSkillSummaryFromCurrentState();
 	if (skillSummaryId > 0 && g_hForwardSkillSummaryFinalized != INVALID_HANDLE)
 	{

@@ -126,6 +126,17 @@ void Detect_SetChargerCharging(int charger, bool state)
 	}
 }
 
+void Detect_StartChargerCharge(int charger)
+{
+	if (!IsValidZombieClass(charger, L4D2ZombieClass_Charger))
+	{
+		return;
+	}
+
+	g_DetectChargerBowl[charger].Reset();
+	Detect_SetChargerCharging(charger, true);
+}
+
 void Detect_DisableChargerClawSummaryByPin(int charger, const char[] source)
 {
 	if (!IsValidZombieClass(charger, L4D2ZombieClass_Charger))
@@ -187,8 +198,7 @@ void Detect_EventChargerChargeStart(Event event)
 			charger);
 	}
 
-	g_DetectChargerBowl[charger].Reset();
-	Detect_SetChargerCharging(charger, true);
+	// ability_use opens charge. This event can repeat or arrive after charge_end.
 }
 
 void Detect_EventChargerChargeEnd(Event event)

@@ -327,7 +327,7 @@ stock int Skills_GetClientActiveWeaponId(int client)
 }
 
 /**
- * @brief Clears the circular runtime buffer of detected skill events.
+ * @brief Clears round-local events without reusing public event IDs.
  *
  * @noreturn
  */
@@ -338,7 +338,6 @@ stock void Skills_ResetEvents()
 		g_SkillEvents[index].Reset();
 	}
 
-	g_iEventSerial	 = 0;
 	g_iNextEventSlot = 0;
 }
 

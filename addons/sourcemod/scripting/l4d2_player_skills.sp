@@ -677,7 +677,7 @@ public void OnMapStart()
 {
 	g_Runtime.roundLive = false;
 	Skills_ResetIdentityCache();
-	Skills_ResetEvents();
+	API_ResetRoundSummaryState();
 	Boss_ResetAll();
 	Detect_ResetAll();
 }
@@ -983,6 +983,7 @@ void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 		return;
 	}
 
+	API_ResetRoundSummaryState();
 	g_Runtime.roundLive = false;
 	Boss_OnRoundStart();
 	Detect_OnRoundStart();
