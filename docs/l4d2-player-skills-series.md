@@ -45,6 +45,10 @@ La unidad real es el snapshot finalizado de:
 - mitad survivor en `Versus`
 - mapa en `Scavenge` y `Survival` según el summary que publique `skills`
 
+Cada snapshot incluye solo los eventos de su ronda o mitad. El buffer de eventos
+se limpia al comenzar la siguiente ronda, después de conservar el snapshot
+finalizado y permitir consultas durante la intermisión.
+
 ## Commands
 
 - `sm_skills_series`

@@ -34,10 +34,11 @@ clasificación rica de `Level` se resuelva primero.
 - `g_bDetectChargerKilledCharging`
 - `g_DetectPendingChargerDeath`
 
-Fuentes auxiliares de verdad para charge:
+Fuentes para el estado de charge:
 
-- `ability_use` con `ability_charge`
-- `charger_charge_start`
+- `ability_use` con `ability_charge` abre una carga nueva;
+- `charger_charge_start` es observacional: puede repetirse o llegar después de
+  `charger_charge_end`, por lo que no reinicia Bowl ni reabre la carga;
 - `charger_charge_end`
 - `charger_killed`
 
@@ -74,7 +75,7 @@ Notas:
 
 ```mermaid
 flowchart TD
-    A[ability_charge / charge_start] --> B[Open effective charge window]
+    A[ability_use con ability_charge] --> B[Open effective charge window]
     B --> C[OnTakeDamage / OnTakeDamagePost on Charger]
     C --> D[charger_killed reports melee/charging]
     D --> E{Melee and charging context valid}

@@ -105,7 +105,7 @@ void Detect_EventAbilityUse(Event event)
 			"Charger charge opened from ability_use. charger=%d ability=%s",
 			client,
 			ability);
-		Detect_SetChargerCharging(client, true);
+		Detect_StartChargerCharge(client);
 	}
 	else if (StrEqual(ability, "ability_leap") && IsValidZombieClass(client, L4D2ZombieClass_Jockey))
 	{
