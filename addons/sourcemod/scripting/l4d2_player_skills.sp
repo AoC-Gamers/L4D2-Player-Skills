@@ -64,6 +64,7 @@ ConVar	g_cvSpitterHealth		 = null;
 ConVar	g_cvJockeyHealth		 = null;
 ConVar	g_cvChargerHealth		 = null;
 ConVar	g_cvTankHealth			 = null;
+ConVar	g_cvDifficulty			 = null;
 ConVar	g_cvWitchHealth			 = null;
 ConVar	g_cvSurvivorLimit		 = null;
 ConVar	g_cvMaxPlayerZombies	 = null;
@@ -141,7 +142,7 @@ methodmap L4D2BossSession
 	 * @param type          Boss type to track.
 	 * @param entity        Current entity index for the boss.
 	 * @param userid        Userid of the current controller when applicable.
-	 * @param maxHealth     Baseline maximum health for the session.
+	 * @param maxHealth     Expected maximum health captured for this session.
 	 *
 	 * @noreturn
 	 */
@@ -158,7 +159,13 @@ methodmap L4D2BossSession
 		g_BossSessions[index].entRef	 = entity > 0 ? EntIndexToEntRef(entity) : INVALID_ENT_REFERENCE;
 		g_BossSessions[index].userid	 = userid;
 		g_BossSessions[index].maxHealth	 = maxHealth;
-		g_BossSessions[index].lastHealth = maxHealth;
+		// maxHealth is the captured expected maximum; lastHealth is a current observation.
+		int observedHealth = maxHealth;
+		if (type == L4D2Boss_Tank && IsValidClient(entity))
+		{
+			observedHealth = GetClientHealth(entity);
+		}
+		g_BossSessions[index].lastHealth = observedHealth;
 		g_BossSessions[index].startedAt	 = GetGameTime();
 		g_BossSessions[index].closedAt	 = 0.0;
 		g_BossSessions[index].printed	 = false;
@@ -542,6 +549,7 @@ public void OnPluginStart()
 	g_cvJockeyHealth	   = FindConVar("z_jockey_health");
 	g_cvChargerHealth	   = FindConVar("z_charger_health");
 	g_cvTankHealth		   = FindConVar("z_tank_health");
+	g_cvDifficulty		   = FindConVar("z_difficulty");
 	g_cvWitchHealth		   = FindConVar("z_witch_health");
 
 	g_cvSurvivorLimit      = FindConVar("survivor_limit");

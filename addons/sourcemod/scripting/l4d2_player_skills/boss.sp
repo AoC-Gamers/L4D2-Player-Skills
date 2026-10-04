@@ -765,7 +765,12 @@ void Boss_OnTankTakeDamagePost(int victim, int attacker, int inflictor, float da
 	}
 
 	int maxHealth = g_BossSessions[sessionIndex].maxHealth;
-	if (maxHealth > 0 && g_BossSessions[sessionIndex].totalDamage + roundedDamage > maxHealth)
+	if (maxHealth <= 0)
+	{
+		return;
+	}
+
+	if (g_BossSessions[sessionIndex].totalDamage + roundedDamage > maxHealth)
 	{
 		roundedDamage = maxHealth - g_BossSessions[sessionIndex].totalDamage;
 	}
@@ -1262,6 +1267,11 @@ int Boss_EnsureTankSession(int client)
 	}
 
 	int maxHealth = Skills_GetSpecialMaxHealth(L4D2ZombieClass_Tank);
+	if (maxHealth <= 0)
+	{
+		return -1;
+	}
+
 	L4D2BossSession(slot).Start(L4D2Boss_Tank, client, userid, maxHealth);
 	if (tankId > 0)
 	{

@@ -6,6 +6,139 @@
 #define L4D2_SKILLS_FAST_POP_TIME 1.0
 #define L4D2_SKILLS_COMPETITIVE_POP_MAX_TIME 3.0
 
+enum TankHealthContextError
+{
+	TankHealthContextError_None = 0,
+	TankHealthContextError_BaseHealth,
+	TankHealthContextError_ModeDependency,
+	TankHealthContextError_UnknownMode,
+	TankHealthContextError_DifficultyUnavailable,
+	TankHealthContextError_DifficultyUnknown
+}
+
+static TankHealthContextError g_TankHealthContextLastError = TankHealthContextError_None;
+
+static void Skills_TankHealthContextError(TankHealthContextError error, const char[] message)
+{
+	if (g_TankHealthContextLastError != error)
+	{
+		LogError("Tank expected-health resolution failed: %s", message);
+		g_TankHealthContextLastError = error;
+	}
+}
+
+/**
+ * @brief Applies the standard L4D2 mode and difficulty factor to base Tank health.
+ * @remarks RoundToNearest is the explicit integer policy for fractional results;
+ *          exact parity with the engine's internal conversion is not verified.
+ *          Survival and Scavenge retain the prior unadjusted base-health behavior.
+ *
+ * @param baseHealth    Base health configured by z_tank_health.
+ * @param mode          Base mode resolved through Left4DHooks.
+ * @param difficulty    Current z_difficulty value; used only in Coop.
+ *
+ * @return              Contextualized expected maximum, or 0 when unresolved.
+ */
+stock int Skills_CalculateContextualTankHealth(int baseHealth, PlayerSkillsGameMode mode, const char[] difficulty)
+{
+	if (baseHealth <= 0)
+	{
+		return 0;
+	}
+
+	float factor;
+	switch (mode)
+	{
+		case PlayerSkillsGameMode_Versus:
+		{
+			factor = 1.5;
+		}
+		case PlayerSkillsGameMode_Coop:
+		{
+			if (StrEqual(difficulty, "Easy", false))
+			{
+				factor = 0.75;
+			}
+			else if (StrEqual(difficulty, "Normal", false))
+			{
+				factor = 1.0;
+			}
+			else if (StrEqual(difficulty, "Hard", false) || StrEqual(difficulty, "Impossible", false))
+			{
+				factor = 2.0;
+			}
+			else
+			{
+				return 0;
+			}
+		}
+		case PlayerSkillsGameMode_Survival, PlayerSkillsGameMode_Scavenge:
+		{
+			return baseHealth;
+		}
+		default:
+		{
+			return 0;
+		}
+	}
+
+	return RoundToNearest(float(baseHealth) * factor);
+}
+
+/**
+ * @brief Resolves expected maximum Tank health for the current game context.
+ * @remarks z_tank_health is the base setting. Survival and Scavenge retain the
+ *          existing base-health behavior; unknown contexts return 0.
+ *
+ * @param baseHealth    Base health configured by z_tank_health.
+ *
+ * @return              Expected maximum health, or 0 when resolution fails.
+ */
+stock int Skills_ContextualizeTankHealth(int baseHealth)
+{
+	if (baseHealth <= 0)
+	{
+		Skills_TankHealthContextError(TankHealthContextError_BaseHealth, "z_tank_health base value is not positive");
+		return 0;
+	}
+
+	PlayerSkillsGameMode mode = Skills_GetCurrentGameMode();
+	if (mode == PlayerSkillsGameMode_Unknown)
+	{
+		if (!g_Runtime.hasLeft4DHooks || GetFeatureStatus(FeatureType_Native, "L4D_GetGameModeType") != FeatureStatus_Available)
+		{
+			Skills_TankHealthContextError(TankHealthContextError_ModeDependency, "Left4DHooks game-mode native is unavailable");
+		}
+		else
+		{
+			Skills_TankHealthContextError(TankHealthContextError_UnknownMode, "Left4DHooks could not resolve the current base mode");
+		}
+		return 0;
+	}
+
+	char difficulty[32];
+	difficulty[0] = '\0';
+	if (mode == PlayerSkillsGameMode_Coop)
+	{
+		if (g_cvDifficulty == null)
+		{
+			Skills_TankHealthContextError(TankHealthContextError_DifficultyUnavailable, "z_difficulty ConVar is unavailable");
+			return 0;
+		}
+		g_cvDifficulty.GetString(difficulty, sizeof(difficulty));
+	}
+
+	int expectedHealth = Skills_CalculateContextualTankHealth(baseHealth, mode, difficulty);
+	if (expectedHealth <= 0)
+	{
+		Skills_TankHealthContextError(TankHealthContextError_DifficultyUnknown, "z_difficulty is not Easy, Normal, Hard, or Impossible");
+		return 0;
+	}
+
+	g_TankHealthContextLastError = TankHealthContextError_None;
+	return expectedHealth;
+}
+
 static const char g_L4D2WeaponDisplayNames[WEPID_SIZE][] =
 {
 	"None", "Pistol", "Uzi",
@@ -967,7 +1100,9 @@ stock bool Skills_IsClosetRescueRelevant()
 }
 
 /**
- * @brief Returns the configured maximum health for a special infected class.
+ * @brief Returns expected maximum health for a special infected class.
+ * @remarks For Tanks, the configured base health is contextualized by base mode
+ *          and Coop difficulty. This differs from observed current health.
  *
  * @param zombieClass    Target infected class.
  *
@@ -1003,7 +1138,8 @@ stock int Skills_GetSpecialMaxHealth(L4D2ZombieClassType zombieClass)
 		}
 		case L4D2ZombieClass_Tank:
 		{
-			return g_cvTankHealth != null ? g_cvTankHealth.IntValue : L4D2_SKILLS_DEFAULT_TANK_HEALTH;
+			int baseHealth = g_cvTankHealth != null ? g_cvTankHealth.IntValue : L4D2_SKILLS_DEFAULT_TANK_HEALTH;
+			return Skills_ContextualizeTankHealth(baseHealth);
 		}
 	}
 
