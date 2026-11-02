@@ -1,0 +1,648 @@
+#pragma semicolon 1
+#pragma newdecls required
+
+#include <sourcemod>
+#include <sdktools>
+#include <dhooks>
+@ACTIONS_ABI@
+#undef REQUIRE_EXTENSIONS
+#include <sdkhooks>
+#define REQUIRE_EXTENSIONS
+#undef REQUIRE_PLUGIN
+#include <left4dhooks>
+#include <l4d2util>
+#include <l4d2_player_skills>
+#include <l4d2_player_stats>
+#include <l4d_tank_control_eq>
+#define REQUIRE_PLUGIN
+
+// Standalone diagnostic observer. Never packaged in the Skills product.
+#define CATALOG_SHA256 "@CATALOG_SHA256@"
+#define TRACE_DIRECTORY "logs/l4d2_skills_smoke"
+#define TraceSource_Engine 0
+#define TraceSource_SDKHooks 1
+#define TraceSource_Left4DHooks 2
+#define TRACE_SOURCES 3
+
+static const char g_SourceNames[][] = {"engine", "sdkhooks", "left4dhooks"};
+static const char g_EventNames[][] =
+{
+@EVENT_NAMES@
+};
+
+enum struct SmokeRuntimeState
+{
+	bool lateLoad;
+	bool hasSDKHooks;
+	bool sdkHooksNeedsSync;
+	bool sdkHooksResetPending;
+	bool hasLeft4DHooks;
+	bool hasPlayerStats;
+	bool hasTankControl;
+	bool configsReady;
+
+	void Reset()
+	{
+		this.lateLoad = false;
+		this.hasSDKHooks = false;
+		this.sdkHooksNeedsSync = false;
+		this.sdkHooksResetPending = false;
+		this.hasLeft4DHooks = false;
+		this.hasPlayerStats = false;
+		this.hasTankControl = false;
+		this.configsReady = false;
+	}
+}
+SmokeRuntimeState g_Runtime;
+File g_Traces[TRACE_SOURCES];
+bool g_PreHooked[sizeof(g_EventNames)];
+bool g_PostHooked[sizeof(g_EventNames)];
+int g_Sequence;
+int g_MapEpoch;
+int g_ObservedGeneration[MAXPLAYERS + 1];
+bool g_SpawnObserved[MAXPLAYERS + 1];
+int g_RunSerial;
+int g_ManualMarkerSerial;
+int g_SmokeEpisodeSerial;
+int g_WriteFailures[TRACE_SOURCES];
+int g_TruncatedLines[TRACE_SOURCES];
+char g_Map[PLATFORM_MAX_PATH];
+char g_Path[PLATFORM_MAX_PATH];
+char g_RunId[64];
+
+public Plugin myinfo =
+{
+	name = "L4D2 Skills Source Observer",
+	author = "lechuga",
+	description = "Separate engine, SDKHooks and Left4DHooks smoke traces",
+	version = "1.5.0"
+};
+
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int errMax)
+{
+	g_Runtime.Reset();
+	g_Runtime.lateLoad = late;
+	MarkNativeAsOptional("SDKHookEx");
+	MarkNativeAsOptional("SDKUnhook");
+	return APLRes_Success;
+}
+
+public void OnPluginStart()
+{
+	char game[32];
+	GetGameFolderName(game, sizeof(game));
+	if (!StrEqual(game, "left4dead2")) SetFailState("This observer requires Left 4 Dead 2.");
+	GetCurrentMap(g_Map, sizeof(g_Map));
+	for (int i = 0; i < sizeof(g_EventNames); i++)
+	{
+		g_PreHooked[i] = HookEventEx(g_EventNames[i], TracePre, EventHookMode_Pre);
+		g_PostHooked[i] = HookEventEx(g_EventNames[i], TracePost, EventHookMode_Post);
+	}
+	RegAdminCmd("sm_start", CommandStart, ADMFLAG_ROOT);
+	RegAdminCmd("sm_stop", CommandStop, ADMFLAG_ROOT);
+	RegAdminCmd("sm_skills_smoke_events_status", CommandStatus, ADMFLAG_ROOT);
+	RegAdminCmd("sm_skills_smoke_sources_sample", CommandSample, ADMFLAG_ROOT);
+	RegAdminCmd("sm_mark", CommandMark, ADMFLAG_ROOT);
+}
+
+public void OnAllPluginsLoaded()
+{
+	g_Runtime.hasLeft4DHooks = LibraryExists("left4dhooks");
+	g_Runtime.hasPlayerStats = LibraryExists(LIBRARY_L4D2PLAYERSTATS);
+	g_Runtime.hasTankControl = LibraryExists(LIBRARY_L4D_TANK_CONTROL_EQ);
+}
+
+public void OnLibraryAdded(const char[] name)
+{
+	if (StrEqual(name, "sdkhooks")) g_Runtime.sdkHooksNeedsSync = true;
+	if (StrEqual(name, "left4dhooks")) g_Runtime.hasLeft4DHooks = true;
+	if (StrEqual(name, LIBRARY_L4D2PLAYERSTATS)) g_Runtime.hasPlayerStats = true;
+	if (StrEqual(name, LIBRARY_L4D_TANK_CONTROL_EQ)) g_Runtime.hasTankControl = true;
+	int seq = TraceBegin(TraceSource_Engine, "OnLibraryAdded");
+	TraceTextValue(TraceSource_Engine, seq, "library", name);
+}
+
+public void OnLibraryRemoved(const char[] name)
+{
+	if (StrEqual(name, "sdkhooks"))
+	{
+		g_Runtime.hasSDKHooks = false;
+		g_Runtime.sdkHooksNeedsSync = true;
+		g_Runtime.sdkHooksResetPending = true;
+	}
+	if (StrEqual(name, "left4dhooks")) g_Runtime.hasLeft4DHooks = false;
+	if (StrEqual(name, LIBRARY_L4D2PLAYERSTATS)) g_Runtime.hasPlayerStats = false;
+	if (StrEqual(name, LIBRARY_L4D_TANK_CONTROL_EQ)) g_Runtime.hasTankControl = false;
+	int seq = TraceBegin(TraceSource_Engine, "OnLibraryRemoved");
+	TraceTextValue(TraceSource_Engine, seq, "library", name);
+}
+
+public void OnConfigsExecuted()
+{
+	g_Runtime.configsReady = true;
+	TraceMarker("configs_executed", 0);
+}
+
+public void OnMapStart()
+{
+	g_MapEpoch++;
+	g_Runtime.configsReady = false;
+	for (int client = 1; client <= MaxClients; client++) g_SpawnObserved[client] = false;
+	GetCurrentMap(g_Map, sizeof(g_Map));
+	TraceMarker("map_start", 0);
+	if (TraceActive())
+	{
+		g_Runtime.sdkHooksNeedsSync = true;
+		SmokeSDK_Reconcile();
+		SmokeWitch_Start();
+		SmokeEpisodes_Start();
+		SmokeActions_Start();
+	}
+}
+
+public void OnMapEnd()
+{
+	g_Runtime.configsReady = false;
+	SmokeSDK_Stop();
+	SmokeEpisodes_Stop("map_end");
+	SmokeActions_Stop();
+	SmokeWitch_Stop();
+	TraceMarker("map_end", 0);
+	FlushTrace();
+}
+
+public void OnClientPutInServer(int client)
+{
+	g_ObservedGeneration[client]++;
+	g_SpawnObserved[client] = false;
+	TraceMarker("client_put", GetClientUserId(client));
+	if (TraceActive()) SmokeSDK_HookEntity(client);
+}
+
+public void OnClientDisconnect(int client)
+{
+	TraceMarker("client_disconnect", GetClientUserId(client));
+	g_ObservedGeneration[client]++;
+	g_SpawnObserved[client] = false;
+}
+
+public void OnEntityCreated(int entity, const char[] classname)
+{
+	int seq = TraceBegin(TraceSource_SDKHooks, "OnEntityCreated");
+	TraceEntityValue(TraceSource_SDKHooks, seq, "entity", entity);
+	TraceTextValue(TraceSource_SDKHooks, seq, "classname", classname);
+	SmokeSDK_OnEntityCreated(entity, classname);
+}
+
+public void OnPluginEnd()
+{
+	StopTrace();
+}
+
+bool TraceActive()
+{
+	return g_Traces[TraceSource_Engine] != null;
+}
+
+public Action CommandStart(int client, int args)
+{
+	if (TraceActive())
+	{
+		ReplyToCommand(client, "Trace already active: %s", g_Path);
+		return Plugin_Handled;
+	}
+	char directory[PLATFORM_MAX_PATH];
+	BuildPath(Path_SM, directory, sizeof(directory), TRACE_DIRECTORY);
+	if (!DirExists(directory) && !CreateDirectory(directory, 511))
+	{
+		ReplyToCommand(client, "Cannot create trace directory.");
+		return Plugin_Handled;
+	}
+	char stamp[32];
+	FormatTime(stamp, sizeof(stamp), "%Y%m%d-%H%M%S");
+	// Do not append/reuse a run ID after reload; all three files share this unique stem.
+	bool exists;
+	do
+	{
+		g_RunSerial++;
+		FormatEx(g_RunId, sizeof(g_RunId), "%s-%d", stamp, g_RunSerial);
+		FormatEx(g_Path, sizeof(g_Path), "%s/run-%s", directory, g_RunId);
+		exists = false;
+		for (int source = 0; source < TRACE_SOURCES; source++)
+		{
+			char path[PLATFORM_MAX_PATH];
+			FormatEx(path, sizeof(path), "%s.%s.jsonl", g_Path, g_SourceNames[source]);
+			if (FileExists(path)) exists = true;
+		}
+	} while (exists);
+	for (int source = 0; source < TRACE_SOURCES; source++)
+	{
+		char path[PLATFORM_MAX_PATH];
+		FormatEx(path, sizeof(path), "%s.%s.jsonl", g_Path, g_SourceNames[source]);
+		g_Traces[source] = OpenFile(path, "w");
+		if (g_Traces[source] == null)
+		{
+			for (int opened = 0; opened < source; opened++) delete g_Traces[opened];
+			ReplyToCommand(client, "Cannot open all source files: %s", path);
+			return Plugin_Handled;
+		}
+		g_WriteFailures[source] = 0;
+		g_TruncatedLines[source] = 0;
+	}
+	g_Sequence = 0;
+	g_SmokeEpisodeSerial = 0;
+	g_ManualMarkerSerial = 0;
+	for (int source = 0; source < TRACE_SOURCES; source++)
+	{
+		TraceLine(source, "{\"kind\":\"catalog\",\"source\":\"%s\",\"run_id\":\"%s\",\"sha256\":\"%s\",\"names\":%d,\"wall_time\":%d,\"observer_late_load\":%d}", g_SourceNames[source], g_RunId, CATALOG_SHA256, sizeof(g_EventNames), GetTime(), g_Runtime.lateLoad);
+		TraceBegin(source, "capture_start");
+	}
+	for (int i = 0; i < sizeof(g_EventNames); i++)
+	{
+		TraceLine(TraceSource_Engine, "{\"kind\":\"coverage\",\"name\":\"%s\",\"pre\":%d,\"post\":%d}", g_EventNames[i], g_PreHooked[i], g_PostHooked[i]);
+	}
+	TraceLHCoverage();
+	SmokeWitch_Start();
+	SmokeEpisodes_Start();
+	SmokeActions_Start();
+	g_Runtime.sdkHooksNeedsSync = true;
+	SmokeSDK_Reconcile();
+	int rosterSequence = TraceBegin(TraceSource_Engine, "initial_roster");
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (IsClientInGame(i)) TraceUserId(rosterSequence, "initial_client", GetClientUserId(i));
+	}
+	FlushTrace();
+	ReplyToCommand(client, "Three source traces active: %s.*.jsonl", g_Path);
+	return Plugin_Handled;
+}
+
+public Action CommandStop(int client, int args)
+{
+	StopTrace();
+	ReplyToCommand(client, "Source traces stopped: %s", g_Path);
+	return Plugin_Handled;
+}
+
+public Action CommandStatus(int client, int args)
+{
+	ReplyToCommand(client, "Source traces active=%d sequence=%d stem=%s", TraceActive(), g_Sequence, g_Path);
+	for (int source = 0; source < TRACE_SOURCES; source++)
+	{
+		ReplyToCommand(client, "%s write_failures=%d truncated_lines=%d", g_SourceNames[source], g_WriteFailures[source], g_TruncatedLines[source]);
+	}
+	return Plugin_Handled;
+}
+
+public Action CommandSample(int client, int args)
+{
+	if (!TraceActive()) ReplyToCommand(client, "Start capture first.");
+	else
+	{
+		TraceLHCoverage();
+		SmokeLH_Sample();
+		SmokeAux_Sample();
+		FlushTrace();
+		ReplyToCommand(client, "Manual state sample recorded.");
+	}
+	return Plugin_Handled;
+}
+
+public Action CommandMark(int client, int args)
+{
+	if (!TraceActive())
+	{
+		ReplyToCommand(client, "Start capture first.");
+		return Plugin_Handled;
+	}
+	if (args < 1)
+	{
+		ReplyToCommand(client, "Usage: sm_mark <description>");
+		return Plugin_Handled;
+	}
+	char text[1024];
+	// Reject a saturated input buffer instead of silently recording a partial note.
+	if (GetCmdArgString(text, sizeof(text)) >= sizeof(text) - 1)
+	{
+		ReplyToCommand(client, "Marker too long: use at most 1022 input bytes.");
+		return Plugin_Handled;
+	}
+	TrimString(text);
+	StripQuotes(text);
+	if (TrimString(text) == 0)
+	{
+		ReplyToCommand(client, "Marker description cannot be empty.");
+		return Plugin_Handled;
+	}
+	int markerId = ++g_ManualMarkerSerial;
+	for (int source = 0; source < TRACE_SOURCES; source++)
+	{
+		// A manual annotation, never an engine/SDKHooks/Left4DHooks observation.
+		int sequence = TraceBegin(source, "manual_marker");
+		TraceIntValue(source, sequence, "marker_id", markerId);
+		TraceIntValue(source, sequence, "issuer_userid", client > 0 ? GetClientUserId(client) : 0);
+		if (client > 0) TraceEntityValue(source, sequence, "issuer", client);
+		TraceTextValue(source, sequence, "text", text);
+	}
+	FlushTrace();
+	ReplyToCommand(client, "Marker %d written to all three traces; check status for write failures.", markerId);
+	return Plugin_Handled;
+}
+
+void StopTrace()
+{
+	SmokeEpisodes_Stop("capture_stopped");
+	SmokeActions_Stop();
+	SmokeWitch_Stop();
+	SmokeSDK_Stop();
+	if (!TraceActive()) return;
+	for (int source = 0; source < TRACE_SOURCES; source++) TraceBegin(source, "capture_stop");
+	// Include payload flush failures in health. Persisting health itself can still
+	// fail, so final command status and SourceMod errors remain part of acceptance.
+	FlushTrace();
+	for (int source = 0; source < TRACE_SOURCES; source++)
+	{
+		TraceLine(source, "{\"kind\":\"health\",\"scope\":\"through_payload_flush\",\"write_failures\":%d,\"truncated_lines\":%d}", g_WriteFailures[source], g_TruncatedLines[source]);
+	}
+	FlushTrace();
+	for (int source = 0; source < TRACE_SOURCES; source++) delete g_Traces[source];
+}
+
+void TraceLine(int source, const char[] format, any ...)
+{
+	if (g_Traces[source] == null) return;
+	char line[4096];
+	int length = VFormat(line, sizeof(line), format, 3);
+	if (length == sizeof(line) - 1)
+	{
+		g_TruncatedLines[source]++;
+		LogError("Smoke %s line may be truncated: %s", g_SourceNames[source], g_Path);
+	}
+	if (!g_Traces[source].WriteLine("%s", line))
+	{
+		g_WriteFailures[source]++;
+		if (g_WriteFailures[source] == 1) LogError("Smoke %s write failed: %s", g_SourceNames[source], g_Path);
+	}
+}
+
+void FlushTrace()
+{
+	for (int source = 0; source < TRACE_SOURCES; source++)
+	{
+		if (g_Traces[source] != null && !g_Traces[source].Flush())
+		{
+			g_WriteFailures[source]++;
+			LogError("Smoke %s flush failed: %s", g_SourceNames[source], g_Path);
+		}
+	}
+}
+
+int TraceBegin(int source, const char[] callback)
+{
+	if (g_Traces[source] == null) return 0;
+	int sequence = ++g_Sequence;
+	TraceLine(source, "{\"kind\":\"callback\",\"seq\":%d,\"tick\":%d,\"game_time\":%.9f,\"engine_time\":%.9f,\"map_epoch\":%d,\"map\":\"%s\",\"callback\":\"%s\"}", sequence, GetGameTickCount(), GetGameTime(), GetEngineTime(), g_MapEpoch, g_Map, callback);
+	return sequence;
+}
+
+void TraceIntValue(int source, int sequence, const char[] key, int value)
+{
+	if (sequence <= 0) return;
+	TraceLine(source, "{\"kind\":\"value\",\"seq\":%d,\"key\":\"%s\",\"type\":\"int\",\"value\":%d}", sequence, key, value);
+}
+
+void TraceFloatValue(int source, int sequence, const char[] key, float value)
+{
+	if (sequence <= 0) return;
+	TraceLine(source, "{\"kind\":\"value\",\"seq\":%d,\"key\":\"%s\",\"type\":\"float\",\"text\":\"%.9f\",\"bits\":%d}", sequence, key, value, view_as<int>(value));
+}
+
+void TraceVectorValue(int source, int sequence, const char[] key, const float value[3])
+{
+	if (sequence <= 0) return;
+	for (int axis = 0; axis < 3; axis++)
+	{
+		char axisKey[96];
+		FormatEx(axisKey, sizeof(axisKey), "%s_%d", key, axis);
+		TraceFloatValue(source, sequence, axisKey, value[axis]);
+	}
+}
+
+void TraceEntityValue(int source, int sequence, const char[] key, int entity)
+{
+	if (sequence <= 0) return;
+	// SourceMod references use bit 31 and are negative cells. Its resolver also
+	// accepts ordinary indices, including non-networked entities above max edicts.
+	int resolved = EntRefToEntIndex(entity);
+	bool valid = resolved >= 0 && IsValidEntity(entity);
+	int entref = valid ? EntIndexToEntRef(resolved) : (entity < 0 && entity != INVALID_ENT_REFERENCE ? entity : INVALID_ENT_REFERENCE);
+	int userid;
+	int serial;
+	int generation;
+	int team = -1;
+	int zombieClass = -1;
+	int alive = -1;
+	int health = -1;
+	if (valid && resolved > 0 && resolved <= MaxClients && IsClientInGame(resolved))
+	{
+		userid = GetClientUserId(resolved);
+		serial = GetClientSerial(resolved);
+		generation = g_ObservedGeneration[resolved];
+		team = GetClientTeam(resolved);
+		alive = IsPlayerAlive(resolved);
+		health = GetClientHealth(resolved);
+		if (HasEntProp(resolved, Prop_Send, "m_zombieClass")) zombieClass = GetEntProp(resolved, Prop_Send, "m_zombieClass");
+	}
+	TraceLine(source, "{\"kind\":\"entity\",\"seq\":%d,\"key\":\"%s\",\"entity\":%d,\"resolved_index\":%d,\"valid\":%d,\"entref\":%d,\"userid\":%d,\"serial\":%d,\"observed_generation\":%d,\"context_sample\":1,\"team\":%d,\"zombie_class\":%d,\"alive\":%d,\"health\":%d}", sequence, key, entity, valid ? resolved : -1, valid, entref, userid, serial, generation, team, zombieClass, alive, health);
+}
+
+public void OnGameFrame()
+{
+	if (TraceActive())
+	{
+		TraceBegin(TraceSource_Engine, "OnGameFrame");
+		SmokeSDK_Reconcile();
+		SmokeWitch_Heartbeat();
+	}
+}
+
+void TraceLHCoverage()
+{
+	int sequence = TraceBegin(TraceSource_Left4DHooks, "coverage");
+	TraceIntValue(TraceSource_Left4DHooks, sequence, "provider_present", g_Runtime.hasLeft4DHooks);
+	TraceIntValue(TraceSource_Left4DHooks, sequence, "configs_ready", g_Runtime.configsReady);
+@LEFT4DHOOKS_COVERAGE@
+}
+
+@SDKHOOKS_MODULE@
+@LEFT4DHOOKS_MODULE@
+@LEFT4DHOOKS_SAMPLES@
+@AUXILIARY_MODULE@
+@WITCH_TARGET_MODULE@
+@WITCH_ACTIONS_MODULE@
+@WITCH_EPISODES_MODULE@
+
+void TracePublication(const char[] family, int id, int type)
+{
+	if (g_Traces[TraceSource_Engine] == null) return;
+	g_Sequence++;
+	TraceLine(TraceSource_Engine, "{\"kind\":\"publication\",\"seq\":%d,\"tick\":%d,\"game_time\":%.9f,\"engine_time\":%.9f,\"map_epoch\":%d,\"family\":\"%s\",\"id\":%d,\"type\":%d}", g_Sequence, GetGameTickCount(), GetGameTime(), GetEngineTime(), g_MapEpoch, family, id, type);
+}
+
+public Action PlayerSkills_OnSkillDetected(int eventId, L4D2ApiSkillType type)
+{
+	TracePublication("skill_event", eventId, view_as<int>(type));
+	return Plugin_Continue;
+}
+
+public Action PlayerSkills_OnKillDetected(int eventId, L4D2ApiKillType type)
+{
+	TracePublication("kill_event", eventId, view_as<int>(type));
+	return Plugin_Continue;
+}
+
+public Action PlayerSkills_OnBossEventDetected(int eventId, L4D2ApiBossEventType type)
+{
+	TracePublication("boss_event", eventId, view_as<int>(type));
+	return Plugin_Continue;
+}
+
+public Action PlayerSkills_OnBossSessionFinalized(int sessionId, L4D2BossType type)
+{
+	TracePublication("boss_session", sessionId, view_as<int>(type));
+	return Plugin_Continue;
+}
+
+public void PlayerSkills_OnTankSessionClosed(int sessionId, L4D2TankSessionEndReason reason)
+{
+	TracePublication("tank_session_closed", sessionId, view_as<int>(reason));
+}
+
+public void PlayerSkills_OnSkillSummaryFinalized(int summaryId)
+{
+	TracePublication("skill_summary", summaryId, 0);
+}
+
+public void PlayerSkills_OnKillSummaryFinalized(int summaryId)
+{
+	TracePublication("kill_summary", summaryId, 0);
+}
+
+void TraceMarker(const char[] marker, int userid)
+{
+	if (g_Traces[TraceSource_Engine] == null) return;
+	g_Sequence++;
+	TraceLine(TraceSource_Engine, "{\"kind\":\"marker\",\"seq\":%d,\"tick\":%d,\"game_time\":%.9f,\"engine_time\":%.9f,\"map_epoch\":%d,\"marker\":\"%s\",\"userid\":%d}", g_Sequence, GetGameTickCount(), GetGameTime(), GetEngineTime(), g_MapEpoch, marker, userid);
+	TraceUserId(g_Sequence, marker, userid);
+}
+
+public Action TracePre(Event event, const char[] name, bool dontBroadcast)
+{
+	if (StrEqual(name, "player_spawn") && event != null)
+	{
+		int client = GetClientOfUserId(event.GetInt("userid"));
+		if (client > 0 && client <= MaxClients)
+		{
+			g_ObservedGeneration[client]++;
+			g_SpawnObserved[client] = true;
+		}
+	}
+	TraceEvent(event, name, "pre");
+	return Plugin_Continue;
+}
+
+public void TracePost(Event event, const char[] name, bool dontBroadcast)
+{
+	TraceEvent(event, name, "post");
+}
+
+void TraceEvent(Event event, const char[] name, const char[] phase)
+{
+	if (g_Traces[TraceSource_Engine] == null) return;
+	int sequence = ++g_Sequence;
+	TraceLine(TraceSource_Engine, "{\"kind\":\"event\",\"seq\":%d,\"tick\":%d,\"game_time\":%.9f,\"engine_time\":%.9f,\"map_epoch\":%d,\"map\":\"%s\",\"name\":\"%s\",\"phase\":\"%s\",\"valid\":%d}", sequence, GetGameTickCount(), GetGameTime(), GetEngineTime(), g_MapEpoch, g_Map, name, phase, event != null);
+	if (event == null) return;
+	TraceLine(TraceSource_Engine, "{\"kind\":\"broadcast\",\"seq\":%d,\"disabled\":%d}", sequence, event.BroadcastDisabled);
+	for (int i = 0; i < sizeof(g_EventNames); i++)
+	{
+		if (StrEqual(g_EventNames[i], name))
+		{
+			TracePayload(event, sequence, i);
+			break;
+		}
+	}
+	TraceLine(TraceSource_Engine, "{\"kind\":\"event_end\",\"seq\":%d}", sequence);
+}
+
+void TracePayload(Event event, int sequence, int index)
+{
+	switch (index)
+	{
+@PAYLOAD_CASES@
+	}
+}
+
+void TraceInt(Event event, int sequence, const char[] key)
+{
+	TraceLine(TraceSource_Engine, "{\"kind\":\"field\",\"seq\":%d,\"key\":\"%s\",\"type\":\"int\",\"value\":%d}", sequence, key, event.GetInt(key));
+}
+
+void TraceBool(Event event, int sequence, const char[] key)
+{
+	TraceLine(TraceSource_Engine, "{\"kind\":\"field\",\"seq\":%d,\"key\":\"%s\",\"type\":\"bool\",\"value\":%d}", sequence, key, event.GetBool(key));
+}
+
+void TraceFloat(Event event, int sequence, const char[] key)
+{
+	TraceFloatValue(TraceSource_Engine, sequence, key, event.GetFloat(key));
+}
+
+// Chunks keep each output line bounded. length==4095 explicitly marks a possible getter truncation.
+void TraceString(Event event, int sequence, const char[] key)
+{
+	char value[4096];
+	event.GetString(key, value, sizeof(value));
+	TraceTextValue(TraceSource_Engine, sequence, key, value, strlen(value) == sizeof(value) - 1);
+}
+
+void TraceTextValue(int source, int sequence, const char[] key, const char[] value, bool possibleTruncation = false)
+{
+	if (sequence <= 0) return;
+	int length = strlen(value);
+	TraceLine(source, "{\"kind\":\"string\",\"seq\":%d,\"key\":\"%s\",\"length\":%d,\"possible_truncation\":%d}", sequence, key, length, possibleTruncation);
+	for (int offset = 0; offset < length; offset += 128)
+	{
+		char escaped[769];
+		int out;
+		for (int i = offset; i < length && i < offset + 128; i++)
+		{
+			int c = value[i] & 255;
+			if (c == '"' || c == '\\')
+			{
+				escaped[out++] = '\\';
+				escaped[out++] = c;
+			}
+			else if (c < 32 || c >= 127)
+			{
+				// Escape bytes outside ASCII individually; the trace preserves bytes, not Unicode decoding.
+				out += FormatEx(escaped[out], sizeof(escaped) - out, "\\u%04x", c);
+			}
+			else escaped[out++] = c;
+		}
+		escaped[out] = '\0';
+		TraceLine(source, "{\"kind\":\"string_chunk\",\"seq\":%d,\"key\":\"%s\",\"offset\":%d,\"value\":\"%s\"}", sequence, key, offset, escaped);
+	}
+}
+
+void TraceUserId(int sequence, const char[] key, int userid)
+{
+	if (g_Traces[TraceSource_Engine] == null || userid <= 0) return;
+	int client = GetClientOfUserId(userid);
+	if (client < 1 || client > MaxClients || !IsClientInGame(client))
+	{
+		TraceLine(TraceSource_Engine, "{\"kind\":\"identity\",\"seq\":%d,\"key\":\"%s\",\"userid\":%d,\"client\":0}", sequence, key, userid);
+		return;
+	}
+	int zombieClass = HasEntProp(client, Prop_Send, "m_zombieClass") ? GetEntProp(client, Prop_Send, "m_zombieClass") : -1;
+	TraceLine(TraceSource_Engine, "{\"kind\":\"identity\",\"seq\":%d,\"key\":\"%s\",\"userid\":%d,\"client\":%d,\"serial\":%d,\"observed_generation\":%d,\"spawn_observed\":%d,\"account_id\":%d,\"bot\":%d,\"team\":%d,\"zombie_class\":%d,\"context_sample\":1}", sequence, key, userid, client, GetClientSerial(client), g_ObservedGeneration[client], g_SpawnObserved[client], IsFakeClient(client) ? 0 : GetSteamAccountID(client), IsFakeClient(client), GetClientTeam(client), zombieClass);
+}

@@ -82,6 +82,24 @@ Reglas:
   - ocurre antes del announce builtin
   - `Plugin_Handled` o mayor suprime el announce builtin de esa familia
 
+### Boomer kill priority window
+
+`BoomerKill` espera al menos 100 ms y conserva su estado provisional mientras
+`BoomerPop` aún pueda calificar. La explosión resuelve Pop/noPop; sin esa señal,
+un spawn conocido permite publicar solo cuando el tiempo de vida supera el
+límite existente de Pop (3 s, comparación estricta `>`). Un Pop válido posterior
+a los 100 ms absorbe el kill antes de publicarlo. Si el spawn es desconocido,
+no se fabrica un límite: espera la explosión o la invalidación del contexto.
+
+El provisional no dispara forward, no es válido para natives públicas ni cuenta
+en consultas o summaries. Cierre, nueva vida y desconexión lo descartan. Pop
+reserva la supresión antes de su callback incluso con `Plugin_Handled`; ese
+resultado solo controla su announce builtin. Sin Pop, el kill conserva su payload
+`LifeKill`, forward y regla normal de `Plugin_Handled`. La resolución por vida
+impide duplicados y reentradas. Es el ajuste de orden autorizado en el refactor;
+las firmas, enums, claves y criterios de aceptación de Pop permanecen iguales.
+Ver [evidencia local y límites](l4d2-skills-boomer-late.md).
+
 ## Boss Session Forwards
 
 ```sourcepawn
@@ -176,6 +194,11 @@ Notas para `skill_event.properties`:
   - valores:
     - `kill`
     - `shove`
+- la metadata de muerte absorbida se serializa para HunterSkeet/melee,
+  BoomerPop, ChargerLevel, JockeySkeet/melee y SmokerSelfClear por kill;
+  `SpecialPinClear` por kill también suprime su fallback, pero conserva la
+  excepción del contrato existente: no serializa `implies_si_death` ni
+  `suppressed_kill_*`
 - algunos skills publican contexto adicional de resolución:
   - `incapped`
   - `ledge_hang`

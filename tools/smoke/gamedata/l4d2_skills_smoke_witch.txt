@@ -1,0 +1,28 @@
+"Games"
+{
+    "left4dead2"
+    {
+        "Signatures"
+        {
+            "WitchAttack::GetVictim"
+            {
+                "library" "server"
+                "linux" "@_ZNK11WitchAttack9GetVictimEv"
+            }
+            "Action<Infected>::InvokeOnStart"
+            {
+                "library" "server"
+                "linux" "@_ZN6ActionI8InfectedE13InvokeOnStartEPS0_P8BehaviorIS0_EPS1_S6_"
+            }
+        }
+        "Offsets"
+        {
+            // Linux x86: mov %ebx, 0x1c(%edi), assigning Action::m_actor.
+            // The observer verifies all three bytes before reading this field.
+            "ActorAssignmentInstruction"
+            {
+                "linux" "106"
+            }
+        }
+    }
+}

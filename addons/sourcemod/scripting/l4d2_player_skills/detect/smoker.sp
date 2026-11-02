@@ -1,13 +1,80 @@
-#if defined _l4d2_player_skills_detect_smoker_included
-	#endinput
-#endif
-#define _l4d2_player_skills_detect_smoker_included
-
+// Private detector ownership: smoker
 #define L4D2_SKILLS_SMOKER_TONGUECUT_CONFIRM_TIME 0.3
 #define L4D2_SKILLS_SMOKER_BREAK_NONE 0
 #define L4D2_SKILLS_SMOKER_BREAK_SHOT 1
 #define L4D2_SKILLS_SMOKER_BREAK_CUT 2
 #define L4D2_SKILLS_SMOKER_BREAK_CHAINSAW 3
+
+void Detect_HandleSmokerDeath(SkillsDeathObservation observation, int victim, int attacker, bool shouldEmitSiLifeKill)
+{
+	int pinvictim = Detect_GetSmokerVictimFromState(victim);
+	int trackedVictim = g_DetectSmoker[victim].victim;
+	bool ownsTrackedVictim = IsValidSurvivor(attacker) && trackedVictim == attacker;
+	bool isVictimKiller = IsValidSurvivor(attacker) && (pinvictim == attacker || ownsTrackedVictim);
+	bool emitSpecialClearByKill = false;
+	bool emitSelfClear = false;
+	bool emitDeferredTongueCut = false;
+	bool dragging = g_DetectSmoker[victim].dragging;
+
+	if (isVictimKiller && g_DetectSmoker[victim].pendingTongueCut)
+	{
+		emitSelfClear = true;
+		emitDeferredTongueCut = !emitSelfClear;
+	}
+	else if (isVictimKiller && (g_DetectSmoker[victim].reached || dragging || ownsTrackedVictim))
+	{
+		emitSelfClear = true;
+	}
+	else if (IsValidSurvivor(attacker) && IsValidSurvivor(pinvictim) && attacker != pinvictim)
+	{
+		emitSpecialClearByKill = true;
+	}
+
+	if (emitSelfClear)
+	{
+		int eventId = Skills_CreateEvent(L4D2Skill_SmokerSelfClear);
+		int eventIndex = Skills_GetEventIndex(eventId);
+		if (eventIndex != -1)
+		{
+			g_SkillEvents[eventIndex].actor.Capture(attacker);
+			g_SkillEvents[eventIndex].victim.Capture(victim);
+			g_SkillEvents[eventIndex].damageScope = L4D2SkillDamageScope_SkillWindow;
+			g_SkillEvents[eventIndex].withShove = false;
+			g_SkillEvents[eventIndex].actorWeaponId = Detect_GetSiLifeWeaponIdByAttacker(victim, attacker);
+			g_SkillEvents[eventIndex].damage = Detect_GetSiLifeDamageByAttacker(victim, attacker);
+			g_SkillEvents[eventIndex].actorDamage = g_SkillEvents[eventIndex].damage;
+			g_SkillEvents[eventIndex].shots = Detect_GetSiLifeShotsByAttacker(victim, attacker);
+			g_SkillEvents[eventIndex].headshot = Detect_ResolveHeadshot(victim, attacker, observation.headshot);
+			g_SkillEvents[eventIndex].timeA = g_DetectSmoker[victim].reached ? 0.0 : -1.0;
+			Detect_WriteSiTrackAssistsToEventAsSkillWindow(eventIndex, victim, attacker);
+
+			Action result = API_FireSkillDetected(eventId, L4D2Skill_SmokerSelfClear);
+			if (result < Plugin_Handled)
+			{
+				Announce_Skill(eventId);
+			}
+		}
+
+		Detect_MarkSiLifeKillSuppressed(victim);
+	}
+	else if (emitSpecialClearByKill)
+	{
+		Detect_EmitSpecialClear(attacker, victim, false, true, observation.headshot);
+		Detect_MarkSiLifeKillSuppressed(victim);
+	}
+	else if (emitDeferredTongueCut)
+	{
+		Detect_EmitSmokerTongueCut(attacker, victim);
+	}
+
+	Detect_ClearPinStateByAttacker(victim);
+	Detect_ResetSmoker(victim);
+	if (shouldEmitSiLifeKill && !g_bDetectSuppressSiLifeKill[victim])
+	{
+		Detect_EmitSiLifeKill(victim, attacker);
+	}
+	Detect_ResetSiLifeKillTrack(victim);
+}
 
 int Detect_ResolveSmokerTongueBreakReason(int stopper, int damageType)
 {
@@ -56,8 +123,14 @@ void Detect_EmitSmokerTongueCut(int survivor, int smoker, int reason = 0, int we
 	}
 }
 
-Action Detect_TimerFinalizeSmokerTongueCut(Handle timer, any smokerUserId)
+Action Detect_TimerFinalizeSmokerTongueCut(Handle timer, any context)
 {
+	int smokerUserId = Detect_ReadDeferredClientUserId(view_as<DataPack>(context));
+	if (smokerUserId <= 0)
+	{
+		return Plugin_Stop;
+	}
+
 	if (!Skills_IsRoundLive())
 	{
 		return Plugin_Stop;
@@ -344,7 +417,7 @@ void Detect_EventTonguePullStopped(Event event)
 		g_DetectSmoker[smoker].pendingTongueCutWeaponId = stopperWeaponId;
 		Detect_ClearPinStateByAttacker(smoker);
 		g_DetectPinRegistry.smokerOwnerByVictim[victim] = 0;
-		CreateTimer(L4D2_SKILLS_SMOKER_TONGUECUT_CONFIRM_TIME, Detect_TimerFinalizeSmokerTongueCut, GetClientUserId(smoker), TIMER_FLAG_NO_MAPCHANGE);
+		Detect_QueueClientTimer(L4D2_SKILLS_SMOKER_TONGUECUT_CONFIRM_TIME, Detect_TimerFinalizeSmokerTongueCut, GetClientUserId(smoker), TIMER_FLAG_NO_MAPCHANGE);
 		return;
 	}
 	else if (stopper != victim && IsValidSurvivor(stopper) && IsValidZombieClass(smoker, L4D2ZombieClass_Smoker))

@@ -23,432 +23,9 @@
 
 #include "l4d2_player_skills/types.sp"
 
-L4D2BossSessionData g_BossSessions[L4D2_SKILLS_MAX_BOSSES];
-L4D2DamageEntry		g_BossDamage[L4D2_SKILLS_MAX_BOSSES][L4D2_SKILLS_MAX_DAMAGE_ENTRIES];
-L4D2SkillEventData	g_SkillEvents[L4D2_SKILLS_MAX_EVENTS];
-L4D2ApiSkillSummaryData g_SkillSummaries[L4D2_SKILLS_MAX_SUMMARIES];
-L4D2ApiKillSummaryData g_KillSummaries[L4D2_SKILLS_MAX_SUMMARIES];
-PlayerSkillsIdentityEntry g_IdentityCache[MAXPLAYERS + 1];
-PlayerSkillsRuntimeState g_Runtime;
+#include "l4d2_player_skills/state.sp"
 
-int	g_iBossSerial		= 0;
-int g_iTankLifecycleSerial = 0;
-int	g_iEventSerial		= 0;
-int	g_iNextEventSlot	= 0;
-int g_iSkillSummarySerial	= 0;
-int g_iNextSkillSummarySlot	= 0;
-int g_iKillSummarySerial	= 0;
-int g_iNextKillSummarySlot	= 0;
-
-ConVar	g_cvEnable				 = null;
-ConVar	g_cvDebug				 = null;
-ConVar	g_cvAnnounceWitch		 = null;
-ConVar	g_cvAnnounceTank		 = null;
-ConVar	g_cvAnnounceHunter		 = null;
-ConVar	g_cvAnnounceSmoker		 = null;
-ConVar	g_cvAnnounceBoomer		 = null;
-ConVar	g_cvAnnounceSpitter		 = null;
-ConVar	g_cvAnnounceJockey		 = null;
-ConVar	g_cvAnnounceCharger		 = null;
-ConVar	g_cvAnnounceOther		 = null;
-ConVar	g_cvAnnounceKillMode		 = null;
-ConVar	g_cvAnnounceSpecialClearMode = null;
-ConVar	g_cvAnnounceTongueReleaseMode = null;
-ConVar	g_cvShoveAttempt		 = null;
-ConVar	g_cvBoomerVomitMinTargets = null;
-ConVar	g_cvBoomerHealth		 = null;
-ConVar	g_cvSmokerHealth		 = null;
-ConVar	g_cvHunterHealth		 = null;
-ConVar	g_cvHunterMaxPounceBonusDamage = null;
-ConVar	g_cvSpitterHealth		 = null;
-ConVar	g_cvJockeyHealth		 = null;
-ConVar	g_cvChargerHealth		 = null;
-ConVar	g_cvTankHealth			 = null;
-ConVar	g_cvDifficulty			 = null;
-ConVar	g_cvWitchHealth			 = null;
-ConVar	g_cvSurvivorLimit		 = null;
-ConVar	g_cvMaxPlayerZombies	 = null;
-ConVar	g_cvVersusBoomerLimit	 = null;
-ConVar	g_cvVersusSmokerLimit	 = null;
-ConVar	g_cvVersusHunterLimit	 = null;
-ConVar	g_cvVersusSpitterLimit	 = null;
-ConVar	g_cvVersusJockeyLimit	 = null;
-ConVar	g_cvVersusChargerLimit	 = null;
-ConVar	g_cvHunterHighPounceHeight = null;
-ConVar	g_cvJockeyHighLeapHeight = null;
-ConVar	g_cvWitchPrintMaxEntries = null;
-ConVar	g_cvChargerClawPrintMinHits = null;
-bool	g_bWitchPrintOnIncap	 = true;
-char	g_sDebugLogPath[PLATFORM_MAX_PATH];
-
-/**
- * @brief Lightweight runtime wrapper over a boss session slot.
- * @remarks Exposes helpers to initialize, reset and update tracked Tank/Witch
- *          sessions stored in g_BossSessions.
- */
-methodmap L4D2BossSession
-{
-	/**
-	 * @brief Wraps a raw boss session slot index.
-	 *
-	 * @param index         Zero-based slot in g_BossSessions.
-	 */
-	public L4D2BossSession(int index)
-	{
-		return view_as<L4D2BossSession>(index);
-	}
-
-	property int Index
-	{
-		/**
-		 * @brief Returns the raw slot index represented by this wrapper.
-		 */
-		public get()
-		{
-			return view_as<int>(this);
-		}
-	}
-
-	/**
-	 * @brief Checks whether the wrapped session slot is currently in use.
-	 *
-	 * @return              True if the slot contains a valid runtime session.
-	 */
-	public bool IsValid()
-	{
-		int index = this.Index;
-		return index >= 0 && index < L4D2_SKILLS_MAX_BOSSES && g_BossSessions[index].id > 0;
-	}
-
-	/**
-	 * @brief Clears the session and all captured damage entries for this slot.
-	 *
-	 * @noreturn
-	 */
-	public void Reset()
-	{
-		int index = this.Index;
-		g_BossSessions[index].Reset();
-
-		for (int entry = 0; entry < L4D2_SKILLS_MAX_DAMAGE_ENTRIES; entry++)
-		{
-			g_BossDamage[index][entry].Reset();
-		}
-	}
-
-	/**
-	 * @brief Starts a new boss session in the wrapped slot.
-	 *
-	 * @param type          Boss type to track.
-	 * @param entity        Current entity index for the boss.
-	 * @param userid        Userid of the current controller when applicable.
-	 * @param maxHealth     Expected maximum health captured for this session.
-	 *
-	 * @noreturn
-	 */
-	public void Start(L4D2BossType type, int entity, int userid, int maxHealth)
-	{
-		int index = this.Index;
-
-		this.Reset();
-
-		g_BossSessions[index].id		 = ++g_iBossSerial;
-		g_BossSessions[index].type		 = type;
-		g_BossSessions[index].state		 = L4D2BossState_Active;
-		g_BossSessions[index].entity	 = entity;
-		g_BossSessions[index].entRef	 = entity > 0 ? EntIndexToEntRef(entity) : INVALID_ENT_REFERENCE;
-		g_BossSessions[index].userid	 = userid;
-		g_BossSessions[index].maxHealth	 = maxHealth;
-		// maxHealth is the captured expected maximum; lastHealth is a current observation.
-		int observedHealth = maxHealth;
-		if (type == L4D2Boss_Tank && IsValidClient(entity))
-		{
-			observedHealth = GetClientHealth(entity);
-		}
-		g_BossSessions[index].lastHealth = observedHealth;
-		g_BossSessions[index].startedAt	 = GetGameTime();
-		g_BossSessions[index].closedAt	 = 0.0;
-		g_BossSessions[index].printed	 = false;
-		if (type == L4D2Boss_Tank)
-		{
-			g_BossSessions[index].tank.lifecycleId = ++g_iTankLifecycleSerial;
-		}
-
-		int client						 = GetClientOfUserId(userid);
-		if (IsValidClient(client))
-		{
-			this.UpdateOwnerSnapshot(client);
-			if (type != L4D2Boss_Tank || !IsFakeClient(client))
-			{
-				this.RefreshOwner(client);
-			}
-		}
-	}
-
-	public void UpdateOwnerSnapshot(int client)
-	{
-		if (!this.IsValid() || !IsValidClient(client))
-		{
-			return;
-		}
-
-		g_BossSessions[this.Index].userid = GetClientUserId(client);
-		g_BossSessions[this.Index].entity = client;
-		g_BossSessions[this.Index].entRef = EntIndexToEntRef(client);
-		g_BossSessions[this.Index].owner.Capture(client);
-	}
-
-	public void CancelPendingTankBotControl()
-	{
-		if (!this.IsValid() || g_BossSessions[this.Index].type != L4D2Boss_Tank)
-		{
-			return;
-		}
-
-		g_BossSessions[this.Index].tank.pendingBotControl = false;
-		g_BossSessions[this.Index].tank.pendingBotUserid = 0;
-		g_BossSessions[this.Index].tank.pendingBotStartedAt = 0.0;
-	}
-
-	public void BeginPendingTankBotControl(int client, float startTime = 0.0)
-	{
-		if (!this.IsValid()
-			|| g_BossSessions[this.Index].type != L4D2Boss_Tank
-			|| !IsValidClient(client)
-			|| !IsFakeClient(client))
-		{
-			return;
-		}
-
-		if (startTime <= 0.0)
-		{
-			startTime = GetGameTime();
-		}
-
-		this.UpdateOwnerSnapshot(client);
-
-		int activeIndex = g_BossSessions[this.Index].tank.activeControlIndex;
-		if (activeIndex >= 0
-			&& activeIndex < L4D2_SKILLS_MAX_TANK_CONTROLS
-			&& g_BossSessions[this.Index].tank.controls[activeIndex].active
-			&& !g_BossSessions[this.Index].tank.controls[activeIndex].player.IsSamePersistentPlayer(client))
-		{
-			this.CloseActiveTankControl(startTime);
-		}
-
-		if (g_BossSessions[this.Index].tank.pendingBotControl
-			&& g_BossSessions[this.Index].tank.pendingBotUserid == GetClientUserId(client))
-		{
-			if (g_BossSessions[this.Index].tank.pendingBotStartedAt <= 0.0
-				|| startTime < g_BossSessions[this.Index].tank.pendingBotStartedAt)
-			{
-				g_BossSessions[this.Index].tank.pendingBotStartedAt = startTime;
-			}
-
-			return;
-		}
-
-		g_BossSessions[this.Index].tank.pendingBotControl = true;
-		g_BossSessions[this.Index].tank.pendingBotUserid = GetClientUserId(client);
-		g_BossSessions[this.Index].tank.pendingBotStartedAt = startTime;
-	}
-
-	public void CloseActiveTankControl(float endTime = 0.0)
-	{
-		if (!this.IsValid() || g_BossSessions[this.Index].type != L4D2Boss_Tank)
-		{
-			return;
-		}
-
-		int index = this.Index;
-		int controlIndex = g_BossSessions[index].tank.activeControlIndex;
-		if (controlIndex < 0 || controlIndex >= L4D2_SKILLS_MAX_TANK_CONTROLS)
-		{
-			return;
-		}
-
-		if (!g_BossSessions[index].tank.controls[controlIndex].active
-			|| g_BossSessions[index].tank.controls[controlIndex].startedAt <= 0.0)
-		{
-			g_BossSessions[index].tank.activeControlIndex = -1;
-			return;
-		}
-
-		if (endTime <= 0.0)
-		{
-			endTime = GetGameTime();
-		}
-
-		if (endTime < g_BossSessions[index].tank.controls[controlIndex].startedAt)
-		{
-			endTime = g_BossSessions[index].tank.controls[controlIndex].startedAt;
-		}
-
-		g_BossSessions[index].tank.controls[controlIndex].endedAt = endTime;
-		g_BossSessions[index].tank.controls[controlIndex].controlTime +=
-			endTime - g_BossSessions[index].tank.controls[controlIndex].startedAt;
-		g_BossSessions[index].tank.controls[controlIndex].remainingHealth = g_BossSessions[index].lastHealth;
-		g_BossSessions[index].tank.controls[controlIndex].startedAt = 0.0;
-		g_BossSessions[index].tank.activeControlIndex = -1;
-	}
-
-		public void OpenTankControl(int client, float startTime = 0.0)
-		{
-			if (!this.IsValid() || g_BossSessions[this.Index].type != L4D2Boss_Tank || !IsValidClient(client))
-			{
-				return;
-			}
-
-			if (startTime <= 0.0)
-			{
-				startTime = GetGameTime();
-			}
-
-			int index = this.Index;
-			int activeIndex = g_BossSessions[index].tank.activeControlIndex;
-			if (activeIndex >= 0
-				&& activeIndex < L4D2_SKILLS_MAX_TANK_CONTROLS
-				&& g_BossSessions[index].tank.controls[activeIndex].active)
-			{
-				if (g_BossSessions[index].tank.controls[activeIndex].player.IsSamePersistentPlayer(client))
-				{
-					g_BossSessions[index].tank.controls[activeIndex].player.Capture(client);
-					return;
-				}
-
-				this.CloseActiveTankControl();
-			}
-
-			if (g_BossSessions[index].tank.controlCount >= L4D2_SKILLS_MAX_TANK_CONTROLS)
-			{
-				int overflowIndex = L4D2_SKILLS_MAX_TANK_CONTROLS - 1;
-			g_BossSessions[index].tank.controls[overflowIndex].mergedControls++;
-			g_BossSessions[index].tank.controls[overflowIndex].active = true;
-			g_BossSessions[index].tank.controls[overflowIndex].overflow = true;
-			g_BossSessions[index].tank.controls[overflowIndex].player.Capture(client);
-			g_BossSessions[index].tank.controls[overflowIndex].startedAt = startTime;
-			g_BossSessions[index].tank.activeControlIndex = overflowIndex;
-			return;
-		}
-
-		int controlIndex = g_BossSessions[index].tank.controlCount++;
-		g_BossSessions[index].tank.controls[controlIndex].Reset();
-		g_BossSessions[index].tank.controls[controlIndex].active = true;
-		g_BossSessions[index].tank.controls[controlIndex].overflow = false;
-		g_BossSessions[index].tank.controls[controlIndex].mergedControls = 1;
-		g_BossSessions[index].tank.controls[controlIndex].player.Capture(client);
-		g_BossSessions[index].tank.controls[controlIndex].startedAt = startTime;
-		g_BossSessions[index].tank.activeControlIndex = controlIndex;
-	}
-
-	public void RecordTankRockThrown()
-	{
-		if (!this.IsValid() || g_BossSessions[this.Index].type != L4D2Boss_Tank)
-		{
-			return;
-		}
-
-		int controlIndex = g_BossSessions[this.Index].tank.activeControlIndex;
-		if (controlIndex < 0 || controlIndex >= L4D2_SKILLS_MAX_TANK_CONTROLS)
-		{
-			return;
-		}
-
-		g_BossSessions[this.Index].tank.controls[controlIndex].rocksThrown++;
-	}
-
-	public void RecordTankRockHit()
-	{
-		if (!this.IsValid() || g_BossSessions[this.Index].type != L4D2Boss_Tank)
-		{
-			return;
-		}
-
-		int controlIndex = g_BossSessions[this.Index].tank.activeControlIndex;
-		if (controlIndex < 0 || controlIndex >= L4D2_SKILLS_MAX_TANK_CONTROLS)
-		{
-			return;
-		}
-
-		g_BossSessions[this.Index].tank.controls[controlIndex].rocksHit++;
-	}
-
-	/**
-	 * @brief Refreshes the owner snapshot for a player-controlled boss.
-	 *
-	 * @param client        Client index of the current controller.
-	 *
-	 * @noreturn
-	 */
-	public 	void RefreshOwner(int client)
-	{
-		if (!this.IsValid() || !IsValidClient(client))
-		{
-			return;
-		}
-
-		this.UpdateOwnerSnapshot(client);
-
-		if (g_BossSessions[this.Index].type == L4D2Boss_Tank)
-		{
-			if (IsFakeClient(client))
-			{
-				int activeIndex = g_BossSessions[this.Index].tank.activeControlIndex;
-				if (activeIndex >= 0
-					&& activeIndex < L4D2_SKILLS_MAX_TANK_CONTROLS
-					&& g_BossSessions[this.Index].tank.controls[activeIndex].active
-					&& g_BossSessions[this.Index].tank.controls[activeIndex].player.IsSamePersistentPlayer(client))
-				{
-					g_BossSessions[this.Index].tank.controls[activeIndex].player.Capture(client);
-					this.CancelPendingTankBotControl();
-					return;
-				}
-
-				this.BeginPendingTankBotControl(client);
-				return;
-			}
-
-			this.CancelPendingTankBotControl();
-			this.OpenTankControl(client);
-		}
-	}
-
-	/**
-	 * @brief Adds survivor damage to the current boss session.
-	 *
-	 * @param attacker      Survivor client index that dealt the damage.
-	 * @param damage        Positive damage amount to accumulate.
-	 *
-	 * @noreturn
-	 */
-	public 	void AddDamage(int attacker, int damage, bool countShot = false)
-	{
-		if (!this.IsValid() || !IsValidSurvivor(attacker) || damage <= 0)
-		{
-			return;
-		}
-
-		int index = this.Index;
-		int entry = Boss_FindOrCreateDamageEntry(index, attacker);
-		if (entry == -1)
-		{
-			return;
-		}
-
-		if (!g_BossDamage[index][entry].active)
-		{
-			g_BossDamage[index][entry].active = true;
-			g_BossDamage[index][entry].player.Capture(attacker);
-		}
-
-		g_BossDamage[index][entry].damage += damage;
-		if (countShot)
-		{
-			g_BossDamage[index][entry].shots++;
-		}
-		g_BossSessions[index].totalDamage += damage;
-	}
-}
+#include "l4d2_player_skills/boss_session.sp"
 
 public Plugin myinfo =
 {
@@ -461,7 +38,8 @@ public Plugin myinfo =
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
-	g_Runtime.isLate = late;
+	g_Runtime.Reset();
+	g_Runtime.lateLoad = late;
 	RegPluginLibrary(LIBRARY_L4D2_PLAYER_SKILLS);
 	API_CreateForwards();
 	API_CreateNatives();
@@ -474,24 +52,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 #include "l4d2_player_skills/boss.sp"
 #include "l4d2_player_skills/detect.sp"
 
-void Skills_RefreshExternalLifecycleAvailability()
-{
-	g_Runtime.hasPlayerStats = LibraryExists(LIBRARY_L4D2PLAYERSTATS);
-	g_Runtime.usesExternalLifecycle = Skills_CanUsePlayerStats();
-}
-
-void Skills_SyncLifecycleState()
-{
-	Skills_RefreshExternalLifecycleAvailability();
-	Skills_RefreshModeContext();
-	Skills_RefreshRoundLiveState();
-}
-#include "l4d2_player_skills/detect_hunter.sp"
-#include "l4d2_player_skills/detect_charger.sp"
-#include "l4d2_player_skills/detect_caralarm.sp"
-#include "l4d2_player_skills/detect_movement.sp"
-#include "l4d2_player_skills/detect_rocks.sp"
-#include "l4d2_player_skills/detect_smoker.sp"
+#include "l4d2_player_skills/lifecycle.sp"
 
 public void OnPluginStart()
 {
@@ -524,7 +85,7 @@ public void OnPluginStart()
 	g_cvShoveAttempt			= CreateConVar("sm_skills_shove_attempt", "1", "Bitmask for shove-attempt announcements. 1=charger 2=tank 4=witch 7=all.");
 	g_cvBoomerVomitMinTargets	= CreateConVar("sm_skills_boomer_vomit_min_targets", "3", "Minimum number of vomited survivors required to announce BoomerVomitLanded. 0=disabled.");
 	g_cvWitchPrintMaxEntries	= CreateConVar("sm_skills_witch_print_max_entries", "4", "Maximum number of Witch damage entries to print before combining the rest as others.");
-	
+
 	g_cvHunterHighPounceHeight				= CreateConVar("sm_skills_hunter_pounce_height", "400", "Minimum vertical height for HunterHighPounce.");
 	g_cvDetectHunterSkeetShotgunInterrupt	= CreateConVar("sm_skills_hunter_skeet_interrupt", "0", "Minimum shotgun blast damage required to classify HunterSkeet. Applies to shotgun skeets only. 0=disabled.");
 	g_cvJockeyHighLeapHeight				= CreateConVar("sm_skills_jockey_leap_height", "300", "Minimum vertical height for JockeyHighLeap.");
@@ -606,14 +167,10 @@ public void OnPluginStart()
 	AutoExecConfig(false, LIBRARY_L4D2_PLAYER_SKILLS);
 	Boss_Init();
 
-	if (!g_Runtime.isLate)
+	if (!g_Runtime.lateLoad)
 	{
 		return;
 	}
-
-	g_Runtime.hasLeft4DHooks = LibraryExists(LIBRARY_LEFT4DHOOKS);
-	g_Runtime.hasTankControlEq = LibraryExists(LIBRARY_L4D_TANK_CONTROL_EQ);
-	Skills_SyncLifecycleState();
 
 	for (int client = 1; client <= MaxClients; client++)
 	{
@@ -628,130 +185,65 @@ public void OnPluginStart()
 	}
 }
 
+// Library callbacks only mark availability; game-state queries wait for a safe frame.
+public void OnGameFrame()
+{
+	Lifecycle_ReconcilePending();
+}
+
 public void OnAllPluginsLoaded()
 {
-	g_Runtime.hasLeft4DHooks = LibraryExists(LIBRARY_LEFT4DHOOKS);
-	g_Runtime.hasTankControlEq = LibraryExists(LIBRARY_L4D_TANK_CONTROL_EQ);
-	Skills_SyncLifecycleState();
+	Lifecycle_OnAllPluginsLoaded();
 }
 
 public void OnLibraryAdded(const char[] name)
 {
-	if (strcmp(name, LIBRARY_LEFT4DHOOKS) == 0)
-	{
-		g_Runtime.hasLeft4DHooks = true;
-		Skills_SyncLifecycleState();
-		return;
-	}
-
-	if (strcmp(name, LIBRARY_L4D_TANK_CONTROL_EQ) == 0)
-	{
-		g_Runtime.hasTankControlEq = true;
-		return;
-	}
-
-	if (strcmp(name, LIBRARY_L4D2PLAYERSTATS) == 0)
-	{
-		Skills_SyncLifecycleState();
-		Skills_Debug(PlayerSkillsDebug_Core, "PlayerStats available. Using external lifecycle=%d", Skills_UsesExternalLifecycle() ? 1 : 0);
-		return;
-	}
+	Lifecycle_OnLibraryAdded(name);
 }
 
 public void OnLibraryRemoved(const char[] name)
 {
-	if (strcmp(name, LIBRARY_LEFT4DHOOKS) == 0)
-	{
-		g_Runtime.hasLeft4DHooks = false;
-		Skills_SyncLifecycleState();
-		return;
-	}
-
-	if (strcmp(name, LIBRARY_L4D_TANK_CONTROL_EQ) == 0)
-	{
-		g_Runtime.hasTankControlEq = false;
-		return;
-	}
-
-	if (strcmp(name, LIBRARY_L4D2PLAYERSTATS) == 0)
-	{
-		Skills_SyncLifecycleState();
-		Skills_Debug(PlayerSkillsDebug_Core, "PlayerStats unavailable. Falling back to standalone lifecycle.");
-		return;
-	}
+	Lifecycle_OnLibraryRemoved(name);
 }
 
 public void OnMapStart()
 {
-	g_Runtime.roundLive = false;
-	Skills_ResetIdentityCache();
-	API_ResetRoundSummaryState();
-	Boss_ResetAll();
-	Detect_ResetAll();
+	Lifecycle_OnMapStart();
 }
 
 public void OnMapEnd()
 {
-	g_Runtime.roundLive = false;
-	Skills_ResetIdentityCache();
-	Skills_ResetEvents();
-	Boss_ResetAll();
-	Detect_ResetAll();
+	Lifecycle_OnMapEnd();
 }
 
 public void OnConfigsExecuted()
 {
-	Skills_SyncLifecycleState();
+	Lifecycle_OnConfigsExecuted();
 }
 
 public void L4D_OnGameModeChange(int gamemode)
 {
-	Skills_Debug(PlayerSkillsDebug_Event, "[L4D_OnGameModeChange] gamemode=%d", gamemode);
-	Skills_SyncLifecycleState();
+	Lifecycle_L4D_OnGameModeChange(gamemode);
 }
 
 public void OnPluginEnd()
 {
-	g_Runtime.roundLive = false;
-	Boss_Shutdown();
-	Detect_Shutdown();
+	Lifecycle_OnPluginEnd();
 }
 
 public void L4D_OnFirstSurvivorLeftSafeArea_Post(int client)
 {
-	Skills_Debug(PlayerSkillsDebug_Event, "[L4D_OnFirstSurvivorLeftSafeArea_Post] client=%d", client);
-
-	if (!Skills_IsEnabled() || Skills_UsesExternalLifecycle() || g_Runtime.roundLive || g_Runtime.roundLiveSignal != PlayerSkillsRoundLiveSignal_SafeArea)
-	{
-		return;
-	}
-
-	g_Runtime.roundLive = true;
+	Lifecycle_L4D_OnFirstSurvivorLeftSafeArea_Post(client);
 }
 
 public void PlayerStats_OnRoundLive(int roundId)
 {
-	if (!Skills_UsesExternalLifecycle())
-	{
-		return;
-	}
-
-	Skills_Debug(PlayerSkillsDebug_Event, "[PlayerStats_OnRoundLive] round=%d", roundId);
-	g_Runtime.roundLive = true;
+	Lifecycle_PlayerStats_OnRoundLive(roundId);
 }
 
 public void PlayerStats_OnRoundEnded(int roundId, StatsEndType endType, int endReason)
 {
-	if (!Skills_UsesExternalLifecycle())
-	{
-		return;
-	}
-
-	Skills_Debug(PlayerSkillsDebug_Event, "[PlayerStats_OnRoundEnded] round=%d type=%d reason=%d", roundId, endType, endReason);
-	Boss_OnRoundEnd();
-	API_FinalizeSummaryFromCurrentState();
-	Detect_OnRoundEnd();
-	g_Runtime.roundLive = false;
+	Lifecycle_PlayerStats_OnRoundEnded(roundId, endType, endReason);
 }
 
 public void OnClientPutInServer(int client)
@@ -978,28 +470,7 @@ public void L4D_TankRock_OnDetonate(int tank, int rock)
 
 void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 {
-	char objective[64];
-	event.GetString("objective", objective, sizeof(objective));
-	Skills_Debug(PlayerSkillsDebug_Event, "[%s] timelimit=%d fraglimit=%d objective=%s",
-		name,
-		event.GetInt("timelimit"),
-		event.GetInt("fraglimit"),
-		objective);
-
-	if (!Skills_ShouldHandleRoundStartEvent(name))
-	{
-		return;
-	}
-
-	API_ResetRoundSummaryState();
-	g_Runtime.roundLive = false;
-	Boss_OnRoundStart();
-	Detect_OnRoundStart();
-
-	if (!Skills_UsesExternalLifecycle() && g_Runtime.roundLiveSignal == PlayerSkillsRoundLiveSignal_Immediate)
-	{
-		g_Runtime.roundLive = true;
-	}
+	Lifecycle_Event_RoundStart(event, name);
 }
 
 bool Skills_HasTankControlEq()
@@ -1020,7 +491,7 @@ public void TankControl_OnTankStarted(int tankId, int client, bool isBot)
 		return;
 	}
 
-	if (!Skills_HasTankControlEq() || !IsValidClient(client) || !IsPlayerAlive(client))
+	if (!IsValidClient(client) || !IsPlayerAlive(client))
 	{
 		return;
 	}
@@ -1036,7 +507,7 @@ public void TankControl_OnTankStarted(int tankId, int client, bool isBot)
 
 public void TankControl_OnTankStartedEx(int tankId, int client, bool isBot, TankControlStartReason startReason, int parentTankId)
 {
-	if (!Skills_HasTankControlEq() || !IsValidClient(client) || !IsPlayerAlive(client))
+	if (!IsValidClient(client) || !IsPlayerAlive(client))
 	{
 		return;
 	}
@@ -1054,7 +525,7 @@ public void TankControl_OnTankStartedEx(int tankId, int client, bool isBot, Tank
 
 public void TankControl_OnTankControlChanged(int tankId, int oldClient, int newClient, bool oldWasBot, bool newWasBot)
 {
-	if (!Skills_HasTankControlEq() || !IsValidClient(newClient) || !IsPlayerAlive(newClient))
+	if (!IsValidClient(newClient) || !IsPlayerAlive(newClient))
 	{
 		return;
 	}
@@ -1072,59 +543,22 @@ public void TankControl_OnTankControlChanged(int tankId, int oldClient, int newC
 
 void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 {
-	char message[128];
-	event.GetString("message", message, sizeof(message));
-	Skills_Debug(PlayerSkillsDebug_Event, "[%s] winner=%d reason=%d message=%s time=%.1f", name, event.GetInt("winner"), event.GetInt("reason"), message, event.GetFloat("time"));
-
-	if (g_Runtime.baseMode == PlayerSkillsGameMode_Versus)
-	{
-		return;
-	}
-
-	if (Skills_UsesExternalLifecycle())
-	{
-		return;
-	}
-
-	if (!Skills_ShouldHandleRoundEndEvent(name))
-	{
-		return;
-	}
-
-	Boss_OnRoundEnd();
-	API_FinalizeSummaryFromCurrentState();
-	Detect_OnRoundEnd();
-	g_Runtime.roundLive = false;
+	Lifecycle_Event_RoundEnd(event, name);
 }
 
 public void L4D2_OnEndVersusModeRound_Post()
 {
-	Skills_Debug(PlayerSkillsDebug_Event, "[L4D2_OnEndVersusModeRound_Post]");
-
-	if (g_Runtime.baseMode != PlayerSkillsGameMode_Versus || Skills_UsesExternalLifecycle())
-	{
-		return;
-	}
-
-	Boss_OnRoundEnd();
-	API_FinalizeSummaryFromCurrentState();
-	Detect_OnRoundEnd();
-	g_Runtime.roundLive = false;
+	Lifecycle_L4D2_OnEndVersusModeRound_Post();
 }
 
 void Event_ScavengeRoundStart(Event event, const char[] name, bool dontBroadcast)
 {
-	Skills_Debug(PlayerSkillsDebug_Event, "[%s] round=%d firsthalf=%d",
-		name,
-		event.GetInt("round"),
-		event.GetBool("firsthalf"));
-	Event_RoundStart(event, name, dontBroadcast);
+	Lifecycle_Event_ScavengeRoundStart(event, name, dontBroadcast);
 }
 
 void Event_ScavengeRoundFinished(Event event, const char[] name, bool dontBroadcast)
 {
-	Skills_Debug(PlayerSkillsDebug_Event, "[%s]", name);
-	Event_RoundEnd(event, name, dontBroadcast);
+	Lifecycle_Event_ScavengeRoundFinished(event, name, dontBroadcast);
 }
 
 void Event_TankSpawn(Event event, const char[] name, bool dontBroadcast)
