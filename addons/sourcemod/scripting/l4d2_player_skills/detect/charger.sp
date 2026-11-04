@@ -1,7 +1,79 @@
-#if defined _l4d2_player_skills_detect_charger_included
-	#endinput
-#endif
-#define _l4d2_player_skills_detect_charger_included
+// Private detector ownership: charger
+
+Action Detect_TimerEvaluateChargerDeath(Handle timer, any context)
+{
+	int userid = Detect_ReadDeferredClientUserId(view_as<DataPack>(context));
+	if (userid <= 0)
+	{
+		return Plugin_Stop;
+	}
+
+	// ChargerLevel and the generic ChargerKill compete for the same death.
+	// Delay the simple kill so the richer level classification resolves first.
+	if (!Skills_IsRoundLive())
+	{
+		return Plugin_Stop;
+	}
+
+	int charger = GetClientOfUserId(userid);
+	if (charger < 1 || charger > MaxClients)
+	{
+		return Plugin_Stop;
+	}
+
+	if (!g_DetectPendingChargerDeath[charger].queued)
+	{
+		return Plugin_Stop;
+	}
+
+	g_DetectPendingChargerDeath[charger].queued = false;
+	int attacker = GetClientOfUserId(g_DetectPendingChargerDeath[charger].attackerUserId);
+	g_DetectPendingChargerDeath[charger].attackerUserId = 0;
+	bool headshot = Detect_ResolveHeadshot(charger, attacker, g_DetectPendingChargerDeath[charger].headshot);
+	g_DetectPendingChargerDeath[charger].headshot = false;
+
+	if (IsValidZombieClass(charger, L4D2ZombieClass_Charger)
+		&& IsValidSurvivor(attacker)
+		&& !g_bDetectSuppressSiLifeKill[charger])
+	{
+		if (Detect_TryEmitChargerLevelFromDeath(charger, attacker))
+		{
+			if (Detect_ShouldAnnounceChargerClawSummary(charger))
+			{
+				Announce_ChargerClawSummary(charger);
+			}
+			Detect_ResetCharger(charger);
+			Detect_ResetSiLifeKillTrack(charger);
+			return Plugin_Stop;
+		}
+
+		int pinvictim = Detect_GetCurrentPinnedVictim(charger);
+		if (!IsValidSurvivor(pinvictim))
+		{
+			pinvictim = g_DetectPinRegistry.pinnedVictimByAttacker[charger];
+		}
+		if (IsValidSurvivor(pinvictim) && attacker != pinvictim)
+		{
+			Detect_EmitSpecialClear(attacker, charger, false, true, headshot);
+			Detect_MarkSiLifeKillSuppressed(charger);
+			Detect_ClearPinStateByAttacker(charger);
+		}
+
+		if (!g_bDetectSuppressSiLifeKill[charger])
+		{
+			Detect_EmitSiLifeKill(charger, attacker, headshot);
+		}
+	}
+
+	if (Detect_ShouldAnnounceChargerClawSummary(charger))
+	{
+		Announce_ChargerClawSummary(charger);
+	}
+
+	Detect_ResetCharger(charger);
+	Detect_ResetSiLifeKillTrack(charger);
+	return Plugin_Stop;
+}
 
 void Detect_ResetCharger(int charger)
 {
@@ -816,7 +888,7 @@ void Detect_TryEmitPendingChargerDeathSetup(int victim)
 	Detect_EmitChargerDeathSetup(victim, incapped, ledgeHang);
 }
 
-void Detect_CheckChargerInstaKill(Event event, int victim)
+void Detect_CheckChargerInstaKill(SkillsDeathObservation observation, int victim)
 {
 	int charger = g_DetectChargeVictim[victim].charger;
 	if (!IsValidZombieClass(charger, L4D2ZombieClass_Charger))
@@ -835,7 +907,7 @@ void Detect_CheckChargerInstaKill(Event event, int victim)
 		return;
 	}
 
-	int attacker = GetClientOfUserId(event.GetInt("attacker"));
+	int attacker = observation.attacker;
 	if (IsValidInfected(attacker) && attacker != charger)
 	{
 		Detect_ResetChargeTrack(victim);
@@ -843,7 +915,7 @@ void Detect_CheckChargerInstaKill(Event event, int victim)
 	}
 
 	char weapon[64];
-	event.GetString("weapon", weapon, sizeof(weapon));
+	strcopy(weapon, sizeof(weapon), observation.weapon);
 	if (attacker == charger
 		&& (StrEqual(weapon, "charger_claw")
 			|| StrEqual(weapon, "charger_pummel")

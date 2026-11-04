@@ -2,6 +2,9 @@
 
 `L4D2-Player-Skills` es un proyecto SourceMod para Left 4 Dead 2 que centraliza la detección, el anuncio y la exposición por API de eventos de skill competitivos.
 
+El refactor en `develop` conserva pruebas runtime pendientes; alcance y próximos
+escenarios en el [plan](docs/l4d2-skills-refactor-plan.md#entrega-a-develop--1-de-noviembre-de-2026).
+
 El proyecto consolida lógica que antes estaba repartida entre varios plugins y la reorganiza en:
 
 - detección basada en eventos del motor y hooks de `left4dhooks`
@@ -54,6 +57,16 @@ Semántica:
 ### Product Documentation
 
 - [Build System](./docs/build-system.md)
+- [Internal Architecture](./docs/l4d2-skills-architecture.md)
+- [Refactor Plan](./docs/l4d2-skills-refactor-plan.md)
+- [Final Refactor Audit](./docs/l4d2-skills-final-audit.md)
+- [MapEnd / Player-Stats Closure](./docs/l4d2-skills-mapend-close.md)
+- [Late BoomerPop Resolution](./docs/l4d2-skills-boomer-late.md)
+- [Unknown Boomer Spawn Issue](./docs/l4d2-skills-boomer-unknown-issue.md)
+- [Smoke Source Coverage](./docs/l4d2-skills-smoke-sources.md)
+- [Smoke Final Audit](./docs/l4d2-skills-smoke-final-audit.md)
+- [Baseline and Validation Evidence](./docs/l4d2-skills-refactor-validation.md)
+- [Pending SRCDS Smoke](./docs/l4d2-skills-srcds-smoke.md)
 - [Skills Commands](./docs/l4d2-skills-cmd.md)
 - [L4D2 Skills API](./docs/l4d2-skills-api.md)
 - [Skill Interpretation](./docs/l4d2-skills-interpretation.md)
@@ -78,7 +91,7 @@ Flow documentation:
 
 ### Official Bibliography
 
-- [L4D Game Events](./docs/l4d2_game_events.md)
+- [L4D Game Events](./docs/l4d2_game_events.json)
 
 ## Local Build
 

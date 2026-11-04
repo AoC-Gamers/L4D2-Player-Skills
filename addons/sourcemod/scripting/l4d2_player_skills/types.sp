@@ -303,8 +303,22 @@ enum struct PlayerSkillsRuntimeState
 	bool hasTankControlEq;
 	bool hasPlayerStats;
 	bool usesExternalLifecycle;
-	bool isLate;
+	bool lateLoad;
+	bool librariesReady;
+	bool configsReady;
+	bool left4DHooksNeedsSync;
+	bool playerStatsNeedsSync;
 	bool roundLive;
+	bool roundClosed;
+	int lifecycleEpoch;
+	bool closeInProgress;
+	bool mapEnding;
+	bool mapEnded;
+	int activeStatsRoundId;
+	int lastClosedStatsRoundId;
+	bool pendingRoundStart;
+	bool pendingStatsLive;
+	int pendingStatsRoundId;
 	int configuredSurvivorLimit;
 	int configuredPlayerZombieLimit;
 	int siPoolMask;
@@ -322,8 +336,22 @@ enum struct PlayerSkillsRuntimeState
 		this.hasTankControlEq = false;
 		this.hasPlayerStats = false;
 		this.usesExternalLifecycle = false;
-		this.isLate = false;
+		this.lateLoad = false;
+		this.librariesReady = false;
+		this.configsReady = false;
+		this.left4DHooksNeedsSync = true;
+		this.playerStatsNeedsSync = true;
 		this.roundLive = false;
+		this.roundClosed = false;
+		this.lifecycleEpoch = 0;
+		this.closeInProgress = false;
+		this.mapEnding = false;
+		this.mapEnded = false;
+		this.activeStatsRoundId = 0;
+		this.lastClosedStatsRoundId = 0;
+		this.pendingRoundStart = false;
+		this.pendingStatsLive = false;
+		this.pendingStatsRoundId = 0;
 		this.configuredSurvivorLimit = 0;
 		this.configuredPlayerZombieLimit = 0;
 		this.siPoolMask = view_as<int>(PlayerSkillsSiPool_None);
@@ -334,6 +362,48 @@ enum struct PlayerSkillsRuntimeState
 		this.roundEndSignal = PlayerSkillsRoundEndSignal_None;
 		this.roundLiveSignal = PlayerSkillsRoundLiveSignal_None;
 	}
+
+	void DetectLibraries()
+	{
+		this.hasLeft4DHooks = LibraryExists(LIBRARY_LEFT4DHOOKS);
+		this.hasTankControlEq = LibraryExists(LIBRARY_L4D_TANK_CONTROL_EQ);
+		this.hasPlayerStats = LibraryExists(LIBRARY_L4D2PLAYERSTATS);
+		this.librariesReady = true;
+		this.left4DHooksNeedsSync = true;
+		this.playerStatsNeedsSync = true;
+	}
+
+	void SetLibraryAvailability(const char[] name, bool available)
+	{
+		if (StrEqual(name, LIBRARY_LEFT4DHOOKS))
+		{
+			this.hasLeft4DHooks = available;
+			this.left4DHooksNeedsSync = true;
+		}
+		else if (StrEqual(name, LIBRARY_L4D2PLAYERSTATS))
+		{
+			this.hasPlayerStats = available;
+			this.playerStatsNeedsSync = true;
+			if (!available)
+			{
+				this.usesExternalLifecycle = false;
+				this.pendingStatsLive = false;
+				this.pendingStatsRoundId = 0;
+				this.activeStatsRoundId = 0;
+				this.lastClosedStatsRoundId = 0;
+			}
+		}
+		else if (StrEqual(name, LIBRARY_L4D_TANK_CONTROL_EQ))
+		{
+			this.hasTankControlEq = available;
+		}
+	}
+
+	bool NeedsLifecycleSync()
+	{
+		return this.left4DHooksNeedsSync || this.playerStatsNeedsSync;
+	}
+
 }
 
 /**
@@ -773,6 +843,7 @@ enum struct L4D2SkillEventData
 {
 	int			  id;
 	L4D2SkillType type;
+	bool pendingPublication;
 	L4D2PlayerRef actor;
 	L4D2PlayerRef victim;
 	L4D2PlayerRef assister;
@@ -833,6 +904,7 @@ enum struct L4D2SkillEventData
 	{
 		this.id						= 0;
 		this.type					= L4D2Skill_None;
+		this.pendingPublication = false;
 		this.actor.Reset();
 		this.victim.Reset();
 		this.assister.Reset();

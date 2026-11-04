@@ -1,7 +1,9 @@
-#if defined _l4d2_player_skills_detect_caralarm_included
-	#endinput
-#endif
-#define _l4d2_player_skills_detect_caralarm_included
+// Private detector ownership: caralarm
+
+void Detect_EventTriggeredCarAlarm()
+{
+	g_fDetectLastCarAlarm = GetGameTime();
+}
 
 void Detect_FormatEntityKey(int entity, char[] buffer, int maxlen)
 {
@@ -159,7 +161,7 @@ void Detect_RecordCarAlarmAttempt(int entity, int survivor, int inflictor, float
 	if (touched)
 	{
 		g_smDetectCarPendingReason.SetValue(key, view_as<int>(L4D2CarAlarm_Touched));
-		CreateTimer(0.01, Detect_TimerCheckCarAlarm, EntIndexToEntRef(entity), TIMER_FLAG_NO_MAPCHANGE);
+		Detect_QueueEntityTimer(0.01, Detect_TimerCheckCarAlarm, EntIndexToEntRef(entity), TIMER_FLAG_NO_MAPCHANGE);
 		return;
 	}
 
@@ -178,23 +180,29 @@ void Detect_RecordCarAlarmAttempt(int entity, int survivor, int inflictor, float
 			g_smDetectCarPendingReason.SetValue(key, view_as<int>(L4D2CarAlarm_Explosion));
 		}
 
-		CreateTimer(0.01, Detect_TimerCheckCarAlarm, EntIndexToEntRef(entity), TIMER_FLAG_NO_MAPCHANGE);
+		Detect_QueueEntityTimer(0.01, Detect_TimerCheckCarAlarm, EntIndexToEntRef(entity), TIMER_FLAG_NO_MAPCHANGE);
 		return;
 	}
 
 	if (damage == 0.0 && (damagetype & DMG_CLUB || damagetype & DMG_SLASH) && !(damagetype & DMG_SLOWBURN))
 	{
 		g_smDetectCarPendingReason.SetValue(key, view_as<int>(L4D2CarAlarm_Touched));
-		CreateTimer(0.01, Detect_TimerCheckCarAlarm, EntIndexToEntRef(entity), TIMER_FLAG_NO_MAPCHANGE);
+		Detect_QueueEntityTimer(0.01, Detect_TimerCheckCarAlarm, EntIndexToEntRef(entity), TIMER_FLAG_NO_MAPCHANGE);
 		return;
 	}
 
 	g_smDetectCarPendingReason.SetValue(key, view_as<int>(L4D2CarAlarm_Hit));
-	CreateTimer(0.01, Detect_TimerCheckCarAlarm, EntIndexToEntRef(entity), TIMER_FLAG_NO_MAPCHANGE);
+	Detect_QueueEntityTimer(0.01, Detect_TimerCheckCarAlarm, EntIndexToEntRef(entity), TIMER_FLAG_NO_MAPCHANGE);
 }
 
-Action Detect_TimerCheckCarAlarm(Handle timer, any entityRef)
+Action Detect_TimerCheckCarAlarm(Handle timer, any context)
 {
+	int entityRef;
+	if (!Detect_ReadDeferredEntityRef(view_as<DataPack>(context), entityRef))
+	{
+		return Plugin_Stop;
+	}
+
 	int entity = EntRefToEntIndex(entityRef);
 	if (entity == INVALID_ENT_REFERENCE || g_smDetectCarPendingSurvivor == null || g_smDetectCarPendingReason == null || g_smDetectCarPendingInfected == null || g_smDetectCarPendingFlags == null)
 	{

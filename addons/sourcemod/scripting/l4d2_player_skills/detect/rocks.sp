@@ -1,7 +1,14 @@
-#if defined _l4d2_player_skills_detect_rocks_included
-	#endinput
-#endif
-#define _l4d2_player_skills_detect_rocks_included
+// Private detector ownership: rocks
+
+void Detect_ResetRocks()
+{
+	for (int slot = 0; slot < L4D2_SKILLS_MAX_ROCKS; slot++)
+	{
+		g_DetectRocks[slot].Reset();
+	}
+
+	g_iDetectActiveRocks = 0;
+}
 
 void Detect_ClearRockSlot(int slot)
 {
@@ -181,11 +188,17 @@ void Detect_QueueRockFinalize(int rock)
 	}
 
 	g_DetectRocks[slot].finalizeQueued = true;
-	CreateTimer(L4D2_SKILLS_ROCK_FINALIZE_DELAY, Detect_TimerFinalizeRock, g_DetectRocks[slot].entityRef, TIMER_FLAG_NO_MAPCHANGE);
+	Detect_QueueEntityTimer(L4D2_SKILLS_ROCK_FINALIZE_DELAY, Detect_TimerFinalizeRock, g_DetectRocks[slot].entityRef, TIMER_FLAG_NO_MAPCHANGE);
 }
 
-Action Detect_TimerFinalizeRock(Handle timer, any rockRef)
+Action Detect_TimerFinalizeRock(Handle timer, any context)
 {
+	int rockRef;
+	if (!Detect_ReadDeferredEntityRef(view_as<DataPack>(context), rockRef))
+	{
+		return Plugin_Stop;
+	}
+
 	if (g_iDetectActiveRocks <= 0)
 	{
 		return Plugin_Stop;
