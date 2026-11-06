@@ -78,8 +78,8 @@ public void OnPluginStart()
 	g_cvAnnounceJockey				= CreateConVar("sm_skills_announce_jockey", "127", "Bitmask for Jockey announcements. 1=high_leap 2=special_clear 4=kill 8=jump_stop 16=skeet_melee 32=ledge_hang 64=skeet 127=all.");
 	g_cvAnnounceCharger				= CreateConVar("sm_skills_announce_charger", "63", "Bitmask for Charger announcements. 1=level 2=insta_kill 4=death_setup 8=special_clear 16=kill 32=bowl 63=all.");
 	g_cvAnnounceOther				= CreateConVar("sm_skills_announce_other", "3", "Bitmask for other announcements. 1=bunnyhop 2=car_alarm 3=all.");
-	g_cvAnnounceKillMode			= CreateConVar("sm_skills_announce_kill_mode", "3", "Output mode for kill announcements. 1=console 2=chat 3=chat_headshot.");
-	g_cvAnnounceSpecialClearMode	= CreateConVar("sm_skills_announce_specialclear_mode", "3", "Output mode for SpecialClear announcements. 1=console 2=chat 3=chat_headshot.");
+	g_cvAnnounceKillMode			= CreateConVar("sm_skills_announce_kill_mode", "1", "Output mode for kill announcements. 1=console 2=chat 3=chat_headshot.");
+	g_cvAnnounceSpecialClearMode	= CreateConVar("sm_skills_announce_specialclear_mode", "1", "Output mode for SpecialClear announcements. 1=console 2=chat 3=chat_headshot.");
 	g_cvAnnounceTongueReleaseMode	= CreateConVar("sm_skills_announce_tongue_release_mode", "2", "Output mode for Smoker tongue-release announcements during pull/drag before choke pin. 0=disabled 1=console 2=chat 3=chat_headshot.");
 
 	g_cvShoveAttempt			= CreateConVar("sm_skills_shove_attempt", "1", "Bitmask for shove-attempt announcements. 1=charger 2=tank 4=witch 7=all.");
