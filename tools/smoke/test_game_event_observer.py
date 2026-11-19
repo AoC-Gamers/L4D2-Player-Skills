@@ -16,9 +16,9 @@ ROOT = Path(__file__).resolve().parents[2]
 SMOKE = ROOT / "tools" / "smoke"
 CATALOG = ROOT / "docs" / "l4d2_game_events.json"
 PLUGIN_SOURCE = ROOT / "addons" / "sourcemod" / "scripting" / "l4d2_player_skills.sp"
-COMPILER = ROOT / "deps" / "sourcemod-linux" / "addons" / "sourcemod" / "scripting" / "spcomp"
+COMPILER = ROOT / ".deps" / "smx" / "sourcemod-linux" / "addons" / "sourcemod" / "scripting" / "spcomp"
 INCLUDES = [
-    ROOT / "deps" / "sourcemod-linux" / "addons" / "sourcemod" / "scripting" / "include",
+    ROOT / ".deps" / "smx" / "sourcemod-linux" / "addons" / "sourcemod" / "scripting" / "include",
     ROOT / "addons" / "sourcemod" / "scripting" / "include",
 ]
 

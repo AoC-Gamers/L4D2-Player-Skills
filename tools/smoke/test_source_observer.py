@@ -18,10 +18,10 @@ PLUGIN = ROOT / "addons/sourcemod/scripting/l4d2_player_skills.sp"
 CATALOG = ROOT / "docs/l4d2_game_events.json"
 SDK_MODULE = SMOKE / "sdkhooks_observer.sp.inc"
 LH_MODULE = SMOKE / "left4dhooks_observer.sp.inc"
-COMPILER = ROOT / "deps/sourcemod-linux/addons/sourcemod/scripting/spcomp"
+COMPILER = ROOT / ".deps/smx/sourcemod-linux/addons/sourcemod/scripting/spcomp"
 SHELL = ROOT.parent / "SteamIDTools/deps/sourcepawn/objdir/spshell/linux-x86_64/spshell"
 INCLUDE_DIRS = [
-    ROOT / "deps/sourcemod-linux/addons/sourcemod/scripting/include",
+    ROOT / ".deps/smx/sourcemod-linux/addons/sourcemod/scripting/include",
     ROOT / "addons/sourcemod/scripting/include",
 ]
 

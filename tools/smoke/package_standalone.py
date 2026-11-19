@@ -93,7 +93,7 @@ def run(command, log, cwd=ROOT):
 
 
 def build_package(output_dir):
-    compiler = ROOT/'deps/sourcemod-linux/addons/sourcemod/scripting/spcomp'
+    compiler = ROOT/'.deps/smx/sourcemod-linux/addons/sourcemod/scripting/spcomp'
     if not compiler.is_file():
         raise RuntimeError('SourceMod compiler missing; run make deps-smx first.')
     work = ROOT/'.build/smoke'
@@ -109,7 +109,7 @@ def build_package(output_dir):
     probe.write_text(render_smoke_probe(original.read_text()))
     copy_file(ROOT/'addons/sourcemod/scripting/include/l4d2_player_skills.inc', package/'source/include/l4d2_player_skills.inc')
     includes = ['-i'+str(ROOT/'addons/sourcemod/scripting/include'),
-                '-i'+str(ROOT/'deps/sourcemod-linux/addons/sourcemod/scripting/include')]
+                '-i'+str(ROOT/'.deps/smx/sourcemod-linux/addons/sourcemod/scripting/include')]
     plugins = package/'plugins'; plugins.mkdir()
     for stem in ['l4d2_skills_game_event_observer', 'l4d2_player_skills_api_smoke']:
         run([compiler, package/f'source/{stem}.sp', *includes, '-o'+str(plugins/f'{stem}.smx')],
