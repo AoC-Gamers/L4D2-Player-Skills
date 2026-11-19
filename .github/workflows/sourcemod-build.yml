@@ -7,39 +7,41 @@ on:
       - develop
   pull_request:
     paths:
-      - .github/workflows/sourcemod-build.yml
+      - .gitattributes
+      - scripts/**
       - Makefile
-      - plugin-package-map.json
-      - scripts/fetch-sourcemod.py
-      - scripts/build-local.py
-      - scripts/stage-artifact.py
-      - scripts/package-release.py
-      - scripts/ci-validate-artifact.sh
       - addons/sourcemod/**
       - README.md
-      - docs/**
+      - LICENSE
+      - NOTICES.md
+      - CHANGELOG.md
+      - .github/workflows/**
+      - tools/smoke/**
   workflow_dispatch:
-    inputs:
-      sourcemod_version:
-        description: SourceMod version to download
-        required: false
-        default: "1.12"
 
 concurrency:
   group: sourcemod-build-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: read
 
 env:
-  SOURCEMOD_VERSION: ${{ inputs.sourcemod_version || '1.12' }}
+  SOURCEMOD_VERSION: ${{ vars.SOURCEMOD_VERSION }}
 
 jobs:
   deps-smx:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Validate organization SourceMod version
+        shell: bash
+        run: |
+          if [[ ! "$SOURCEMOD_VERSION" =~ ^[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Set the AoC-Gamers Actions variable SOURCEMOD_VERSION to a SourceMod branch such as 1.12."
+            exit 1
+          fi
+
       - name: Check out repository
         uses: actions/checkout@v6
 
@@ -52,8 +54,8 @@ jobs:
         id: cache
         uses: actions/cache/restore@v5
         with:
-          path: deps
-          key: ${{ runner.os }}-smx-deps-${{ env.SOURCEMOD_VERSION }}-${{ hashFiles('scripts/fetch-sourcemod.py', 'Makefile') }}
+          path: .deps/smx
+          key: ${{ runner.os }}-smx-deps-${{ env.SOURCEMOD_VERSION }}-${{ hashFiles('scripts/deps/fetch-sourcemod.py', 'Makefile') }}
 
       - name: Resolve SourceMod dependencies
         if: steps.cache.outputs.cache-hit != 'true'
@@ -63,7 +65,7 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v5
         with:
-          path: deps
+          path: .deps/smx
           key: ${{ steps.cache.outputs.cache-primary-key }}
 
   build-smx:
@@ -82,12 +84,12 @@ jobs:
       - name: Restore SourceMod dependency cache
         uses: actions/cache/restore@v5
         with:
-          path: deps
-          key: ${{ runner.os }}-smx-deps-${{ env.SOURCEMOD_VERSION }}-${{ hashFiles('scripts/fetch-sourcemod.py', 'Makefile') }}
+          path: .deps/smx
+          key: ${{ runner.os }}-smx-deps-${{ env.SOURCEMOD_VERSION }}-${{ hashFiles('scripts/deps/fetch-sourcemod.py', 'Makefile') }}
           fail-on-cache-miss: true
 
       - name: Build SourceMod plugin
-        run: make build-smx PYTHON=python3 SPCOMP="deps/sourcemod-linux/addons/sourcemod/scripting/spcomp"
+        run: make build-smx PYTHON=python3
 
       - name: Upload SourceMod build tree
         uses: actions/upload-artifact@v6
@@ -101,13 +103,17 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: smx-compile-log
-          path: deps/build-smx-compile.log
+          path: .build/build-smx-compile.log
           if-no-files-found: error
           retention-days: 1
 
-  release:
+  package:
     needs: build-smx
     runs-on: ubuntu-latest
+    outputs:
+      basename: ${{ steps.artifact.outputs.basename }}
+      prerelease: ${{ steps.artifact.outputs.prerelease }}
+      tag: ${{ steps.artifact.outputs.tag }}
 
     steps:
       - name: Check out repository
@@ -123,12 +129,6 @@ jobs:
         with:
           name: smx-build
           path: .build/smx
-
-      - name: Download SourceMod compile log
-        uses: actions/download-artifact@v8
-        with:
-          name: smx-compile-log
-          path: deps
 
       - name: Resolve artifact channel
         id: artifact
@@ -158,12 +158,6 @@ jobs:
       - name: Package SourceMod build tree
         run: make package-smx PYTHON=python3
 
-      - name: Stage SourceMod artifact
-        run: python3 ./scripts/stage-artifact.py . ./.build/package-smx ./deps/build-smx-compile.log
-
-      - name: Validate SourceMod artifact
-        run: bash ./scripts/ci-validate-artifact.sh
-
       - name: Create release archive
         env:
           RELEASE_BASENAME: ${{ steps.artifact.outputs.basename }}
@@ -177,20 +171,37 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  publish-channel:
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    needs: package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Download validated ZIP
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.package.outputs.basename }}
+          path: dist/release
+
       - name: Move channel tag
         if: github.event_name != 'pull_request' && (github.ref_name == 'main' || github.ref_name == 'develop')
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -f "${{ steps.artifact.outputs.tag }}" "$GITHUB_SHA"
-          git push origin "refs/tags/${{ steps.artifact.outputs.tag }}" --force
+          git tag -f "${{ needs.package.outputs.tag }}" "$GITHUB_SHA"
+          git push origin "refs/tags/${{ needs.package.outputs.tag }}" --force
 
       - name: Publish channel release
         if: github.event_name != 'pull_request' && (github.ref_name == 'main' || github.ref_name == 'develop')
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ steps.artifact.outputs.tag }}
-          files: dist/release/${{ steps.artifact.outputs.basename }}.zip
+          tag_name: ${{ needs.package.outputs.tag }}
+          files: dist/release/${{ needs.package.outputs.basename }}.zip
           draft: false
-          prerelease: ${{ steps.artifact.outputs.prerelease == 'true' }}
+          prerelease: ${{ needs.package.outputs.prerelease == 'true' }}

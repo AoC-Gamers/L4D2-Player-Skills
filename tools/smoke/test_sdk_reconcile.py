@@ -13,7 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 TEMPLATE = ROOT / "tools/smoke/game_event_observer.sp.in"
 SDK_MODULE = ROOT / "tools/smoke/sdkhooks_observer.sp.inc"
-COMPILER = ROOT / "deps/sourcemod-linux/addons/sourcemod/scripting/spcomp"
+COMPILER = ROOT / ".deps/smx/sourcemod-linux/addons/sourcemod/scripting/spcomp"
 SHELL = ROOT.parent / "SteamIDTools/deps/sourcepawn/objdir/spshell/linux-x86_64/spshell"
 
 

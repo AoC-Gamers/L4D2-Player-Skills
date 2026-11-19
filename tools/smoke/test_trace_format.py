@@ -16,7 +16,7 @@ from validate_smoke_trace import SOURCES, validate_trace_paths
 ROOT = Path(__file__).resolve().parents[2]
 TEMPLATE = ROOT / "tools/smoke/game_event_observer.sp.in"
 VALIDATOR = ROOT / "tools/smoke/validate_smoke_trace.py"
-COMPILER = ROOT / "deps/sourcemod-linux/addons/sourcemod/scripting/spcomp"
+COMPILER = ROOT / ".deps/smx/sourcemod-linux/addons/sourcemod/scripting/spcomp"
 SHELL = ROOT.parent / "SteamIDTools/deps/sourcepawn/objdir/spshell/linux-x86_64/spshell"
 SHA = "a" * 64
 

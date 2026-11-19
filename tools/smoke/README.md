@@ -12,12 +12,12 @@ Desde la raíz del repositorio, con Python 3 y el toolchain local:
 make deps-smx
 python3 tools/smoke/generate_game_event_observer.py
 python3 -m unittest discover -s tools/smoke -p 'test_*.py' -v
-deps/sourcemod-linux/addons/sourcemod/scripting/spcomp \
+.deps/smx/sourcemod-linux/addons/sourcemod/scripting/spcomp \
   .build/smoke/game-events/l4d2_skills_game_event_observer.sp \
   -iaddons/sourcemod/scripting/include \
   -ideps/sourcemod-linux/addons/sourcemod/scripting/include \
   -o.build/smoke/game-events/l4d2_skills_game_event_observer.smx
-deps/sourcemod-linux/addons/sourcemod/scripting/spcomp \
+.deps/smx/sourcemod-linux/addons/sourcemod/scripting/spcomp \
   addons/sourcemod/scripting/l4d2_player_skills_api.sp \
   -iaddons/sourcemod/scripting/include \
   -ideps/sourcemod-linux/addons/sourcemod/scripting/include \
@@ -32,11 +32,10 @@ la clave del campo y `name` contiene su tipo: el generador verifica esa inversi�
 
 ## Instalación futura y captura
 
-**Pendiente de servidor autorizado.** competitive_dev sigue reservado. Antes de
-instalar cualquier SMX, coordinar el gameserver y sus ventanas con el usuario,
-respaldar los archivos reemplazados y registrar modo, plugins, versiones y cvars.
-En ZoneMod aplicar los SMX descargando y cargando de nuevo el modo. Restaurar
-solo los cambios temporales propios; conservar cambios explícitos del usuario.
+**Pendiente de validación en SRCDS.** Antes de instalar el observador, respalda
+los archivos que vayas a reemplazar y registra el modo, los plugins, las
+versiones y las ConVars. En ZoneMod, descarga y vuelve a cargar el modo para
+aplicar los SMX. Restaura la configuración temporal al terminar.
 
 Copiar explícitamente el SMX de este observador y, para payloads públicos, el
 acompañante API compilado (`l4d2_player_skills_api.smx`). El observador no requiere
@@ -110,7 +109,7 @@ la ausencia de esos registros exige tratar la captura como incompleta.
 
 ## Investigación de Boomer con spawn desconocido
 
-Ver el [issue documentado](../../docs/l4d2-skills-boomer-unknown-issue.md). Capturar
+Ver el [caso de spawn desconocido](../../docs/detection/boomer-timing.md). Capturar
 el stream completo, no solo la pareja death/explosion: spawn, daño, disparos,
 vomit/bile, muerte, explosión, desconexión, cambios de equipo y límites de ronda.
 Registrar carga tardía, core SHA, disponibilidad de Player-Stats y si se observó
@@ -272,7 +271,7 @@ La suite ahora contrasta las 26 firmas completas con los includes y prueba el
 escape real en VM (incluido UTF-8 entre chunks), recargas SDK con stubs y cierre
 con fallo de flush. Para esas pruebas VM se utiliza el spshell local de
 `../SteamIDTools/deps/sourcepawn/objdir`; si no está disponible, los SKIP no deben
-reportarse como casos ejecutados. Ver el [informe de auditoría](../../docs/l4d2-skills-smoke-final-audit.md).
+reportarse como casos ejecutados. Ver los [resultados de validación](../../docs/validation/README.md).
 
 ## ZIP standalone para un gameserver
 

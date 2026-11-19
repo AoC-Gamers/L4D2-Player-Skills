@@ -58,9 +58,8 @@ frente a la copia de referencia conservada.
 
 ## 2. Coordinar el servidor y preservar su estado
 
-**competitive_dev permanece reservado.** Elegir con el usuario otro gameserver
-o una ventana autorizada antes de instalar, cambiar modo, plugins o cvars.
-Preparar el caso, duración y criterio de cierre con el operador.
+Usa un servidor de pruebas. Antes de instalar, prepara el escenario, su
+duración y la evidencia que necesitas capturar.
 
 Antes de cambios temporales, guardar en una carpeta de evidencia separada:
 
